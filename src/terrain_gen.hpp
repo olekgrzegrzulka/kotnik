@@ -1,58 +1,132 @@
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <execution>
 #include "chunk.hpp"
 #include "fast_noise_lite.h"
 
 namespace TerrainGen {
 
+static FastNoiseLite noise_landform{};
+static FastNoiseLite noise_heightmap{};
+static FastNoiseLite noise_heightmap_high{};
 static FastNoiseLite noise3d{};
 static FastNoiseLite noise3d_high{};
-static FastNoiseLite noise_height{};
-static FastNoiseLite noise_height_high{};
 
 static std::array<size_t, CHUNK_CUBES> indices;
 
 static bool was_initialized = false;
 static const float SCALE = 1.25f;
-static const float HEIGHT = 2.1f;
 
 static void init() {
   std::iota(indices.begin(), indices.end(), 0);
 
+  noise_heightmap.SetSeed(555);
+  noise_heightmap.SetFrequency(0.00411f / SCALE);
+  noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+  noise_heightmap.SetFractalOctaves(3);
+
+  noise_heightmap_high.SetSeed(666);
+  noise_heightmap_high.SetFrequency(0.0234f / SCALE);
+  noise_heightmap_high.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+  noise_heightmap_high.SetFractalOctaves(2);
+
   noise3d.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
   noise3d.SetSeed(555);
-  noise3d.SetFrequency(0.0211f / SCALE);
+  noise3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+  noise3d.SetFractalOctaves(3);
+  noise3d.SetFrequency(0.01711f / SCALE);
 
   noise3d_high.SetSeed(444);
-  noise3d_high.SetFrequency(0.069f / SCALE);
+  noise3d_high.SetFrequency(0.059f / SCALE);
 
-  noise_height.SetSeed(77);
-  noise_height.SetFractalType(FastNoiseLite::FractalType::FractalType_None);
-  // noise_height.SetFractalOctaves(2);
-  noise_height.SetFrequency(0.0026f / SCALE);
-  noise_height.SetFractalGain(2.0f);
-
-  noise_height_high.SetSeed(452345);
-  noise_height_high.SetFractalOctaves(2);
-  noise_height_high.SetFrequency(0.021f / SCALE);
-  noise_height_high.SetFractalGain(2.0f);
+  noise_landform.SetSeed(2137);
+  noise_landform.SetFrequency(0.0041f);
 
   was_initialized = true;
 }
 
-bool is_cube(float x, float y, float z) {
+struct Landform {
+  float base_height = 0.0f;
+  float height_multiplier = 0.0f;
+  float height_high_multiplier = 0.0f;
+  float noise_3d_multiplier = 0.0f;
+  float high_noise_3d_multiplier = 0.0f;
+};
+
+static constexpr auto landforms = std::to_array<const Landform>({
+
+    Landform /* Roughlands */ {
+        .base_height = 0.0f,
+        .height_multiplier = 72.0f,
+        .height_high_multiplier = 10.0f,
+        .noise_3d_multiplier = 55.0f,
+        .high_noise_3d_multiplier = 5.0f,
+    }, // namespace TerrainGen
+    Landform /* Hillylands */ {
+        .base_height = 0.0f,
+        .height_multiplier = 8.0f,
+        .height_high_multiplier = 0.5f,
+        .noise_3d_multiplier = 30.0f,
+        .high_noise_3d_multiplier = 0.5f,
+    },
+    Landform /* Flatlands */ {
+        .base_height = 0.0f,
+        .height_multiplier = 4.0f,
+        .height_high_multiplier = 0.5f,
+        .noise_3d_multiplier = 10.0f,
+        .high_noise_3d_multiplier = 0.5f,
+    },
+});
+
+bool is_cube_landform(float x, float y, float z, Landform blended_landform) {
   if (!was_initialized) { init(); }
-  float value_height = 0.8f;
 
-  float noise3d_high_value = noise3d_high.GetNoise(x, y, z);
+  float value_height = noise_heightmap.GetNoise(x, z) * blended_landform.height_multiplier;
+  value_height += noise_heightmap_high.GetNoise(x, z) * blended_landform.height_high_multiplier;
 
-  float value_3d = (noise3d.GetNoise(x, y, z) + 1.0f) * 0.5f;
+  float value_3d = noise3d.GetNoise(x, y, z) * blended_landform.noise_3d_multiplier;
+  value_3d += noise3d_high.GetNoise(x, y, z) * blended_landform.high_noise_3d_multiplier;
 
-  if (value_height * 80.0f * (1.0f + value_3d * 0.5f + noise3d_high_value * 0.08f) * HEIGHT > y) {
+  if (blended_landform.base_height + value_height + value_3d > y) {
     return true;
   }
   return false;
+}
+
+Landform get_landform_blended_properties(float x, float z) {
+  if (!was_initialized) { init(); }
+
+  static constexpr float landform_blending_size = 0.75f;
+  static_assert(landform_blending_size >= 0.01f && landform_blending_size <= 1.0f);
+
+  float value = (noise_landform.GetNoise(x, z) + 1.0f) * 0.5f;
+  value *= (float)landforms.size();
+
+  size_t landform_index_left = std::floor(value);
+  size_t landform_index_right = std::ceil(value);
+  if (landform_index_right >= landforms.size()) { landform_index_right = landforms.size() - 1; }
+
+  float lerp_value = value - (int32_t)value;
+  lerp_value = ((lerp_value - 0.5f) / landform_blending_size) + 0.5f;
+  lerp_value = std::clamp(lerp_value, 0.0f, 1.0f);
+
+  auto landform_left = landforms.at(landform_index_left);
+  auto landform_right = landforms.at(landform_index_right);
+
+  return Landform{
+      .base_height = std::lerp(landform_left.base_height, landform_right.base_height, lerp_value),
+      .height_multiplier = std::lerp(landform_left.height_multiplier, landform_right.height_multiplier, lerp_value),
+      .height_high_multiplier = std::lerp(landform_left.height_high_multiplier, landform_right.height_high_multiplier, lerp_value),
+      .noise_3d_multiplier = std::lerp(landform_left.noise_3d_multiplier, landform_right.noise_3d_multiplier, lerp_value),
+      .high_noise_3d_multiplier = std::lerp(landform_left.high_noise_3d_multiplier, landform_right.high_noise_3d_multiplier, lerp_value),
+  };
+}
+
+bool is_cube(float x, float y, float z) {
+  auto blended_landform = get_landform_blended_properties(x, z);
+
+  return is_cube_landform(x, y, z, blended_landform);
 }
 
 void generate_chunk(Chunk* chunk) {
