@@ -1,0 +1,40 @@
+﻿BasedOnStyle: LLVM
+AllowShortBlocksOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+PointerAlignment: Left
+AlwaysBreakTemplateDeclarations: MultiLine
+ColumnLimit: 0
+
+# Needs clang-format 17...
+# BracedInitializerIndentWidth: 2
+
+IncludeCategories:
+  # Headers in <> without extension.
+  - Regex:           '<([A-Za-z0-9\Q/-_\E])+>'
+    Priority:        0
+  # Headers in <> with extension.
+  - Regex:           '<([A-Za-z0-9.\Q/-_\E])+>'
+    Priority:        1
+  # Headers in "" with extension.
+  - Regex:           '"([A-Za-z0-9.\Q/-_\E])+"'
+    Priority:        2
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+
+AllowShortCaseLabelsOnASingleLine: true
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true

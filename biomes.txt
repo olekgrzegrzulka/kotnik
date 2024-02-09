@@ -1,0 +1,25 @@
+LANDFORMS:
+
+» Highlands
+
+» Jaggedlangs / Ridgelands / Roughlands
+
+» Flatlands
+
+» Clifflands
+
+BIOMES:
+
+» Jungle
+
+» Rainforest
+
+» Swamp
+
+» Boreal forest
+
+» Chaparral
+
+» Taiga
+
+» Shrubland
