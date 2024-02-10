@@ -16,18 +16,18 @@ static FastNoiseLite noise3d_high{};
 static std::array<size_t, CHUNK_CUBES> indices;
 
 static bool was_initialized = false;
-static const float SCALE = 1.25f;
+static const float SCALE = 0.8f;
 
 static void init() {
   std::iota(indices.begin(), indices.end(), 0);
 
   noise_heightmap.SetSeed(555);
-  noise_heightmap.SetFrequency(0.00411f / SCALE);
+  noise_heightmap.SetFrequency(0.00641f / SCALE);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_heightmap.SetFractalOctaves(3);
 
   noise_heightmap_high.SetSeed(666);
-  noise_heightmap_high.SetFrequency(0.0234f / SCALE);
+  noise_heightmap_high.SetFrequency(0.0314f / SCALE);
   noise_heightmap_high.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_heightmap_high.SetFractalOctaves(2);
 
@@ -41,7 +41,7 @@ static void init() {
   noise3d_high.SetFrequency(0.059f / SCALE);
 
   noise_landform.SetSeed(2137);
-  noise_landform.SetFrequency(0.0041f);
+  noise_landform.SetFrequency(0.0041f / SCALE);
 
   was_initialized = true;
 }
@@ -52,30 +52,45 @@ struct Landform {
   float height_high_multiplier = 0.0f;
   float noise_3d_multiplier = 0.0f;
   float high_noise_3d_multiplier = 0.0f;
+  float cliff_factor = 0.0f;
 };
 
 static constexpr auto landforms = std::to_array<const Landform>({
 
     Landform /* Roughlands */ {
-        .base_height = 0.0f,
-        .height_multiplier = 72.0f,
-        .height_high_multiplier = 10.0f,
-        .noise_3d_multiplier = 55.0f,
-        .high_noise_3d_multiplier = 5.0f,
-    }, // namespace TerrainGen
-    Landform /* Hillylands */ {
-        .base_height = 0.0f,
-        .height_multiplier = 8.0f,
-        .height_high_multiplier = 0.5f,
-        .noise_3d_multiplier = 30.0f,
-        .high_noise_3d_multiplier = 0.5f,
+        .base_height = 8.0f,
+        .height_multiplier = 60.0f,
+        .height_high_multiplier = 5.0f,
+        .noise_3d_multiplier = 40.0f,
+        .high_noise_3d_multiplier = 4.0f,
+        .cliff_factor = 0.0f,
     },
-    Landform /* Flatlands */ {
-        .base_height = 0.0f,
-        .height_multiplier = 4.0f,
+
+    Landform /* Clifflands */ {
+        .base_height = 4.0f,
+        .height_multiplier = 30.0f,
         .height_high_multiplier = 0.5f,
         .noise_3d_multiplier = 10.0f,
-        .high_noise_3d_multiplier = 0.5f,
+        .high_noise_3d_multiplier = 1.0f,
+        .cliff_factor = 1.0f,
+    },
+
+    Landform /* Hillylands */ {
+        .base_height = 0.0f,
+        .height_multiplier = 25.0f,
+        .height_high_multiplier = 0.4f,
+        .noise_3d_multiplier = 5.0f,
+        .high_noise_3d_multiplier = 0.4f,
+        .cliff_factor = 0.0f,
+    },
+
+    Landform /* Flatlands */ {
+        .base_height = 0.0f,
+        .height_multiplier = 3.0f,
+        .height_high_multiplier = 0.4f,
+        .noise_3d_multiplier = 8.0f,
+        .high_noise_3d_multiplier = 0.4f,
+        .cliff_factor = 0.0f,
     },
 });
 
@@ -88,7 +103,14 @@ bool is_cube_landform(float x, float y, float z, Landform blended_landform) {
   float value_3d = noise3d.GetNoise(x, y, z) * blended_landform.noise_3d_multiplier;
   value_3d += noise3d_high.GetNoise(x, y, z) * blended_landform.high_noise_3d_multiplier;
 
-  if (blended_landform.base_height + value_height + value_3d > y) {
+  float value = blended_landform.base_height + value_height + value_3d * (1.0f - blended_landform.cliff_factor * 0.7f);
+
+  if (value > 15.0f / (0.01f + blended_landform.cliff_factor * 0.8f)) {
+    float cliff_height = (noise_heightmap.GetNoise(x * 0.04f, z * 0.04f) + 1.0f) * 35.0f;
+    value = cliff_height + (value * 0.4f);
+  }
+
+  if (value > y) {
     return true;
   }
   return false;
@@ -120,6 +142,7 @@ Landform get_landform_blended_properties(float x, float z) {
       .height_high_multiplier = std::lerp(landform_left.height_high_multiplier, landform_right.height_high_multiplier, lerp_value),
       .noise_3d_multiplier = std::lerp(landform_left.noise_3d_multiplier, landform_right.noise_3d_multiplier, lerp_value),
       .high_noise_3d_multiplier = std::lerp(landform_left.high_noise_3d_multiplier, landform_right.high_noise_3d_multiplier, lerp_value),
+      .cliff_factor = std::lerp(landform_left.cliff_factor, landform_right.cliff_factor, lerp_value),
   };
 }
 
