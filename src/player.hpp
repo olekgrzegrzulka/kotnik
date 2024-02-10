@@ -231,8 +231,18 @@ public:
   void update_velocity() {
     float walking_speed = (is_flying) ? 0.25f : 0.1f;
     auto walking_vector = (get_walking_dir() * walking_speed);
+
     velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25f);
     velocity.z = std::lerp(velocity.z, walking_vector.z, 0.25f);
+
+    if (glm::length(walking_vector) == 0.0f) {
+      if (std::abs(velocity.x) < 0.0001f) {
+        velocity.x *= 0.5f;
+      }
+      if (std::abs(velocity.y) < 0.0001f) {
+        velocity.y *= 0.5f;
+      }
+    }
 
     if (is_flying) {
       velocity.y += 0.02f * (input_held("ascend") - input_held("descend"));
