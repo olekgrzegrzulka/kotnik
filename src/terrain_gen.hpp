@@ -103,7 +103,7 @@ bool is_cube_landform(float x, float y, float z, Landform blended_landform) {
   float value_3d = noise3d.GetNoise(x, y, z) * blended_landform.noise_3d_multiplier;
   value_3d += noise3d_high.GetNoise(x, y, z) * blended_landform.high_noise_3d_multiplier;
 
-  float value = blended_landform.base_height + value_height + value_3d * (1.0f - blended_landform.cliff_factor * 0.7f);
+  float value = blended_landform.base_height + value_height + value_3d * (1.0f - blended_landform.cliff_factor * 0.5f);
 
   if (value > 15.0f / (0.01f + blended_landform.cliff_factor * 0.8f)) {
     float cliff_height = (noise_heightmap.GetNoise(x * 0.04f, z * 0.04f) + 1.0f) * 35.0f;
@@ -152,11 +152,52 @@ bool is_cube(float x, float y, float z) {
   return is_cube_landform(x, y, z, blended_landform);
 }
 
+void tree_gen(Chunk* chunk, size_t cube_index) {
+  CubePos cube_pos = index_to_local_pos(cube_index) + chunk->position * (int32_t)CHUNK_SIZE;
+
+  int max_height = 0;
+  for (; max_height < 16; max_height += 1) {
+    CubePos cube_pos_height = cube_pos + CubePos{0, max_height + 1, 0};
+    if (is_cube((float)cube_pos_height.x, (float)cube_pos_height.y, (float)cube_pos_height.z)) { break; }
+  }
+
+  max_height = std::clamp(max_height - 2, 0, 6 + (int)(noise_heightmap_high.GetNoise((float)cube_pos.x, (float)cube_pos.z) * 3.0f));
+
+  if (max_height <= 4) { return; }
+
+  for (int i = 0; i < max_height; i += 1) {
+    auto [chunk_pos, local_pos] = cube_to_local(cube_pos + CubePos{0, i, 0});
+    if (chunk->position == chunk_pos) {
+      chunk->set_cube_no_lock(local_pos, CubeId::WOOD);
+    } else {
+      chunk->set_cube_neigbour(chunk_pos, local_pos, CubeId::WOOD);
+    }
+  }
+
+  CubePos cube_pos_crown = cube_pos + CubePos{0, max_height, 0};
+
+  for (int x = -2; x <= 2; x += 1) {
+    for (int z = -2; z <= 2; z += 1) {
+      if (std::abs(x) == 2 && std::abs(z) == 2) { continue; }
+      for (int y = -2; y <= 1; y += 1) {
+        if (y == 1 && (std::abs(x) == 2 || std::abs(z) == 2)) { continue; }
+        auto [chunk_pos, local_pos] = cube_to_local(cube_pos_crown + CubePos{x, y, z});
+        if (chunk->position == chunk_pos && chunk->get_cube(local_pos) == CubeId::AIR) {
+          chunk->set_cube_no_lock(local_pos, CubeId::LEAVES);
+        } else {
+          chunk->set_cube_neigbour(chunk_pos, local_pos, CubeId::LEAVES);
+        }
+      }
+    }
+  }
+}
+
 void generate_chunk(Chunk* chunk) {
   if (!was_initialized) { init(); }
 
   std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](size_t i) {
-    auto pos = index_to_local_pos(i) + chunk->position * (int32_t)CHUNK_SIZE;
+    WorldPos pos = index_to_local_pos(i) + chunk->position * (int32_t)CHUNK_SIZE;
+    size_t i_up = local_pos_to_index(index_to_local_pos(i) + LocalPos{0, 1, 0});
 
     float x = (float)pos.x;
     float y = (float)pos.y;
@@ -165,22 +206,17 @@ void generate_chunk(Chunk* chunk) {
     bool is_cube_neg_1 = is_cube(x, y - 1.0f, z);
     bool is_cube_0 = is_cube(x, y, z);
 
+    std::vector<int> is_cube_parallel = {1, 2, 3, 4};
+    std::for_each(std::execution::par_unseq, is_cube_parallel.begin(), is_cube_parallel.end(), [&](int& n) {
+      n = (int)is_cube(x, y + n, z);
+    });
+
+    bool is_cube_1 = (bool)is_cube_parallel[0];
+    bool is_cube_2 = (bool)is_cube_parallel[1];
+    bool is_cube_3 = (bool)is_cube_parallel[2];
+    bool is_cube_4 = (bool)is_cube_parallel[3];
+
     if (is_cube_0) {
-      // bool is_cube_1 = is_cube(x, y + 1.0f, z);
-      // bool is_cube_2 = is_cube(x, y + 2.0f, z);
-      // bool is_cube_3 = is_cube(x, y + 3.0f, z);
-      // bool is_cube_4 = is_cube(x, y + 4.0f, z);
-
-      std::vector<int> is_cube_parallel = {1, 2, 3, 4};
-      std::for_each(std::execution::par_unseq, is_cube_parallel.begin(), is_cube_parallel.end(), [&](int& n) {
-        n = (int)is_cube(x, y + n, z);
-      });
-
-      bool is_cube_1 = (bool)is_cube_parallel[0];
-      bool is_cube_2 = (bool)is_cube_parallel[1];
-      bool is_cube_3 = (bool)is_cube_parallel[2];
-      bool is_cube_4 = (bool)is_cube_parallel[3];
-
       if (is_cube_1 && is_cube_2 && is_cube_3 && is_cube_4) {
         chunk->set_cube_index_no_lock(i, CubeId::STONE);
       } else if (is_cube_1) {
@@ -188,7 +224,10 @@ void generate_chunk(Chunk* chunk) {
       } else {
         chunk->set_cube_index_no_lock(i, CubeId::GRASS);
       }
-    } else if (is_cube_neg_1 && noise3d_high.GetNoise(x * 4.0f, y * 4.0f, z * 4.0f) > 0.7f) {
+    } else if (float tree_noise = noise3d_high.GetNoise(x * 4.0f, y * 4.0f, z * 4.0f);
+               is_cube_neg_1 && tree_noise > 0.4f && (int)(x) % (int)(4 + tree_noise * 2.5f) == 0 && (int)z % (int)(4 + tree_noise * 2.5f) == 0) {
+      tree_gen(chunk, i);
+    } else if (is_cube_neg_1 && noise3d_high.GetNoise(x * 4.0f, y * 4.0f, z * 4.0f) > 0.5f) {
       chunk->set_cube_index_no_lock(i, CubeId::GRASS_PLANT);
     }
   });

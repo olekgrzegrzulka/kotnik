@@ -412,8 +412,8 @@ void World::update() {
   // Load chunks near player
   ChunkPos chunk_load_center = world_pos_to_chunk_pos(player->world_pos);
   chunks_to_keep_loaded.clear();
-  for (int x = -9; x <= 9; x += 1) {
-    for (int z = -9; z <= 9; z += 1) {
+  for (int x = -6; x <= 6; x += 1) {
+    for (int z = -6; z <= 6; z += 1) {
       for (int y = -4; y <= 4; y += 1) {
         chunks_to_keep_loaded.emplace_back(chunk_load_center + ChunkPos{x, y, z});
       }
@@ -450,6 +450,35 @@ void World::update() {
       chunks_not_ready.emplace_back(chunk_pos);
       continue;
     }
+
+    // Set cubes, which chunk neigbours requested to set
+    std::unordered_map<CubePos, CubeId, Vec3Hasher> chunks_neigbour_chunks_failed_cubes;
+    for (auto [cube_pos, cube_id] : chunk.neigbour_chunks_cubes_to_set) {
+      auto [neigb_chunk_pos, neigb_local_pos] = cube_to_local(cube_pos);
+      auto neigb_chunk_it = chunks.find(neigb_chunk_pos);
+
+      // Chunk doesn't exist
+      if (neigb_chunk_it == chunks.end()) {
+        chunks_neigbour_chunks_failed_cubes.insert({cube_pos, cube_id});
+        continue;
+      }
+
+      Chunk& neigb_chunk = neigb_chunk_it->second;
+
+      // Chunk is locked
+      if (!neigb_chunk.flags.ready || neigb_chunk.flags.locked) {
+        chunks_neigbour_chunks_failed_cubes.insert({cube_pos, cube_id});
+        continue;
+      }
+
+      // Can only replace air block
+      if (neigb_chunk.get_cube(neigb_local_pos) != CubeId::AIR) {
+        continue;
+      }
+
+      neigb_chunk.set_cube(neigb_local_pos, cube_id);
+    }
+    chunk.neigbour_chunks_cubes_to_set = chunks_neigbour_chunks_failed_cubes;
 
     chunk.update();
 

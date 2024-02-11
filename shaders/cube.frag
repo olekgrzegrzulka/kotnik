@@ -8,8 +8,7 @@ in float brightness;
 in vec2 uv;
 
 void main() {
-    vec3 color = texture(atlas, uv).rgb;
-    if (color == vec3(0.0, 0.0, 0.0)) {discard; }
-    // FragColor = vec4(color, 1.0);
-    FragColor = vec4(color, 1.0) * brightness;
+    vec4 color = texture(atlas, uv).rgba;
+    if (color.a < 0.6) {discard;}
+    FragColor = vec4(color.rgb, 1.0) * brightness;
 }

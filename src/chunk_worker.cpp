@@ -26,26 +26,18 @@ bool ChunkMeshWorker::run_job(Chunk* chunk) {
 
   World& world = chunk->world;
 
-  for (int x : {-1, 0, 1}) {
-    for (int y : {-1, 0, 1}) {
-      for (int z : {-1, 0, 1}) {
-        if (x == 0 && y == 0 && z == 0) { continue; }
-        if (Chunk* neigb = (Chunk*)(world.get_chunk(chunk->position + ChunkPos(x, y, z)))) { _surrounding_chunks.emplace_back(neigb); }
-      }
-    }
-  }
+  static std::array<ChunkPos, 6> neigbour_offsets = {ChunkPos{-1, 0, 0}, ChunkPos{1, 0, 0}, ChunkPos{0, -1, 0}, ChunkPos{0, 1, 0}, ChunkPos{0, 0, -1}, ChunkPos{0, 0, 1}};
 
-  for (Chunk* c : _surrounding_chunks) {
-    if (c->flags.locked) {
-      return false;
-    }
-    if (!(c->flags.ready)) {
-      return false;
-    }
+  for (auto offset : neigbour_offsets) {
+    Chunk* neigb = const_cast<Chunk*>(world.get_chunk(chunk->position + offset));
+    if (!neigb) { return false; }
+    if (neigb->flags.locked) { return false; }
+    if (!(neigb->flags.ready)) { return false; }
+
+    _surrounding_chunks.emplace_back(neigb);
   }
 
   surrounding_chunks = _surrounding_chunks;
-
   finished = false;
 
   for (Chunk* c : surrounding_chunks) {

@@ -172,7 +172,7 @@ static CubeProperties create_foliage_cube(glm::vec<2, uint32_t> uv) {
   return cp;
 }
 
-static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv) {
+static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv, bool solid = true) {
   CubeProperties cp{
       .render_data{
           .vertices_left = cube_vertices_left,
@@ -185,6 +185,13 @@ static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv) {
       },
       .friction = 1.0f,
   };
+
+  cp.render_data.face_solidity[Dir::LEFT] = solid;
+  cp.render_data.face_solidity[Dir::RIGHT] = solid;
+  cp.render_data.face_solidity[Dir::FRONT] = solid;
+  cp.render_data.face_solidity[Dir::BACK] = solid;
+  cp.render_data.face_solidity[Dir::BOTTOM] = solid;
+  cp.render_data.face_solidity[Dir::TOP] = solid;
 
   for (size_t i = 0; i < 6; i += 1) {
     cp.render_data.vertices_left[i].pack |= ((uint8_t)((uvs[i].x + uv.x) * 2.0f));
@@ -279,6 +286,7 @@ static const std::array<CubeProperties, static_cast<size_t>(CubeId::CUBE_ID_SIZE
     /* Sand */ create_full_cube({5, 0}),
     /* Gravel */ create_full_cube({6, 0}),
     /* Wood */ create_full_cube({7, 0}, {7, 0}, {7, 0}, {7, 0}, {8, 0}, {8, 0}),
+    /* Leaves */ create_full_cube({9, 0}, false),
     /* Grass plant */ create_foliage_cube({13, 0}),
 };
 

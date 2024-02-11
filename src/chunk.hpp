@@ -30,7 +30,7 @@ static LocalPos index_to_local_pos(size_t index) {
 
 // Returns chunk's array index to the cube located at the given local position
 static size_t local_pos_to_index(LocalPos pos) {
-  assert(is_local_pos_valid(pos));
+  // assert(is_local_pos_valid(pos));
   size_t index = pos.x + pos.y * CHUNK_SIZE + pos.z * CHUNK_SIZE * CHUNK_SIZE;
   return index;
 }
@@ -91,6 +91,8 @@ public:
 
   } flags;
 
+  std::unordered_map<CubePos, CubeId, Vec3Hasher> neigbour_chunks_cubes_to_set;
+
   ChunkRenderer* renderer{};
 
   // This flag is set when a background thread finishes generating draw_data, allowing binding VAO on next World::update()
@@ -129,11 +131,15 @@ public:
   CubeId get_cube(LocalPos at) const;
   LightLevel get_lightmap(LocalPos at) const;
 
-  void set_cube(LocalPos at, CubeId to);
-  void set_cube_no_lock(LocalPos at, CubeId to);
-  void set_cube_index(uint32_t index, CubeId to);
-  void set_cube_index_no_lock(uint32_t index, CubeId to);
-  void set_lightmap(LocalPos at, LightLevel to);
+  void set_cube(LocalPos local_pos, CubeId cube_id);
+  void set_cube_no_lock(LocalPos local_pos, CubeId cube_id);
+  void set_cube_index(uint32_t index, CubeId cube_id);
+  void set_cube_index_no_lock(uint32_t index, CubeId cube_id);
+
+  // Allows changing cubes of different chunks by storing them, for World to set them later.
+  void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
+
+  void set_lightmap(LocalPos local_pos, LightLevel cube_id);
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
 

@@ -59,12 +59,7 @@ int main() {
 
   // Load textures
   GLuint texture = load_texture("assets/atlas.png");
-  GLuint texture_sampler;
-  glCreateSamplers(1, &texture_sampler);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  GLuint texture_sampler = create_sampler();
 
   // Create cube shader program
   std::string vertexShaderSource = read_file("shaders/cube.vert");
@@ -171,7 +166,7 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   World world;
-  world.add_entity<Player>({-1000, 200, 0});
+  world.add_entity<Player>({-1000, 50, 0});
 
   // Player
   // Player player(world);
@@ -211,8 +206,8 @@ int main() {
 
     // Bind cube shader and texture
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(0, texture_sampler);
-    glBindTextureUnit(0, texture);
 
     // Draw chunks
     world.draw(matrix);

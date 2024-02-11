@@ -76,6 +76,14 @@ void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   update_occlusion_map(local_pos + LocalPos{0, 0, 1});
 }
 
+void Chunk::set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id) {
+  assert(is_local_pos_valid(local_pos));
+
+  CubePos cube_pos = local_pos_to_cube_pos(chunk_pos, local_pos);
+
+  neigbour_chunks_cubes_to_set.insert({cube_pos, cube_id});
+}
+
 void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
   assert(is_local_pos_valid(local_pos));
 

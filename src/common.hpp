@@ -21,6 +21,7 @@ enum class CubeId : uint16_t {
   SAND,
   GRAVEL,
   WOOD,
+  LEAVES,
   GRASS_PLANT,
 
   CUBE_ID_SIZE,

@@ -156,6 +156,8 @@ void ChunkRenderer::swap_buffers() {
   // Unbind buffers
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  vertices[building_index].clear();
 }
 
 void ChunkRenderer::draw(glm::mat4 matrix) const {

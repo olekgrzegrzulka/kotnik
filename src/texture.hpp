@@ -7,31 +7,39 @@
 
 GLuint load_texture(const char* path) {
   int width, height, channels;
-  stbi_uc* image = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
+  stbi_uc* data = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
 
-  if (image == nullptr) {
+  if (data == nullptr) {
     throw std::runtime_error("Failed to load texture" + std::string(path));
   }
 
   GLuint texture;
-  glCreateTextures(GL_TEXTURE_2D, 1, &texture);
-  glTextureStorage2D(texture, 4, GL_RGBA8, width, height);
-  glTextureSubImage2D(texture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image);
-  glGenerateTextureMipmap(texture);
+  glGenTextures(1, &texture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
 
-  stbi_image_free(image);
+  glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, width, height);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+  stbi_image_free(data);
 
   return texture;
 }
 
-GLuint create_sampler(const char* path) {
-  GLuint texture = load_texture(path);
-
+GLuint create_sampler() {
   GLuint texture_sampler;
   glCreateSamplers(1, &texture_sampler);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glSamplerParameteri(texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glSamplerParameteri(texture_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   return texture_sampler;
