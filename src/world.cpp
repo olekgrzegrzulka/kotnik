@@ -425,7 +425,6 @@ void World::update() {
   int i = 0;
   for (const ChunkPos chunk_pos : chunks_to_keep_loaded) {
     if (chunks.contains(chunk_pos)) { continue; }
-    if (i++ >= 2) { break; }
     create_new_chunk(chunk_pos);
   }
 
@@ -433,7 +432,7 @@ void World::update() {
   std::vector<ChunkPos> chunks_to_remove;
   for (const auto& [chunk_pos, chunk] : chunks) {
     if (std::find(chunks_to_keep_loaded.begin(), chunks_to_keep_loaded.end(), chunk_pos) == chunks_to_keep_loaded.end()) {
-      if (!chunk.flags.locked && chunk.flags.ready) {
+      if (!(chunk.flags.is_write_locked())) {
         chunks_to_remove.emplace_back(chunk_pos);
       }
     }
@@ -466,7 +465,7 @@ void World::update() {
       Chunk& neigb_chunk = neigb_chunk_it->second;
 
       // Chunk is locked
-      if (!neigb_chunk.flags.ready || neigb_chunk.flags.locked) {
+      if (neigb_chunk.flags.is_write_locked()) {
         chunks_neigbour_chunks_failed_cubes.insert({cube_pos, cube_id});
         continue;
       }

@@ -31,7 +31,7 @@ bool ChunkMeshWorker::run_job(Chunk* chunk) {
   for (auto offset : neigbour_offsets) {
     Chunk* neigb = const_cast<Chunk*>(world.get_chunk(chunk->position + offset));
     if (!neigb) { return false; }
-    if (neigb->flags.locked) { return false; }
+    if (neigb->flags.is_read_locked()) { return false; }
     if (!(neigb->flags.ready)) { return false; }
 
     _surrounding_chunks.emplace_back(neigb);
@@ -41,7 +41,7 @@ bool ChunkMeshWorker::run_job(Chunk* chunk) {
   finished = false;
 
   for (Chunk* c : surrounding_chunks) {
-    c->flags.locked = true;
+    c->flags.threads_reading += 1;
   }
 
   std::thread thread([=, this]() {
@@ -59,8 +59,8 @@ bool ChunkMeshWorker::try_collecting() {
   }
 
   for (Chunk* chunk : surrounding_chunks) {
-    assert(chunk->flags.locked);
-    chunk->flags.locked = false;
+    assert(chunk->flags.threads_reading > 0);
+    chunk->flags.threads_reading -= 1;
   }
 
   surrounding_chunks.clear();
@@ -76,19 +76,19 @@ bool ChunkMeshWorker::is_finished() {
 //
 
 void generate_chunks_terrain(Chunk* chunk) {
-  assert((chunk->flags.locked));
+  assert((chunk->flags.thread_writing));
   TerrainGen::generate_chunk(chunk);
 }
 
 bool ChunkTerrainGenWorker::run_job(Chunk* _chunk) {
 
   if (_chunk->flags.ready) { return false; }
-  if (_chunk->flags.locked) { return false; }
+  if (_chunk->flags.is_write_locked()) { return false; }
   if (!finished) { return false; }
   if (chunk) { return false; }
 
   chunk = _chunk;
-  chunk->flags.locked = true;
+  chunk->flags.thread_writing = true;
   finished = false;
 
   std::thread thread([=, this]() {
@@ -105,10 +105,10 @@ bool ChunkTerrainGenWorker::try_collecting() {
   if (!chunk) { return false; }
 
   assert(!(chunk->flags.ready));
-  assert(chunk->flags.locked);
+  assert(chunk->flags.thread_writing);
 
   chunk->flags.ready = true;
-  chunk->flags.locked = false;
+  chunk->flags.thread_writing = false;
   chunk = nullptr;
 
   return true;

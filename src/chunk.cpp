@@ -14,7 +14,8 @@ Chunk::~Chunk() {
 }
 
 void Chunk::update() {
-  if (!flags.locked) {
+  // Event queue
+  if (!(flags.is_write_locked())) {
     for (auto& event : event_queue) {
       if (event.type == ChunkEventType::SET_CUBE) {
         set_cube(event.local_pos, event.cube_id);
@@ -39,7 +40,7 @@ LightLevel Chunk::get_lightmap(LocalPos local_pos) const {
 
 void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   assert(is_local_pos_valid(local_pos));
-  if (flags.locked) {
+  if (flags.is_write_locked()) {
     event_queue.emplace_back(ChunkEvent{.type = ChunkEventType::SET_CUBE, .local_pos = local_pos, .cube_id = cube_id});
     return;
   }

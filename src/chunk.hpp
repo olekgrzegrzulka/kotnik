@@ -86,8 +86,19 @@ public:
 
     bool update_geometry = false;
 
-    // This flag prevents chunk data from being modified, instead all chunk modifications are sent to event_queue, until chunk is unlocked
-    bool locked = false;
+    // When > 0 prevents chunk data from being modified, instead all chunk modifications are sent to event_queue
+    size_t threads_reading = 0;
+
+    // Prevents chunk data from being modified, instead all chunk modifications are sent to event_queue
+    bool thread_writing = false;
+
+    bool is_read_locked() const {
+      return thread_writing;
+    }
+
+    bool is_write_locked() const {
+      return thread_writing || threads_reading > 0;
+    }
 
   } flags;
 
