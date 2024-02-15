@@ -13,14 +13,16 @@ static FastNoiseLite noise_heightmap_high{};
 static FastNoiseLite noise3d{};
 static FastNoiseLite noise3d_high{};
 
-static std::array<size_t, CHUNK_CUBES> indices;
+static constexpr auto indices = [] {
+  std::array<size_t, CHUNK_CUBES> _indices{};
+  std::iota(_indices.begin(), _indices.end(), 0);
+  return _indices;
+}();
 
 static bool was_initialized = false;
 static const float SCALE = 0.8f;
 
 static void init() {
-  std::iota(indices.begin(), indices.end(), 0);
-
   noise_heightmap.SetSeed(555);
   noise_heightmap.SetFrequency(0.00641f / SCALE);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
@@ -35,13 +37,16 @@ static void init() {
   noise3d.SetSeed(555);
   noise3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise3d.SetFractalOctaves(3);
-  noise3d.SetFrequency(0.01711f / SCALE);
+  noise3d.SetFrequency(0.0181f / SCALE);
 
   noise3d_high.SetSeed(444);
-  noise3d_high.SetFrequency(0.059f / SCALE);
+  noise3d_high.SetFrequency(0.0702f / SCALE);
 
   noise_landform.SetSeed(2137);
-  noise_landform.SetFrequency(0.0041f / SCALE);
+  noise_landform.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_Value);
+  noise_landform.SetFrequency(0.011f / SCALE);
+  noise_landform.SetFractalOctaves(3);
+  noise_landform.SetFractalGain(1.0f);
 
   was_initialized = true;
 }
@@ -60,8 +65,8 @@ static constexpr auto landforms = std::to_array<const Landform>({
     Landform /* Roughlands */ {
         .base_height = 8.0f,
         .height_multiplier = 60.0f,
-        .height_high_multiplier = 5.0f,
-        .noise_3d_multiplier = 40.0f,
+        .height_high_multiplier = 6.0f,
+        .noise_3d_multiplier = 30.0f,
         .high_noise_3d_multiplier = 4.0f,
         .cliff_factor = 0.0f,
     },
@@ -105,8 +110,8 @@ bool is_cube_landform(float x, float y, float z, Landform blended_landform) {
 
   float value = blended_landform.base_height + value_height + value_3d * (1.0f - blended_landform.cliff_factor * 0.5f);
 
-  if (value > 15.0f / (0.01f + blended_landform.cliff_factor * 0.8f)) {
-    float cliff_height = (noise_heightmap.GetNoise(x * 0.04f, z * 0.04f) + 1.0f) * 35.0f;
+  if (value > 12.0f / (0.01f + blended_landform.cliff_factor * 0.8f)) {
+    float cliff_height = (noise_heightmap.GetNoise(x * 0.08f, z * 0.08f) + 1.0f) * 42.0f;
     value = cliff_height + (value * 0.4f);
   }
 
@@ -192,29 +197,95 @@ void tree_gen(Chunk* chunk, size_t cube_index) {
   }
 }
 
+struct TerrainGenArray {
+public:
+  static const uint32_t lip_negative_x = 0;
+  static const uint32_t lip_positive_x = 0;
+
+  static const uint32_t lip_negative_y = 1;
+  static const uint32_t lip_positive_y = 4;
+
+  static const uint32_t lip_negative_z = 0;
+  static const uint32_t lip_positive_z = 0;
+
+  static constexpr auto indices = [] {
+    constexpr size_t size = (CHUNK_SIZE + lip_negative_x + lip_positive_x) * (CHUNK_SIZE + lip_negative_y + lip_positive_y) * (CHUNK_SIZE + lip_negative_z + lip_positive_z);
+    std::array<size_t, size> _indices{};
+    std::iota(_indices.begin(), _indices.end(), 0);
+    return _indices;
+  }();
+
+  TerrainGenArray(CubePos _begin, CubePos _end) {
+    begin = _begin - CubePos{lip_negative_x, lip_negative_y, lip_negative_z};
+    end = _end + CubePos{lip_positive_x, lip_positive_y, lip_positive_z};
+
+    cubes.resize(indices.size());
+
+    std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](size_t i) {
+      LocalPos local_pos = index_to_local_pos(i);
+      assert(i == get_index(local_pos));
+      cubes[i] = is_cube(begin.x + local_pos.x, begin.y + local_pos.y, begin.z + local_pos.z);
+    });
+  }
+
+  bool is_solid(LocalPos local_pos) {
+    size_t index = get_index(local_pos);
+    assert(index < cubes.size());
+    return cubes.at(index);
+  }
+
+  size_t get_index(LocalPos local_pos) {
+    size_t index = 0;
+    index += local_pos.x + lip_negative_x;
+    index += (CHUNK_SIZE + lip_negative_x + lip_positive_x) * (local_pos.y + lip_negative_y);
+    index += (CHUNK_SIZE + lip_negative_x + lip_positive_x) * (CHUNK_SIZE + lip_negative_y + lip_positive_y) * (local_pos.z + lip_negative_z);
+
+    return index;
+  }
+
+  LocalPos index_to_local_pos(size_t index) {
+    LocalPos local_pos;
+    local_pos.z = (index / ((CHUNK_SIZE + lip_negative_x + lip_positive_x) * (CHUNK_SIZE + lip_negative_y + lip_positive_y))) % (CHUNK_SIZE + lip_negative_z + lip_positive_z);
+    local_pos.z -= lip_negative_z;
+    // index -= local_pos.z;
+
+    local_pos.y = (index / ((CHUNK_SIZE + lip_negative_x + lip_positive_x))) % (CHUNK_SIZE + lip_negative_y + lip_positive_y);
+    local_pos.y -= lip_negative_y;
+
+    // index -= local_pos.y;
+
+    local_pos.x = (index) % (CHUNK_SIZE + lip_negative_x + lip_positive_x);
+    local_pos.x -= lip_negative_x;
+
+    // index -= local_pos.x;
+
+    // assert(index == 0);
+
+    return local_pos;
+  }
+
+private:
+  CubePos begin;
+  CubePos end;
+  std::vector<uint8_t> cubes;
+};
+
 void generate_chunk(Chunk* chunk) {
   if (!was_initialized) { init(); }
 
+  auto chunk_world_pos = CubePos{chunk->position} * CubePos{CHUNK_SIZE};
+  TerrainGenArray array(chunk_world_pos, chunk_world_pos + CubePos{CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE});
+
   std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](size_t i) {
     WorldPos pos = index_to_local_pos(i) + chunk->position * (int32_t)CHUNK_SIZE;
-    size_t i_up = local_pos_to_index(index_to_local_pos(i) + LocalPos{0, 1, 0});
+    LocalPos local_pos = index_to_local_pos(i);
 
-    float x = (float)pos.x;
-    float y = (float)pos.y;
-    float z = (float)pos.z;
-
-    bool is_cube_neg_1 = is_cube(x, y - 1.0f, z);
-    bool is_cube_0 = is_cube(x, y, z);
-
-    std::vector<int> is_cube_parallel = {1, 2, 3, 4};
-    std::for_each(std::execution::par_unseq, is_cube_parallel.begin(), is_cube_parallel.end(), [&](int& n) {
-      n = (int)is_cube(x, y + n, z);
-    });
-
-    bool is_cube_1 = (bool)is_cube_parallel[0];
-    bool is_cube_2 = (bool)is_cube_parallel[1];
-    bool is_cube_3 = (bool)is_cube_parallel[2];
-    bool is_cube_4 = (bool)is_cube_parallel[3];
+    bool is_cube_neg_1 = array.is_solid(local_pos + LocalPos{0, -1, 0});
+    bool is_cube_0 = array.is_solid(local_pos);
+    bool is_cube_1 = array.is_solid(local_pos + LocalPos{0, 1, 0});
+    bool is_cube_2 = array.is_solid(local_pos + LocalPos{0, 2, 0});
+    bool is_cube_3 = array.is_solid(local_pos + LocalPos{0, 3, 0});
+    bool is_cube_4 = array.is_solid(local_pos + LocalPos{0, 4, 0});
 
     if (is_cube_0) {
       if (is_cube_1 && is_cube_2 && is_cube_3 && is_cube_4) {
@@ -224,10 +295,10 @@ void generate_chunk(Chunk* chunk) {
       } else {
         chunk->set_cube_index_no_lock(i, CubeId::GRASS);
       }
-    } else if (float tree_noise = noise3d_high.GetNoise(x * 4.0f, y * 4.0f, z * 4.0f);
-               is_cube_neg_1 && tree_noise > 0.4f && (int)(x) % (int)(4 + tree_noise * 2.5f) == 0 && (int)z % (int)(4 + tree_noise * 2.5f) == 0) {
+    } else if (float tree_noise = noise3d_high.GetNoise(pos.x * 4.0f, pos.y * 4.0f, pos.z * 4.0f);
+               is_cube_neg_1 && tree_noise > 0.4f && (int)(pos.x) % (int)(4 + tree_noise * 2.5f) == 0 && (int)(pos.z) % (int)(4 + tree_noise * 2.5f) == 0) {
       tree_gen(chunk, i);
-    } else if (is_cube_neg_1 && noise3d_high.GetNoise(x * 4.0f, y * 4.0f, z * 4.0f) > 0.5f) {
+    } else if (is_cube_neg_1 && noise3d_high.GetNoise(pos.x * 4.0f, pos.y * 4.0f, pos.z * 4.0f) > 0.5f) {
       chunk->set_cube_index_no_lock(i, CubeId::GRASS_PLANT);
     }
   });
