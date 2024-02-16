@@ -1,6 +1,6 @@
 #include "chunk.hpp"
 #include <execution>
-#include "chunk_renderer2.hpp"
+#include "chunk_renderer.hpp"
 #include "fast_noise_lite.h"
 #include "world.hpp"
 

@@ -13,7 +13,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
-#include "chunk_renderer2.hpp"
+#include "chunk_renderer.hpp"
 #include "input.hpp"
 #include "player.hpp"
 #include "shader.hpp"
@@ -166,10 +166,7 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   World world;
-  world.add_entity<Player>({-1000, 50, 0});
-
-  // Player
-  // Player player(world);
+  world.add_entity<Player>({-10000, 50, 0});
 
   Input::init(window);
 
@@ -181,20 +178,15 @@ int main() {
 
     const Player* player = world.get_player();
 
-    const static glm::vec3 upVector{0.0f, 1.0f, 0.0f};
-
-    // Calculating matrix
     matrix = glm::mat4(1.0);
-    // Projection transfrom
+
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
     float aspect_ratio = window_width / (float)window_height;
     matrix *= glm::perspective(glm::radians<float>(75.0), aspect_ratio, 0.01f, 1000.0f);
-    // Camera angle and position transform
+    matrix *= glm::lookAt(player->camera_offset, player->camera_offset + player->get_looking_dir(), {0.0f, 1.0f, 0.0f});
 
-    matrix *= glm::lookAt(player->world_pos + player->camera_offset, player->world_pos + player->camera_offset + player->get_looking_dir(), upVector);
-
-    auto prev_player_position = player->world_pos;
+    auto player_pos = player->world_pos;
 
     // -----------------
     //     Rendering
@@ -204,32 +196,24 @@ int main() {
     glClearColor(0.65f, 0.9f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Bind cube shader and texture
+    // Draw cubes
     glUseProgram(shaderProgram);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(0, texture_sampler);
+    world.draw(player_pos, matrix);
 
-    // Draw chunks
-    world.draw(matrix);
-
-    // Bind cube indicator shader
+    // Draw cube indicator
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
       glUseProgram(cube_indicator_program);
       glBindVertexArray(cube_indicator_vao);
       glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(matrix));
-      glUniform3f(1, (float)cube_indicator_pos.value().x, (float)cube_indicator_pos.value().y, (float)cube_indicator_pos.value().z);
+      glUniform3f(1, (float)(cube_indicator_pos.value().x - player_pos.x), (float)(cube_indicator_pos.value().y - player_pos.y), (float)(cube_indicator_pos.value().z - player_pos.z));
       glLineWidth(2.5f);
       glDrawArrays(GL_LINE_STRIP, 0, cube_indicator_vertices.size());
-
-      print("Looking at: ", (cube_indicator_pos.value()));
-      print("Sunlight  : ", (int)world.get_sunlight(cube_indicator_pos.value()));
-      // print("Heightmap : ", world.get_heightmap(cube_indicator_pos.value()).value_or(2137));
-      print("Lightmap  : ", (int)world.get_lightmap(cube_indicator_pos.value()).x);
-      // print("Solid     : ", world.is_solid(cube_indicator_pos.value()));
     }
 
-    // Crosshair
+    // Draw crosshair
     glUseProgram(crosshair_program);
     glBindVertexArray(crosshair_vao);
     glBindSampler(0, crosshair_sampler);
@@ -241,6 +225,7 @@ int main() {
     glfwSwapBuffers(window);
     glfwPollEvents();
 
+    // Delta
     auto end_time = std::chrono::high_resolution_clock::now();
     uint16_t delta = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
     usleep(std::max(delta - 16666, 0));

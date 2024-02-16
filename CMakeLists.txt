@@ -18,7 +18,7 @@ set(SOURCES
     ./src/chunk.cpp
     ./src/glad.c
     ./src/input.cpp
-    ./src/chunk_renderer2.cpp
+    ./src/chunk_renderer.cpp
     ./src/chunk_worker.cpp
 )
 

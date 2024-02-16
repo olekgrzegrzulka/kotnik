@@ -90,5 +90,5 @@ public:
 
   void update();
 
-  void draw(const glm::mat4& matrix);
+  void draw(WorldPos camera_pos, const glm::mat4& camera_matrix);
 };

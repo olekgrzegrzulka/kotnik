@@ -5,8 +5,9 @@ layout (location = 2) in uint pack;
 //      uv.x   uv.y    
 // 0 x  FF     FF      FFFF
 
-uniform mat4 matrix;
+uniform mat4 camera_matrix;
 uniform vec3 light;
+uniform vec3 camera_position;
 
 out vec2 uv;
 out float brightness;
@@ -27,5 +28,6 @@ void main() {
     brightness = 0.5 + dot * 0.5 - (1.0 - float(brightness_vertex) / 255.0);
     // brightness = 1.0;
 
-    gl_Position =  matrix * (vec4(vertex, 1.0));
+    gl_Position = camera_matrix * (vec4(vertex - camera_position, 1.0));
+    
 }

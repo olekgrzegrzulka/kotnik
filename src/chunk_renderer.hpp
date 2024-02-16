@@ -22,7 +22,7 @@ public:
 
   void recreate_geometry(std::vector<Chunk*> chunk_list);
   void swap_buffers();
-  void draw(glm::mat4 matrix) const;
+  void draw(WorldPos camera_pos, const glm::mat4& camera_matrix) const;
 
 public:
   ChunkRenderer(Chunk& _chunk);

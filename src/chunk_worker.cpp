@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 #include "chunk.hpp"
-#include "chunk_renderer2.hpp"
+#include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "fast_noise_lite.h"
 #include "terrain_gen.hpp"

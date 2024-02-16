@@ -1,4 +1,4 @@
-#include "chunk_renderer2.hpp"
+#include "chunk_renderer.hpp"
 #include <chrono>
 #include <unordered_map>
 #include "chunk.hpp"
@@ -160,16 +160,16 @@ void ChunkRenderer::swap_buffers() {
   vertices[building_index].clear();
 }
 
-void ChunkRenderer::draw(glm::mat4 matrix) const {
-  glBindVertexArray(vaos[drawing_index]);
-  // Matrix uniform
-  glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(matrix));
+void ChunkRenderer::draw(WorldPos camera_pos, const glm::mat4& camera_matrix) const {
   glm::vec3 light = {0.5f, 1.0f, 0.5f};
   light = glm::normalize(light);
+
+  glBindVertexArray(vaos[drawing_index]);
+
+  glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
   glUniform3f(1, light.x, light.y, light.z);
-  // Transform dot product from [-1, 1] to [0, 1]
-  // light += 1.0f;
-  // light *= 0.5f;
+  glUniform3f(2, camera_pos.x, camera_pos.y, camera_pos.z);
+
   glDrawArrays(GL_TRIANGLES, 0, vertices[drawing_index].size());
 
   glBindVertexArray(0);

@@ -1,6 +1,6 @@
 #include "world.hpp"
 #include <unordered_set>
-#include "chunk_renderer2.hpp"
+#include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "entity.hpp"
 #include "player.hpp"
@@ -539,9 +539,9 @@ void World::update() {
   chunks_awaiting_mesh_update = new_chunks_awaiting_mesh_update;
 }
 
-void World::draw(const glm::mat4& matrix) {
+void World::draw(WorldPos camera_pos, const glm::mat4& camera_matrix) {
   for (auto& it : chunks) {
     if (!it.second.flags.ready) { continue; }
-    it.second.renderer->draw(matrix);
+    it.second.renderer->draw(camera_pos, camera_matrix);
   }
 }
