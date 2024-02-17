@@ -11,6 +11,7 @@ uniform vec3 camera_position;
 
 out vec2 uv;
 out float brightness;
+out float fog_factor;
 
 void main() {
     uv.x = float((pack & 0xFF)) / 16.0 / 2.0;
@@ -26,7 +27,11 @@ void main() {
 
     float dot = (dot(normal, light) + 1.0) * 0.5;
     brightness = 0.5 + dot * 0.5 - (1.0 - float(brightness_vertex) / 255.0);
-    // brightness = 1.0;
+
+    fog_factor = clamp(
+        (distance(vertex, camera_position) - 80) * 0.009,
+        0.0, 1.0
+    );
 
     gl_Position = camera_matrix * (vec4(vertex - camera_position, 1.0));
     
