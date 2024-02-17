@@ -19,8 +19,7 @@
 #include "shader.hpp"
 #include "texture.hpp"
 #include "world.hpp"
-
-glm::mat4 matrix{1.0f};
+#include "world_renderer.hpp"
 
 static std::string read_file(const std::string& filename) {
   std::ifstream file(filename, std::ios::in);
@@ -40,7 +39,7 @@ int main() {
   glfwInit();
 
   glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Triangle", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSetWindowSizeCallback(window, [](GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -166,6 +165,7 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   World world;
+  WorldRenderer world_renderer(world);
   world.add_entity<Player>({-10000, 50, 0});
 
   Input::init(window);
@@ -178,15 +178,14 @@ int main() {
 
     const Player* player = world.get_player();
 
-    matrix = glm::mat4(1.0);
-
+    glm::mat4 camera_matrix = glm::mat4(1.0);
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
     float aspect_ratio = window_width / (float)window_height;
-    matrix *= glm::perspective(glm::radians<float>(75.0), aspect_ratio, 0.01f, 1000.0f);
-    matrix *= glm::lookAt(player->camera_offset, player->camera_offset + player->get_looking_dir(), {0.0f, 1.0f, 0.0f});
+    camera_matrix *= glm::perspective(glm::radians<float>(75.0), aspect_ratio, 0.01f, 1000.0f);
+    camera_matrix *= glm::lookAt(player->camera_offset, player->camera_offset + player->get_looking_dir(), {0.0f, 1.0f, 0.0f});
 
-    auto player_pos = player->world_pos;
+    auto camera_pos = player->world_pos;
 
     // -----------------
     //     Rendering
@@ -200,15 +199,15 @@ int main() {
     glUseProgram(shaderProgram);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(0, texture_sampler);
-    world.draw(player_pos, matrix);
+    world_renderer.update(camera_pos, camera_matrix);
 
     // Draw cube indicator
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
       glUseProgram(cube_indicator_program);
       glBindVertexArray(cube_indicator_vao);
-      glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(matrix));
-      glUniform3f(1, (float)(cube_indicator_pos.value().x - player_pos.x), (float)(cube_indicator_pos.value().y - player_pos.y), (float)(cube_indicator_pos.value().z - player_pos.z));
+      glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
+      glUniform3f(1, (float)(cube_indicator_pos.value().x - camera_pos.x), (float)(cube_indicator_pos.value().y - camera_pos.y), (float)(cube_indicator_pos.value().z - camera_pos.z));
       glLineWidth(2.5f);
       glDrawArrays(GL_LINE_STRIP, 0, cube_indicator_vertices.size());
     }

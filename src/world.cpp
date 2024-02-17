@@ -397,12 +397,6 @@ void World::update() {
     }
   }
 
-  // Unlock chunks locked by mesh worker threads
-  for (const auto& worker : chunk_mesh_workers) {
-    if (worker->try_collecting()) {
-    }
-  }
-
   // Unlock chunks locked by terrain gen worker threads
   for (const auto& worker : chunk_terrain_gen_workers) {
     if (worker->try_collecting()) {
@@ -410,7 +404,7 @@ void World::update() {
   }
 
   // Load chunks near player
-  ChunkPos chunk_load_center = world_pos_to_chunk_pos(player->world_pos);
+  ChunkPos chunk_load_center = (player) ? world_pos_to_chunk_pos(player->world_pos) : ChunkPos{0, 0, 0};
   chunks_to_keep_loaded.clear();
   for (int x = -6; x <= 6; x += 1) {
     for (int z = -6; z <= 6; z += 1) {
@@ -420,7 +414,7 @@ void World::update() {
     }
   }
 
-  sort_vector_by_distance(chunks_to_keep_loaded, world_pos_to_chunk_pos(player->world_pos));
+  sort_vector_by_distance(chunks_to_keep_loaded, chunk_load_center);
 
   int i = 0;
   for (const ChunkPos chunk_pos : chunks_to_keep_loaded) {
@@ -441,7 +435,7 @@ void World::update() {
     chunks.erase(chunk_pos);
   }
 
-  // Get list of chunks that were modified, so we can update their geometry
+  // Get list of chunks that were modified, so we can update their meshes
   std::vector<ChunkPos> chunks_not_ready;
 
   for (auto& [chunk_pos, chunk] : chunks) {
@@ -480,23 +474,6 @@ void World::update() {
     chunk.neigbour_chunks_cubes_to_set = chunks_neigbour_chunks_failed_cubes;
 
     chunk.update();
-
-    if (chunk.renderer->can_swap_buffers) {
-      chunk.renderer->swap_buffers();
-    }
-
-    if (chunk.flags.update_geometry) {
-      // FIXME: update chunks that were actually modified
-      chunks_awaiting_mesh_update.emplace(chunk_pos);
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(-1, 0, 0));
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(1, 0, 0));
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, -1, 0));
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 1, 0));
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, -1));
-      chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, 1));
-
-      chunk.flags.update_geometry = false;
-    }
   }
 
   sort_vector_by_distance(chunks_not_ready, world_pos_to_chunk_pos(player->world_pos));
@@ -507,41 +484,5 @@ void World::update() {
         break;
       }
     }
-  }
-
-  // Threaded mesh update
-  std::unordered_set<ChunkPos, Vec3Hasher> new_chunks_awaiting_mesh_update;
-
-  std::vector<ChunkPos> chunks_awaiting_mesh_update_sorted_by_distance;
-  for (auto x : chunks_awaiting_mesh_update) {
-    chunks_awaiting_mesh_update_sorted_by_distance.emplace_back(x);
-  }
-  sort_vector_by_distance(chunks_awaiting_mesh_update_sorted_by_distance, world_pos_to_chunk_pos(player->world_pos));
-
-  for (const ChunkPos chunk_pos : chunks_awaiting_mesh_update_sorted_by_distance) {
-    const Chunk* chunk = get_chunk(chunk_pos);
-    if (chunk == nullptr) { continue; }
-    if (!chunk->flags.ready) { continue; }
-
-    bool updated = false;
-    for (const auto& worker : chunk_mesh_workers) {
-      if (worker->run_job(const_cast<Chunk*>(chunk))) {
-        updated = true;
-        break;
-      }
-    }
-
-    if (!updated) {
-      new_chunks_awaiting_mesh_update.emplace(chunk->position);
-    }
-  }
-
-  chunks_awaiting_mesh_update = new_chunks_awaiting_mesh_update;
-}
-
-void World::draw(WorldPos camera_pos, const glm::mat4& camera_matrix) {
-  for (auto& it : chunks) {
-    if (!it.second.flags.ready) { continue; }
-    it.second.renderer->draw(camera_pos, camera_matrix);
   }
 }

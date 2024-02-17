@@ -12,6 +12,8 @@ struct ChunkTerrainGenWorker;
 class Player;
 
 class World {
+  friend class WorldRenderer;
+
 public:
   struct {
     float gravity = -0.017f;
@@ -89,6 +91,4 @@ public:
   bool is_chunk_ready(ChunkPos chunk_pos);
 
   void update();
-
-  void draw(WorldPos camera_pos, const glm::mat4& camera_matrix);
 };
