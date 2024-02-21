@@ -3,7 +3,7 @@
 #include <atomic>
 #include <vector>
 #include <stdint.h>
-#include "cube_vertices.hpp" // for Vertex
+#include "cubes.hpp" // for Vertex
 
 class Chunk;
 

@@ -6,11 +6,11 @@
 #include "player.hpp"
 
 World::World() {
-  for (size_t i = 0; i < 4; i += 1) {
+  for (size_t i = 0; i < 8; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 
-  for (size_t i = 0; i < 4; i += 1) {
+  for (size_t i = 0; i < 8; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker);
   }
 }
@@ -406,8 +406,8 @@ void World::update() {
   // Load chunks near player
   ChunkPos chunk_load_center = (player) ? world_pos_to_chunk_pos(player->world_pos) : ChunkPos{0, 0, 0};
   chunks_to_keep_loaded.clear();
-  for (int x = -6; x <= 6; x += 1) {
-    for (int z = -6; z <= 6; z += 1) {
+  for (int x = -8; x <= 8; x += 1) {
+    for (int z = -8; z <= 8; z += 1) {
       for (int y = -4; y <= 4; y += 1) {
         chunks_to_keep_loaded.emplace_back(chunk_load_center + ChunkPos{x, y, z});
       }

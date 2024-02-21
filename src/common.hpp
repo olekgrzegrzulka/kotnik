@@ -10,7 +10,7 @@
 typedef glm::vec<3, int32_t> ChunkPos;
 typedef glm::vec<3, int32_t> CubePos;
 typedef glm::vec<3, int32_t> LocalPos;
-typedef glm::vec<3, float> WorldPos;
+typedef glm::vec<3, double> WorldPos;
 typedef glm::vec<3, uint8_t> LightLevel;
 
 enum class CubeId : uint16_t {

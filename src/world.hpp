@@ -16,8 +16,8 @@ class World {
 
 public:
   struct {
-    float gravity = -0.017f;
-    float air_friction = 0.01f;
+    double gravity = -0.017;
+    double air_friction = 0.01;
 
   } physical_properties;
 

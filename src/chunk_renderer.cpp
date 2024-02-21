@@ -2,7 +2,7 @@
 #include <chrono>
 #include <unordered_map>
 #include "chunk.hpp"
-#include "cube_vertices.hpp"
+#include "cubes.hpp"
 #include "glad/glad.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"

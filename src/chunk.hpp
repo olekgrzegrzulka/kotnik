@@ -7,7 +7,7 @@
 #include <vector>
 #include <stdint.h>
 #include "common.hpp"
-#include "cube_vertices.hpp"
+#include "cubes.hpp"
 
 #define CHUNK_SIZE (32)
 #define CHUNK_CUBES (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
@@ -153,15 +153,6 @@ public:
   void set_lightmap(LocalPos local_pos, LightLevel cube_id);
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
-
-  struct {
-    bool is_initialized = false;
-    std::vector<Vertex> vertices;
-    u_int32_t vao;
-    u_int32_t vertex_vbo;
-    u_int32_t position_vbo;
-    u_int32_t cube_count;
-  } draw_data;
 
 private:
   void update_occlusion_map(LocalPos local_pos);

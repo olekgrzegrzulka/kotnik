@@ -1,8 +1,10 @@
 #pragma once
 #include <unordered_set>
 #include <vector>
+#include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
+#include "player.hpp"
 #include "world.hpp"
 
 class WorldRenderer final {
@@ -69,7 +71,7 @@ public:
     for (auto x : chunks_awaiting_mesh_update) {
       chunks_awaiting_mesh_update_sorted_by_distance.emplace_back(x);
     }
-    sort_vector_by_distance(chunks_awaiting_mesh_update_sorted_by_distance, (world.player) ? world_pos_to_chunk_pos(world.player->world_pos) : ChunkPos{0, 0, 0});
+    sort_vector_by_distance(chunks_awaiting_mesh_update_sorted_by_distance, (world.player) ? world_pos_to_chunk_pos(world.player->get_world_pos()) : ChunkPos{0, 0, 0});
 
     for (const ChunkPos chunk_pos : chunks_awaiting_mesh_update_sorted_by_distance) {
       const Chunk* chunk = world.get_chunk(chunk_pos);

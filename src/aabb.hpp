@@ -6,12 +6,12 @@
 // #include "player.hpp"
 
 struct AABB {
-  glm::vec<3, float> half_extents;
-  glm::vec<3, float> offset{};
+  WorldPos half_extents;
+  WorldPos offset{};
 
   // Returns a vector of cubes that this AABB placed at entity_pos overlaps.
   // needs_to_be_solid can be set to false to also detect non-solid cubes
-  std::vector<CubePos> get_overlapping_cubes(const World& world, glm::vec<3, float> entity_pos, bool needs_to_be_solid = true) {
+  std::vector<CubePos> get_overlapping_cubes(const World& world, WorldPos entity_pos, bool needs_to_be_solid = true) {
     std::vector<CubePos> overlapping_cubes;
     CubePos min = floor_position(entity_pos - half_extents + offset);
     CubePos max = floor_position(entity_pos + half_extents + offset);
@@ -30,12 +30,12 @@ struct AABB {
   }
 
   // Returns if this AABB placed at entity_pos overlaps any of world's solid cube
-  bool is_overlapping_cube(const World& world, glm::vec<3, float> entity_pos, CubePos cube_world_pos) {
+  bool is_overlapping_cube(const World& world, WorldPos entity_pos, CubePos cube_world_pos) {
     auto v = get_overlapping_cubes(world, entity_pos, false);
     return std::find(v.begin(), v.end(), cube_world_pos) != v.end();
   }
 
-  bool is_overlapping_any_cube(const World& world, glm::vec<3, float> entity_pos) {
+  bool is_overlapping_any_cube(const World& world, WorldPos entity_pos) {
     CubePos min = {
         glm::floor(entity_pos.x - half_extents.x + offset.x),
         glm::floor(entity_pos.y - half_extents.y + offset.y),

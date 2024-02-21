@@ -29,7 +29,7 @@ void main() {
     brightness = 0.5 + dot * 0.5 - (1.0 - float(brightness_vertex) / 255.0);
 
     fog_factor = clamp(
-        (distance(vertex, camera_position) - 80) * 0.009,
+        (distance(vertex, camera_position) - 100) * 0.007,
         0.0, 1.0
     );
 

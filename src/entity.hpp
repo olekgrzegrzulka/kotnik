@@ -1,4 +1,5 @@
 #pragma once
+#include "chunk.hpp"
 #include "common.hpp"
 #include "world.hpp"
 
@@ -11,4 +12,8 @@ public:
   Entity(World& _world) : world(_world) {}
   virtual ~Entity() {}
   virtual void update() {}
+
+  WorldPos get_world_pos() {
+    return world_pos;
+  }
 };

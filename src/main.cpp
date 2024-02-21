@@ -84,7 +84,7 @@ int main() {
   glBindVertexArray(cube_indicator_vao);
 
   GLuint cube_indicator_vbo;
-  std::vector<WorldPos> cube_indicator_vertices = {
+  std::vector<glm::vec<3, float>> cube_indicator_vertices = {
       {-0.0005f, -0.0005f, -0.0005f},
       {-0.0005f, -0.0005f, +1.0005f},
       {+1.0005f, -0.0005f, +1.0005f},
@@ -110,10 +110,10 @@ int main() {
   };
   glGenBuffers(1, &cube_indicator_vbo);
   glBindBuffer(GL_ARRAY_BUFFER, cube_indicator_vbo);
-  glBufferData(GL_ARRAY_BUFFER, cube_indicator_vertices.size() * sizeof(WorldPos), cube_indicator_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, cube_indicator_vertices.size() * sizeof(glm::vec<3, float>), cube_indicator_vertices.data(), GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, cube_indicator_vbo);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(WorldPos), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec<3, float>), (void*)0);
 
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -183,13 +183,12 @@ int main() {
     glfwGetWindowSize(window, &window_width, &window_height);
     float aspect_ratio = window_width / (float)window_height;
     camera_matrix *= glm::perspective(glm::radians<float>(75.0), aspect_ratio, 0.01f, 1000.0f);
-    camera_matrix *= glm::lookAt(player->camera_offset, player->camera_offset + player->get_looking_dir(), {0.0f, 1.0f, 0.0f});
+    camera_matrix *= glm::lookAt(
+        static_cast<glm::vec<3, float>>(player->camera_offset),
+        static_cast<glm::vec<3, float>>(player->camera_offset + player->get_looking_dir()),
+        {0.0f, 1.0f, 0.0f});
 
     auto camera_pos = player->world_pos;
-
-    // -----------------
-    //     Rendering
-    // -----------------
 
     // Clear
     glClearColor(0.65f, 0.9f, 1.0f, 1.0f);

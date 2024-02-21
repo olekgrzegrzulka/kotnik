@@ -7,6 +7,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "aabb.hpp"
+#include "common.hpp"
 #include "entity.hpp"
 #include "input.hpp"
 
@@ -59,14 +60,14 @@ private:
 
 class Player final : public Entity {
 public:
-  glm::vec3 camera_offset{0.0f, 0.7f, 0.0f};
-  glm::vec3 velocity{};
-  float pitch = 0.0f;
-  float yaw = 0.0f;
+  WorldPos camera_offset{0.0, 0.7, 0.0};
+  WorldPos velocity{};
+  double pitch = 0.0;
+  double yaw = 0.0;
   bool is_flying = false;
 
-  AABB aabb{{0.15f, 0.9f, 0.15f}};
-  AABB aabb_ground{{0.17f, 0.1f, 0.17f}, {0.0f, -0.83f, 0.0f}};
+  AABB aabb{{0.15, 0.9, 0.15}};
+  AABB aabb_ground{{0.17, 0.1, 0.17}, {0.0, -0.83, 0.0}};
 
   CubeId cube_to_place = CubeId::DIRT;
 
@@ -85,26 +86,26 @@ public:
 
 public:
   Player(World& _world) : Entity(_world) {
-    world_pos = {0.0f, 50.0f, 0.0f};
+    world_pos = {0.0, 50.0, 0.0};
   }
 
   ~Player() override {
   }
 
-  glm::vec3 get_looking_dir(float rotated_by = 0.0f) const {
+  WorldPos get_looking_dir(double rotated_by = 0.0) const {
     return glm::normalize(
-        glm::vec3{glm::cos(yaw + rotated_by) * glm::cos(pitch),
+        WorldPos{glm::cos(yaw + rotated_by) * glm::cos(pitch),
                   glm::sin(pitch),
                   glm::sin(yaw + rotated_by) * glm::cos(pitch)});
   };
 
-  glm::vec3 get_walking_dir() const {
-    if (!(input_held("forward") || input_held("back") || input_held("strafe_left") || input_held("strafe_right"))) return glm::vec3(0.0f);
-    const float pi = std::numbers::pi_v<float>;
-    float angle = std::atan2((float)input_held("back") - (float)input_held("forward"), (float)input_held("strafe_right") - (float)input_held("strafe_left"));
-    angle += pi * 0.5f;
-    glm::vec3 dir = get_looking_dir(angle);
-    dir.y = 0.0f;
+  WorldPos get_walking_dir() const {
+    if (!(input_held("forward") || input_held("back") || input_held("strafe_left") || input_held("strafe_right"))) return WorldPos(0.0);
+    const double pi = std::numbers::pi_v<double>;
+    double angle = std::atan2((double)input_held("back") - (double)input_held("forward"), (double)input_held("strafe_right") - (double)input_held("strafe_left"));
+    angle += pi * 0.5;
+    WorldPos dir = get_looking_dir(angle);
+    dir.y = 0.0;
     return glm::normalize(dir);
   };
 
@@ -133,21 +134,24 @@ public:
   }
 
   void handle_input() {
+    const double pi = std::numbers::pi_v<double>;
+    const double pitch_margin = 0.05;
+
     for (auto& [_, key] : key_states) {
       key.update();
     }
 
-    yaw += Input::get_mouse_delta().x * 0.0014f;
-    pitch -= Input::get_mouse_delta().y * 0.0014f;
+    yaw += Input::get_mouse_delta().x * 0.0014;
+    pitch -= Input::get_mouse_delta().y * 0.0014;
 
-    yaw = std::fmod(yaw, 2 * std::numbers::pi_v<float>);
-    pitch = std::fmod(pitch, 2 * std::numbers::pi_v<float>);
+    yaw = std::fmod(yaw, 2 * pi);
+    pitch = std::fmod(pitch, 2 * pi);
 
-    static const float pitch_margin = 0.05f;
+    
     pitch = glm::clamp(
         pitch,
-        -0.5f * std::numbers::pi_v<float> + pitch_margin,
-        +0.5f * std::numbers::pi_v<float> - pitch_margin);
+        -0.5 * pi + pitch_margin,
+        +0.5 * pi - pitch_margin);
 
     if (input_just_released("switch_flying")) {
       is_flying = !is_flying;
@@ -168,8 +172,7 @@ public:
 
   std::optional<CubePos> get_cube_indicator_pos() const {
 
-    std::optional<CubePos> raycast_pos = world.raycast_get_solid_cube(world_pos + camera_offset, world_pos + camera_offset + get_looking_dir() * 5.0f);
-    // std::optional<CubePos> raycast_pos = floor_position(world.query_raycast_solid(world_pos + camera_offset, world_pos + camera_offset + get_looking_dir() * 5.0f));
+    std::optional<CubePos> raycast_pos = world.raycast_get_solid_cube(world_pos + camera_offset, world_pos + camera_offset + get_looking_dir() * 5.0);
     // If player is looking directly at a cube, then we return it
     if (raycast_pos.has_value()) {
       return raycast_pos;
@@ -188,9 +191,9 @@ public:
       // If the dot product of local position of neigbour and player looking vector is high enough, we return the neigbour cube
       for (auto neigh_cube : neigh_cubes) {
         if (!world.is_solid(neigh_cube)) {
-          WorldPos neigh_pos = WorldPos{neigh_cube} + WorldPos{0.5f, 0.5f, 0.5f};
-          float dot = glm::dot(glm::normalize(neigh_pos - world_pos), glm::normalize(get_looking_dir()));
-          if (dot > 0.97f) {
+          WorldPos neigh_pos = WorldPos{neigh_cube} + WorldPos{0.5, 0.5, 0.5};
+          double dot = glm::dot(glm::normalize(neigh_pos - world_pos), glm::normalize(get_looking_dir()));
+          if (dot > 0.97) {
             return neigh_cube;
           }
         }
@@ -216,7 +219,7 @@ public:
 
     // Cube placing
     if (input_just_pressed("place")) {
-      CubePos raycast_pos = floor_position(world.query_raycast_solid(world_pos + camera_offset, world_pos + camera_offset + get_looking_dir() * 5.0f));
+      CubePos raycast_pos = floor_position(world.query_raycast_solid(world_pos + camera_offset, world_pos + camera_offset + get_looking_dir() * 5.0));
       std::vector<CubePos> poses = {raycast_pos};
       if (indicator_pos.has_value()) { poses.emplace_back(indicator_pos.value()); }
 
@@ -229,31 +232,31 @@ public:
   }
 
   void update_velocity() {
-    float walking_speed = (is_flying) ? 0.25f : 0.1f;
+    const double walking_speed = (is_flying) ? 2.5 : 0.1;
     auto walking_vector = (get_walking_dir() * walking_speed);
 
-    velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25f);
-    velocity.z = std::lerp(velocity.z, walking_vector.z, 0.25f);
+    velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25);
+    velocity.z = std::lerp(velocity.z, walking_vector.z, 0.25);
 
-    if (glm::length(walking_vector) == 0.0f) {
-      if (std::abs(velocity.x) < 0.0001f) {
-        velocity.x *= 0.5f;
+    if (glm::length(walking_vector) == 0.0) {
+      if (std::abs(velocity.x) < 0.0001) {
+        velocity.x *= 0.5;
       }
-      if (std::abs(velocity.y) < 0.0001f) {
-        velocity.y *= 0.5f;
+      if (std::abs(velocity.y) < 0.0001) {
+        velocity.y *= 0.5;
       }
     }
 
     if (is_flying) {
-      velocity.y += 0.02f * (input_held("ascend") - input_held("descend"));
-      velocity.y *= 0.92f;
+      velocity.y += 0.02 * (input_held("ascend") - input_held("descend"));
+      velocity.y *= 0.92;
     } else {
-      if (velocity.y == 0.0f && aabb_ground.is_overlapping_any_cube(world, world_pos)) {
-        velocity.y += 0.22f * (input_held("ascend"));
+      if (velocity.y == 0.0 && aabb_ground.is_overlapping_any_cube(world, world_pos)) {
+        velocity.y += 0.22 * (input_held("ascend"));
       }
       if (!is_flying) { velocity.y += world.physical_properties.gravity; }
-      velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0f) * glm::sign(velocity.y);
-      if (glm::length(velocity) < 0.03f) { velocity *= 0.99f; }
+      velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
+      if (glm::length(velocity) < 0.03) { velocity *= 0.99; }
     }
   }
 
@@ -262,7 +265,7 @@ public:
     WorldPos move_vector_individual_axis{};
     const int ITERATIONS = 4;
     for (int i = 0; i <= ITERATIONS; i += 1) {
-      const float a = (float)i / ITERATIONS;
+      const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{a * (player_target_position.x - world_pos.x), 0, 0};
       if (aabb.is_overlapping_any_cube(world, test_position)) {
         break;
@@ -271,7 +274,7 @@ public:
     }
 
     for (int i = 0; i <= ITERATIONS; i += 1) {
-      const float a = (float)i / ITERATIONS;
+      const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, a * (player_target_position.y - world_pos.y), 0};
       if (aabb.is_overlapping_any_cube(world, test_position)) {
         break;
@@ -280,7 +283,7 @@ public:
     }
 
     for (int i = 0; i <= ITERATIONS; i += 1) {
-      const float a = (float)i / ITERATIONS;
+      const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, 0, a * (player_target_position.z - world_pos.z)};
       if (aabb.is_overlapping_any_cube(world, test_position)) {
         break;
@@ -292,7 +295,7 @@ public:
 
     // To prevent getting stuck inside cubes, push out the player away from average position of all overlapping cubes
     for (int i = 20; i > 0 && aabb.is_overlapping_any_cube(world, world_pos + velocity); i -= 1) {
-      velocity -= move_vector_individual_axis * 0.05f;
+      velocity -= move_vector_individual_axis * 0.05;
     }
   }
 };
