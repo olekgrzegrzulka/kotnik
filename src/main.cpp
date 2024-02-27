@@ -1,3 +1,5 @@
+#include <iomanip>
+#include <ios>
 #define GLM_FORCE_RADIANS
 #include "glad/glad.h"
 
@@ -34,7 +36,7 @@ static std::string read_file(const std::string& filename) {
 }
 
 int main() {
-  std::cout << std::setprecision(2) << std::boolalpha;
+  std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
   // Setup GLFW
   glfwInit();
 
@@ -166,7 +168,7 @@ int main() {
 
   World world;
   WorldRenderer world_renderer(world);
-  world.add_entity<Player>({-10000, 50, 0});
+  world.add_entity<Player>({1500, 60, 800});
 
   Input::init(window);
 
@@ -210,6 +212,8 @@ int main() {
       glLineWidth(2.5f);
       glDrawArrays(GL_LINE_STRIP, 0, cube_indicator_vertices.size());
     }
+
+    print(player->world_pos);
 
     // Draw crosshair
     glUseProgram(crosshair_program);

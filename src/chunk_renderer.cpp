@@ -79,7 +79,7 @@ std::unordered_map<uint32_t, CubeId> get_neigbours(const Chunk& chunk, LocalPos 
   return map;
 }
 
-inline static void get_cubes_visible_faces(const std::vector<const Chunk*>& chunks, Chunk& chunk, LocalPos local_pos, std::vector<Vertex>& vertices, std::vector<Chunk*> chunk_list) {
+inline static void get_cubes_visible_faces(const std::vector<const Chunk*>& chunks, Chunk& chunk, LocalPos local_pos, std::vector<SparseVertex>& vertices, std::vector<Chunk*> chunk_list) {
   assert(is_local_pos_valid(local_pos));
   if (chunk.is_cube_occluded(local_pos)) { return; }
   if (!chunk.is_solid(local_pos)) { return; }
@@ -98,7 +98,7 @@ inline static void get_cubes_visible_faces(const std::vector<const Chunk*>& chun
   get_vertices(vertices, cube_pos, chunk.get_cube(local_pos), neigbours, light_levels);
 }
 
-inline static void get_chunks_visible_faces(const std::vector<const Chunk*>& chunks, Chunk& chunk, std::vector<Vertex>& vertices, std::vector<Chunk*> chunk_list) {
+inline static void get_chunks_visible_faces(const std::vector<const Chunk*>& chunks, Chunk& chunk, std::vector<SparseVertex>& vertices, std::vector<Chunk*> chunk_list) {
   vertices.reserve(500);
 
   for (size_t x = 0; x < CHUNK_SIZE; x += 1) {
@@ -143,15 +143,15 @@ void ChunkRenderer::swap_buffers() {
   // Create vertex VBO
   glGenBuffers(1, &vbos[drawing_index]);
   glBindBuffer(GL_ARRAY_BUFFER, vbos[drawing_index]);
-  glBufferData(GL_ARRAY_BUFFER, vertices[drawing_index].size() * sizeof(Vertex), vertices[drawing_index].data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices[drawing_index].size() * sizeof(SparseVertex), vertices[drawing_index].data(), GL_STATIC_DRAW);
 
   // Bind vertex position
   glBindBuffer(GL_ARRAY_BUFFER, vbos[drawing_index]);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(SparseVertex), (void*)offsetof(SparseVertex, pos));
   // Bind pack
   glEnableVertexAttribArray(2);
-  glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, pack));
+  glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(SparseVertex), (void*)offsetof(SparseVertex, pack));
 
   // Unbind buffers
   glBindVertexArray(0);

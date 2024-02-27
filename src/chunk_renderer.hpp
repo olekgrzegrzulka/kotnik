@@ -13,7 +13,7 @@ public:
 
   int drawing_index = 0;
   int building_index = 1;
-  std::array<std::vector<Vertex>, 2> vertices{};
+  std::array<std::vector<SparseVertex>, 2> vertices{};
   std::array<uint32_t, 2> vbos{};
   std::array<uint32_t, 2> vaos{};
 

@@ -1,16 +1,19 @@
 #include "world.hpp"
+#include <algorithm>
 #include <unordered_set>
 #include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
+#include "common.hpp"
+#include "cubes.hpp"
 #include "entity.hpp"
 #include "player.hpp"
 
 World::World() {
-  for (size_t i = 0; i < 8; i += 1) {
+  for (size_t i = 0; i < 4; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 
-  for (size_t i = 0; i < 8; i += 1) {
+  for (size_t i = 0; i < 4; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker);
   }
 }
@@ -485,4 +488,45 @@ void World::update() {
       }
     }
   }
+}
+
+std::vector<CubePos> World::aabb_get_overlapping_cubes(AABB aabb, WorldPos world_pos) {
+  std::vector<CubePos> overlapping_cubes;
+  CubePos min = floor_position(world_pos - aabb.half_extents + aabb.offset);
+  CubePos max = floor_position(world_pos + aabb.half_extents + aabb.offset);
+
+  for (auto x = min.x; x <= max.x; x += 1) {
+    for (auto y = min.y; y <= max.y; y += 1) {
+      for (auto z = min.z; z <= max.z; z += 1) {
+        CubePos overlapping_pos = CubePos{x, y, z};
+        overlapping_cubes.emplace_back(overlapping_pos);
+      }
+    }
+  }
+
+  return overlapping_cubes;
+}
+
+static constexpr AABB full_cube_aabb = AABB{.half_extents = {0.5, 0.5, 0.5}, .offset = {0.0, 0.0, 0.0}};
+bool World::aabb_is_overlapping_cube(AABB aabb, WorldPos world_pos, CubePos cube_pos) {
+  return AABB::test(
+      aabb, world_pos,
+      full_cube_aabb, WorldPos{cube_pos} + WorldPos{0.5, 0.5, 0.5});
+}
+
+std::vector<CubePos> World::aabb_get_solid_cubes(AABB aabb, WorldPos world_pos) {
+  std::vector<CubePos> solid_cubes;
+  std::vector<CubePos> overlapping_cubes = aabb_get_overlapping_cubes(aabb, world_pos);
+
+  for (auto cube_pos : overlapping_cubes) {
+    auto properties = cube_properties.at(static_cast<size_t>(get_cube(cube_pos)));
+    bool collider_overlapping = std::any_of(properties.collider_aabb.cbegin(), properties.collider_aabb.cend(), [&](auto& cube_aabb) {
+      return AABB::test(aabb, world_pos, cube_aabb, WorldPos{cube_pos} + WorldPos{0.5, 0.5, 0.5});
+    });
+    if (collider_overlapping) {
+      solid_cubes.emplace_back(cube_pos);
+    }
+  }
+
+  return solid_cubes;
 }

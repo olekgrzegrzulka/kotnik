@@ -37,7 +37,7 @@ enum Dir {
   BOTTOM = 32,
 };
 
-static Dir opposite_dir(Dir dir) {
+static constexpr Dir opposite_dir(Dir dir) {
   if (dir == Dir::NONE) {
     return Dir::NONE;
   } else if (dir == Dir::LEFT) {
@@ -62,7 +62,7 @@ enum CubeFlag {
 };
 
 template <typename T>
-void print(glm::vec<3, T> vec3) {
+static void print(glm::vec<3, T> vec3) {
   std::cout << "[" << vec3.x << ", " << vec3.y << ", " << vec3.z << "]" << std::endl;
 }
 
@@ -82,7 +82,7 @@ struct Vec3Comparator {
 };
 
 template <typename T>
-void print(std::vector<T> vec) {
+static void print(std::vector<T> vec) {
   for (T elem : vec) {
     print(elem);
   }
@@ -92,7 +92,7 @@ void print(std::vector<T> vec) {
 // typedef std::map<LocalPos, Vec3Comparator> CubeMap;
 
 template <typename Arg>
-void print(Arg&& arg) {
+static void print(Arg&& arg) {
   std::cout << arg << std::endl;
 }
 
@@ -103,7 +103,7 @@ static void print(FirstArg&& first_arg, Args&&... args) {
 }
 
 template <typename T>
-glm::vec<3, T> lerp_vec3(glm::vec<3, T> from, glm::vec<3, T> to, float a) {
+static glm::vec<3, T> lerp_vec3(glm::vec<3, T> from, glm::vec<3, T> to, float a) {
   return glm::vec<3, T>{
       std::lerp(from.x, to.x, a),
       std::lerp(from.y, to.y, a),

@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "entity.hpp"
 #include "input.hpp"
+#include "world.hpp"
 
 struct KeyState {
 public:
@@ -95,8 +96,8 @@ public:
   WorldPos get_looking_dir(double rotated_by = 0.0) const {
     return glm::normalize(
         WorldPos{glm::cos(yaw + rotated_by) * glm::cos(pitch),
-                  glm::sin(pitch),
-                  glm::sin(yaw + rotated_by) * glm::cos(pitch)});
+                 glm::sin(pitch),
+                 glm::sin(yaw + rotated_by) * glm::cos(pitch)});
   };
 
   WorldPos get_walking_dir() const {
@@ -147,7 +148,6 @@ public:
     yaw = std::fmod(yaw, 2 * pi);
     pitch = std::fmod(pitch, 2 * pi);
 
-    
     pitch = glm::clamp(
         pitch,
         -0.5 * pi + pitch_margin,
@@ -223,16 +223,16 @@ public:
       std::vector<CubePos> poses = {raycast_pos};
       if (indicator_pos.has_value()) { poses.emplace_back(indicator_pos.value()); }
 
-      for (auto p : poses) {
-        if (world.is_solid(p) || !world.has_solid_neigbour(p) || aabb.is_overlapping_cube(world, world_pos, p)) { continue; }
-        world.set_cube(floor_position(p), cube_to_place);
+      for (auto cube_pos : poses) {
+        if (world.is_solid(cube_pos) || !world.has_solid_neigbour(cube_pos) || world.aabb_is_overlapping_cube(aabb, world_pos, cube_pos)) { continue; }
+        world.set_cube(floor_position(cube_pos), cube_to_place);
         break;
       }
     }
   }
 
   void update_velocity() {
-    const double walking_speed = (is_flying) ? 2.5 : 0.1;
+    const double walking_speed = (is_flying) ? 0.5 : 0.1;
     auto walking_vector = (get_walking_dir() * walking_speed);
 
     velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25);
@@ -251,7 +251,7 @@ public:
       velocity.y += 0.02 * (input_held("ascend") - input_held("descend"));
       velocity.y *= 0.92;
     } else {
-      if (velocity.y == 0.0 && aabb_ground.is_overlapping_any_cube(world, world_pos)) {
+      if (velocity.y == 0.0 && world.aabb_get_solid_cubes(aabb_ground, world_pos).size() > 0) {
         velocity.y += 0.22 * (input_held("ascend"));
       }
       if (!is_flying) { velocity.y += world.physical_properties.gravity; }
@@ -267,7 +267,7 @@ public:
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{a * (player_target_position.x - world_pos.x), 0, 0};
-      if (aabb.is_overlapping_any_cube(world, test_position)) {
+      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
         break;
       }
       move_vector_individual_axis.x = test_position.x - world_pos.x;
@@ -276,7 +276,7 @@ public:
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, a * (player_target_position.y - world_pos.y), 0};
-      if (aabb.is_overlapping_any_cube(world, test_position)) {
+      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
         break;
       }
       move_vector_individual_axis.y = test_position.y - world_pos.y;
@@ -285,7 +285,7 @@ public:
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, 0, a * (player_target_position.z - world_pos.z)};
-      if (aabb.is_overlapping_any_cube(world, test_position)) {
+      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
         break;
       }
       move_vector_individual_axis.z = test_position.z - world_pos.z;
@@ -294,7 +294,7 @@ public:
     velocity = move_vector_individual_axis;
 
     // To prevent getting stuck inside cubes, push out the player away from average position of all overlapping cubes
-    for (int i = 20; i > 0 && aabb.is_overlapping_any_cube(world, world_pos + velocity); i -= 1) {
+    for (int i = 20; i > 0 && world.aabb_get_solid_cubes(aabb, world_pos + velocity).size() > 0; i -= 1) {
       velocity -= move_vector_individual_axis * 0.05;
     }
   }

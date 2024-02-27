@@ -3,6 +3,7 @@
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
+#include "aabb.hpp"
 #include "chunk.hpp"
 #include "common.hpp"
 #include "entity.hpp"
@@ -60,7 +61,28 @@ public:
 
   bool is_solid(glm::vec<3, float> world_position_f) const;
 
+  //
+  // Raycast
+  //
+
   WorldPos query_raycast_solid(glm::vec<3, float> from, glm::vec<3, float> to) const;
+
+  std::optional<CubePos> raycast_get_solid_cube(glm::vec<3, float> from, glm::vec<3, float> to) const;
+
+  // Returns world positions intersecting the raycast. They can be out of bounds.
+  std::unordered_set<CubePos, Vec3Hasher> raycast_get_overlapping_cubes(WorldPos from, WorldPos to) const;
+
+  //
+  // AABB
+  //
+
+  // Get cube positions overlapping the AABB
+  std::vector<CubePos> aabb_get_overlapping_cubes(AABB aabb, WorldPos world_pos);
+
+  bool aabb_is_overlapping_cube(AABB aabb, WorldPos world_pos, CubePos cube_pos);
+
+  // Get cube positions which AABBs overlap the AABB
+  std::vector<CubePos> aabb_get_solid_cubes(AABB aabb, WorldPos world_pos);
 
   // Get sunlight of a cube by checking how much space there is above it
   // FIXME: this isn't really accurate as we should be using inverse of heightmap (lowmap?) to get the CLOSEST cube to our cube
@@ -70,11 +92,6 @@ public:
   std::optional<uint16_t> get_heightmap(CubePos cube_pos) const;
 
   LightLevel get_lightmap(CubePos cube_pos) const;
-
-  std::optional<CubePos> raycast_get_solid_cube(glm::vec<3, float> from, glm::vec<3, float> to) const;
-
-  // Returns world positions intersecting the raycast. They can be out of bounds.
-  std::unordered_set<CubePos, Vec3Hasher> raycast_get_overlapping_cubes(WorldPos from, WorldPos to) const;
 
   const Chunk* get_chunk(ChunkPos chunk_pos) const;
 

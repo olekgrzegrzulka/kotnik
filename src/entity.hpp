@@ -1,7 +1,8 @@
 #pragma once
 #include "chunk.hpp"
 #include "common.hpp"
-#include "world.hpp"
+
+class World;
 
 class Entity {
 public:

@@ -15,12 +15,12 @@
 class World;
 
 // Checks if a local position is in range of chunk's array
-constexpr bool is_local_pos_valid(LocalPos local_pos) {
+constexpr static bool is_local_pos_valid(LocalPos local_pos) {
   return local_pos.x >= 0 && local_pos.y >= 0 && local_pos.z >= 0 && local_pos.x < CHUNK_SIZE && local_pos.y < CHUNK_SIZE && local_pos.z < CHUNK_SIZE;
 }
 
 // Returns local position  of cube identified by given index of chunk's array
-static LocalPos index_to_local_pos(size_t index) {
+constexpr static LocalPos index_to_local_pos(size_t index) {
   ChunkPos pos;
   pos.x = index % CHUNK_SIZE;
   pos.y = (index / CHUNK_SIZE) % CHUNK_SIZE;
@@ -29,19 +29,19 @@ static LocalPos index_to_local_pos(size_t index) {
 }
 
 // Returns chunk's array index to the cube located at the given local position
-static size_t local_pos_to_index(LocalPos pos) {
+constexpr static size_t local_pos_to_index(LocalPos pos) {
   // assert(is_local_pos_valid(pos));
   size_t index = pos.x + pos.y * CHUNK_SIZE + pos.z * CHUNK_SIZE * CHUNK_SIZE;
   return index;
 }
 
 // Returns cube position of given a chunk position and a (not necessarily in chunk bounds) local position
-static inline constexpr CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos local_pos) {
+constexpr static CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos local_pos) {
   return (chunk_pos * (int32_t)CHUNK_SIZE) + local_pos;
 }
 
 // Returns chunk position that contains the given world position
-constexpr ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
+constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
   ChunkPos chunk_pos;
   chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (int32_t)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
   chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (int32_t)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
@@ -51,7 +51,7 @@ constexpr ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
 }
 
 // Returns a pair of chunk and local positions of a global cube position
-constexpr std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos) {
+constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos) {
   ChunkPos chunk_pos;
   chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (int32_t)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
   chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (int32_t)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);

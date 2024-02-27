@@ -5,12 +5,20 @@
 #include <numeric>
 #include <vector>
 #include <stdint.h>
-// #include "aabb.hpp"
+#include "aabb.hpp"
 #include "atlas.hpp"
 #include "common.hpp"
 #include "glm/glm.hpp"
 
 #define ATLAS_SIZE (16)
+
+enum class SparseVertexNormal : uint16_t {
+  NEGATIVE = 0,
+  ZERO = 1,
+  POSITIVE = 2,
+};
+
+using enum SparseVertexNormal;
 
 // Layout of 32-bit pack:
 // First 8 bits: x uv, which when incremented increments actual shader uv value by 0.5
@@ -20,16 +28,13 @@
 // Next  2 bits: z normal, same as above
 // Next  8 bits: brightness
 // Next  2 bits: unused :)
-struct Vertex {
-  constexpr Vertex(glm::vec<3, float> _pos, glm::vec3 _normal) : pos(_pos) {
-    uint16_t normal_value_x = (_normal.x < -0.5f) ? (0) : ((_normal.x) > 0.5f ? (2) : (1));
-    uint16_t normal_value_y = (_normal.y < -0.5f) ? (0) : ((_normal.y) > 0.5f ? (2) : (1));
-    uint16_t normal_value_z = (_normal.z < -0.5f) ? (0) : ((_normal.z) > 0.5f ? (2) : (1));
-
-    pack |= ((0b11 & (normal_value_x)) << 16);
-    pack |= ((0b11 & (normal_value_y)) << 18);
-    pack |= ((0b11 & (normal_value_z)) << 20);
+struct SparseVertex {
+  constexpr SparseVertex(glm::vec<3, float> _pos, std::array<SparseVertexNormal, 3> normal) : pos(_pos) {
+    pack |= ((0b11 & ((uint16_t)normal[0])) << 16);
+    pack |= ((0b11 & ((uint16_t)normal[1])) << 18);
+    pack |= ((0b11 & ((uint16_t)normal[2])) << 20);
   }
+
   glm::vec<3, float> pos;
   alignas(4) uint32_t pack{};
 };
@@ -45,69 +50,75 @@ static constexpr std::array<glm::vec2, 6> uvs = {
     glm::vec2(0.0, 0.0),
 };
 
-static const std::vector<Vertex> cube_vertices_left = {
-    Vertex({0.0, +1.0, 0.0}, {-1.0f, 0.0f, 0.0f}),
-    Vertex({0.0, 0.0, 0.0}, {-1.0f, 0.0f, 0.0f}),
-    Vertex({0.0, 0.0, +1.0}, {-1.0f, 0.0f, 0.0f}),
-    Vertex({0.0, 0.0, +1.0}, {-1.0f, 0.0f, 0.0f}),
-    Vertex({0.0, +1.0, +1.0}, {-1.0f, 0.0f, 0.0f}),
-    Vertex({0.0, +1.0, 0.0}, {-1.0f, 0.0f, 0.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_left = {NEGATIVE, ZERO, ZERO};
+static const std::vector<SparseVertex> cube_vertices_left = {
+    SparseVertex({0.0, +1.0, 0.0}, cube_normals_left),
+    SparseVertex({0.0, 0.0, 0.0}, cube_normals_left),
+    SparseVertex({0.0, 0.0, +1.0}, cube_normals_left),
+    SparseVertex({0.0, 0.0, +1.0}, cube_normals_left),
+    SparseVertex({0.0, +1.0, +1.0}, cube_normals_left),
+    SparseVertex({0.0, +1.0, 0.0}, cube_normals_left),
 };
 
-static const std::vector<Vertex> cube_vertices_right = {
-    Vertex({+1.0, +1.0, +1.0}, {1.0f, 0.0f, 0.0f}),
-    Vertex({+1.0, 0.0, +1.0}, {1.0f, 0.0f, 0.0f}),
-    Vertex({+1.0, 0.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-    Vertex({+1.0, 0.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-    Vertex({+1.0, +1.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-    Vertex({+1.0, +1.0, +1.0}, {1.0f, 0.0f, 0.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_right = {POSITIVE, ZERO, ZERO};
+static const std::vector<SparseVertex> cube_vertices_right = {
+    SparseVertex({+1.0, +1.0, +1.0}, cube_normals_right),
+    SparseVertex({+1.0, 0.0, +1.0}, cube_normals_right),
+    SparseVertex({+1.0, 0.0, 0.0}, cube_normals_right),
+    SparseVertex({+1.0, 0.0, 0.0}, cube_normals_right),
+    SparseVertex({+1.0, +1.0, 0.0}, cube_normals_right),
+    SparseVertex({+1.0, +1.0, +1.0}, cube_normals_right),
 };
 
-static const std::vector<Vertex> cube_vertices_front = {
-    Vertex({+1.0, +1.0, 0.0}, {0.0f, 0.0f, -1.0f}),
-    Vertex({+1.0, 0.0, 0.0}, {0.0f, 0.0f, -1.0f}),
-    Vertex({0.0, 0.0, 0.0}, {0.0f, 0.0f, -1.0f}),
-    Vertex({0.0, 0.0, 0.0}, {0.0f, 0.0f, -1.0f}),
-    Vertex({0.0, +1.0, 0.0}, {0.0f, 0.0f, -1.0f}),
-    Vertex({+1.0, +1.0, 0.0}, {0.0f, 0.0f, -1.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_front = {ZERO, ZERO, NEGATIVE};
+static const std::vector<SparseVertex> cube_vertices_front = {
+    SparseVertex({+1.0, +1.0, 0.0}, cube_normals_front),
+    SparseVertex({+1.0, 0.0, 0.0}, cube_normals_front),
+    SparseVertex({0.0, 0.0, 0.0}, cube_normals_front),
+    SparseVertex({0.0, 0.0, 0.0}, cube_normals_front),
+    SparseVertex({0.0, +1.0, 0.0}, cube_normals_front),
+    SparseVertex({+1.0, +1.0, 0.0}, cube_normals_front),
 };
 
-static const std::vector<Vertex> cube_vertices_back = {
-    Vertex({0.0, +1.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-    Vertex({0.0, 0.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-    Vertex({+1.0, 0.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-    Vertex({+1.0, 0.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-    Vertex({+1.0, +1.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-    Vertex({0.0, +1.0, +1.0}, {0.0f, 0.0f, 1.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_back = {ZERO, ZERO, POSITIVE};
+static const std::vector<SparseVertex> cube_vertices_back = {
+    SparseVertex({0.0, +1.0, +1.0}, cube_normals_back),
+    SparseVertex({0.0, 0.0, +1.0}, cube_normals_back),
+    SparseVertex({+1.0, 0.0, +1.0}, cube_normals_back),
+    SparseVertex({+1.0, 0.0, +1.0}, cube_normals_back),
+    SparseVertex({+1.0, +1.0, +1.0}, cube_normals_back),
+    SparseVertex({0.0, +1.0, +1.0}, cube_normals_back),
 };
 
-static const std::vector<Vertex> cube_vertices_top = {
-    Vertex({+1.0, +1.0, +1.0}, {0.0f, 1.0f, 0.0f}),
-    Vertex({+1.0, +1.0, 0.0}, {0.0f, 1.0f, 0.0f}),
-    Vertex({0.0, +1.0, 0.0}, {0.0f, 1.0f, 0.0f}),
-    Vertex({0.0, +1.0, 0.0}, {0.0f, 1.0f, 0.0f}),
-    Vertex({0.0, +1.0, +1.0}, {0.0f, 1.0f, 0.0f}),
-    Vertex({+1.0, +1.0, +1.0}, {0.0f, 1.0f, 0.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_top = {ZERO, POSITIVE, ZERO};
+static const std::vector<SparseVertex> cube_vertices_top = {
+    SparseVertex({+1.0, +1.0, +1.0}, cube_normals_top),
+    SparseVertex({+1.0, +1.0, 0.0}, cube_normals_top),
+    SparseVertex({0.0, +1.0, 0.0}, cube_normals_top),
+    SparseVertex({0.0, +1.0, 0.0}, cube_normals_top),
+    SparseVertex({0.0, +1.0, +1.0}, cube_normals_top),
+    SparseVertex({+1.0, +1.0, +1.0}, cube_normals_top),
 };
 
-static const std::vector<Vertex> cube_vertices_bottom = {
-    Vertex({0.0, 0.0, 0.0}, {0.0f, -1.0f, 0.0f}),
-    Vertex({+1.0, 0.0, 0.0}, {0.0f, -1.0f, 0.0f}),
-    Vertex({+1.0, 0.0, +1.0}, {0.0f, -1.0f, 0.0f}),
-    Vertex({+1.0, 0.0, +1.0}, {0.0f, -1.0f, 0.0f}),
-    Vertex({0.0, 0.0, +1.0}, {0.0f, -1.0f, 0.0f}),
-    Vertex({0.0, 0.0, 0.0}, {0.0f, -1.0f, 0.0f}),
+static constexpr std::array<SparseVertexNormal, 3> cube_normals_bottom = {ZERO, NEGATIVE, ZERO};
+static const std::vector<SparseVertex> cube_vertices_bottom = {
+    SparseVertex({0.0, 0.0, 0.0}, cube_normals_bottom),
+    SparseVertex({+1.0, 0.0, 0.0}, cube_normals_bottom),
+    SparseVertex({+1.0, 0.0, +1.0}, cube_normals_bottom),
+    SparseVertex({+1.0, 0.0, +1.0}, cube_normals_bottom),
+    SparseVertex({0.0, 0.0, +1.0}, cube_normals_bottom),
+    SparseVertex({0.0, 0.0, 0.0}, cube_normals_bottom),
 };
 
 struct CubeProperties {
   struct {
-    std::vector<Vertex> vertices_left{};
-    std::vector<Vertex> vertices_right{};
-    std::vector<Vertex> vertices_front{};
-    std::vector<Vertex> vertices_back{};
-    std::vector<Vertex> vertices_bottom{};
-    std::vector<Vertex> vertices_top{};
-    std::vector<Vertex> vertices_misc{};
+    std::vector<SparseVertex> vertices_left{};
+    std::vector<SparseVertex> vertices_right{};
+    std::vector<SparseVertex> vertices_front{};
+    std::vector<SparseVertex> vertices_back{};
+    std::vector<SparseVertex> vertices_bottom{};
+    std::vector<SparseVertex> vertices_top{};
+    std::vector<SparseVertex> vertices_misc{};
 
     std::unordered_map<Dir, bool> face_solidity{
         {Dir::LEFT, true},
@@ -120,7 +131,7 @@ struct CubeProperties {
 
   } render_data;
 
-  // std::vector<AABB> collider_aabb;
+  std::vector<AABB> collider_aabb;
 
   double friction = 1.0;
 };
@@ -129,31 +140,31 @@ static CubeProperties create_foliage_cube(glm::vec<2, uint32_t> uv) {
   CubeProperties cp;
 
   cp.render_data.vertices_misc = {
-      Vertex({+1.0, +1.0, +1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({+1.0, 0.0, +1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, 0.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, 0.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, +1.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({+1.0, +1.0, +1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, +1.0, 0.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({0.0, 0.0, 0.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, 0.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, 0.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, +1.0, +1.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({0.0, +1.0, 0.0}, {0.0f, 0.0f, 1.0f}),
+      SparseVertex({+1.0, +1.0, +1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({+1.0, 0.0, +1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, 0.0, 0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, 0.0, 0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, +1.0, 0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({+1.0, +1.0, +1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, +1.0, 0.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({0.0, 0.0, 0.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, 0.0, +1.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, 0.0, +1.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, +1.0, +1.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({0.0, +1.0, 0.0}, {ZERO, ZERO, POSITIVE}),
 
-      Vertex({+1.0, +1.0, +0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({+1.0, 0.0, +0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, 0.0, 1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, 0.0, 1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, +1.0, 1.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({+1.0, +1.0, 0.0}, {1.0f, 0.0f, 0.0f}),
-      Vertex({0.0, +1.0, 1.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({0.0, 0.0, 1.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, 0.0, 0.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, 0.0, 0.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({+1.0, +1.0, 0.0}, {0.0f, 0.0f, 1.0f}),
-      Vertex({0.0, +1.0, 1.0}, {0.0f, 0.0f, 1.0f}),
+      SparseVertex({+1.0, +1.0, +0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({+1.0, 0.0, +0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, 0.0, 1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, 0.0, 1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, +1.0, 1.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({+1.0, +1.0, 0.0}, {POSITIVE, ZERO, ZERO}),
+      SparseVertex({0.0, +1.0, 1.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({0.0, 0.0, 1.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, 0.0, 0.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, 0.0, 0.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({+1.0, +1.0, 0.0}, {ZERO, ZERO, POSITIVE}),
+      SparseVertex({0.0, +1.0, 1.0}, {ZERO, ZERO, POSITIVE}),
   };
 
   cp.render_data.face_solidity[Dir::LEFT] = false;
@@ -183,6 +194,10 @@ static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv, bool solid = tr
           .vertices_misc = {},
       },
       .friction = 1.0f,
+  };
+
+  cp.collider_aabb = {
+      AABB{.half_extents = {0.5, 0.5, 0.5}, .offset = {0.0, 0.0, 0.0}},
   };
 
   cp.render_data.face_solidity[Dir::LEFT] = solid;
@@ -222,7 +237,11 @@ static CubeProperties create_half_cube(glm::vec<2, uint32_t> uv) {
   cp.render_data.face_solidity[Dir::BOTTOM] = true;
   cp.render_data.face_solidity[Dir::TOP] = false;
 
-  auto halve_y = [](Vertex& v, bool halve_uv = true) {
+  cp.collider_aabb = {
+      AABB{.half_extents = {0.5, 0.25, 0.5}, .offset = {0.0, -0.25, 0.0}},
+  };
+
+  auto halve_y = [](SparseVertex& v, bool halve_uv = true) {
     if (v.pos.y == 1.0f) {
       v.pos.y = 0.5f;
       if (halve_uv) {
@@ -237,7 +256,7 @@ static CubeProperties create_half_cube(glm::vec<2, uint32_t> uv) {
   std::for_each(cp.render_data.vertices_right.begin(), cp.render_data.vertices_right.end(), halve_y);
   std::for_each(cp.render_data.vertices_front.begin(), cp.render_data.vertices_front.end(), halve_y);
   std::for_each(cp.render_data.vertices_back.begin(), cp.render_data.vertices_back.end(), halve_y);
-  std::for_each(cp.render_data.vertices_top.begin(), cp.render_data.vertices_top.end(), [&](Vertex& v) { halve_y(v, false); });
+  std::for_each(cp.render_data.vertices_top.begin(), cp.render_data.vertices_top.end(), [&](SparseVertex& v) { halve_y(v, false); });
   return cp;
 }
 
@@ -257,6 +276,10 @@ static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv_left, glm::vec<2
       .friction = 1.0f,
   };
 
+  cp.collider_aabb = {
+      AABB{.half_extents = {0.5, 0.5, 0.5}, .offset = {0.0, 0.0, 0.0}},
+  };
+
   for (size_t i = 0; i < 6; i += 1) {
     cp.render_data.vertices_left[i].pack |= ((uint8_t)((uvs[i].x + uv_left.x) * 2.0f));
     cp.render_data.vertices_left[i].pack |= ((uint8_t)((uvs[i].y + uv_left.y) * 2.0f)) << 8;
@@ -270,8 +293,6 @@ static CubeProperties create_full_cube(glm::vec<2, uint32_t> uv_left, glm::vec<2
     cp.render_data.vertices_top[i].pack |= ((uint8_t)((uvs[i].y + uv_top.y) * 2.0f)) << 8;
     cp.render_data.vertices_bottom[i].pack |= ((uint8_t)((uvs[i].x + uv_bottom.x) * 2.0f));
     cp.render_data.vertices_bottom[i].pack |= ((uint8_t)((uvs[i].y + uv_bottom.y) * 2.0f)) << 8;
-    // cp.render_data.vertices_misc[i].pack |= ((uint8_t)((uvs[i].x + uv.x) * 2.0f));
-    // cp.render_data.vertices_misc[i].pack |= ((uint8_t)((uvs[i].y + uv.y) * 2.0f)) << 8;
   }
 
   return cp;
@@ -289,7 +310,7 @@ static const std::array<CubeProperties, static_cast<size_t>(CubeId::CUBE_ID_SIZE
     /* Grass plant */ create_foliage_cube({13, 0}),
 };
 
-static bool has_ambient_occlusion(Dir face, const Vertex& vertex, const std::unordered_map<uint32_t, CubeId>& neigbours) {
+static bool has_ambient_occlusion(Dir face, const SparseVertex& vertex, const std::unordered_map<uint32_t, CubeId>& neigbours) {
   // if (cube_properties.at((size_t)neigbours.at(dir_bitmask)).render_data.face_solidity.at(Dir::TOP) == false) {
   // return false;
   // }
@@ -369,11 +390,11 @@ static bool has_ambient_occlusion(Dir face, const Vertex& vertex, const std::uno
   return false;
 }
 
-static void get_vertices(std::vector<Vertex>& vertices, glm::vec3 offset, CubeId cube, const std::unordered_map<uint32_t, CubeId>& neigbour_ids, const std::unordered_map<Dir, LightLevel>& light_levels) {
+static void get_vertices(std::vector<SparseVertex>& vertices, glm::vec3 offset, CubeId cube, const std::unordered_map<uint32_t, CubeId>& neigbour_ids, const std::unordered_map<Dir, LightLevel>& light_levels) {
   if (cube == CubeId::AIR) { return; }
 
   std::vector<Dir> face_dirs;
-  std::vector<const std::vector<Vertex>*> faces;
+  std::vector<const std::vector<SparseVertex>*> faces;
 
   const CubeProperties* const cube_props = &cube_properties.at((size_t)cube);
 
@@ -428,7 +449,7 @@ static void get_vertices(std::vector<Vertex>& vertices, glm::vec3 offset, CubeId
     Dir face_dir = face_dirs[face_i];
 
     for (size_t vertex_i = 0; vertex_i < face->size(); vertex_i += 1) {
-      Vertex vertex = (*face)[vertex_i];
+      SparseVertex vertex = (*face)[vertex_i];
 
       uint8_t brightness = 255;
 
