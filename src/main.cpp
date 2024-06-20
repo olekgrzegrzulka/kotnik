@@ -4,10 +4,7 @@
 #include "glad/glad.h"
 
 #include <chrono>
-#include <fstream>
 #include <iostream>
-#include <map>
-#include <thread>
 #include <vector>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -15,25 +12,13 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
-#include "chunk_renderer.hpp"
+#include "cube_indicator_renderer.hpp"
 #include "input.hpp"
 #include "player.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
-
-static std::string read_file(const std::string& filename) {
-  std::ifstream file(filename, std::ios::in);
-
-  if (!file.is_open()) {
-    throw std::runtime_error("Failed to open file '" + filename + "'!");
-  }
-  std::string source;
-  source = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-
-  return source;
-}
 
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
@@ -72,53 +57,7 @@ int main() {
   glAttachShader(shaderProgram, fragmentShader);
   glLinkProgram(shaderProgram);
 
-  // Create cube indicator shader program
-  GLuint cube_indicator_vertex = compile_vertex_shader(read_file("shaders/cube_indicator.vert"));
-  GLuint cube_indicator_fragment = compile_fragment_shader(read_file("shaders/cube_indicator.frag"));
-  GLuint cube_indicator_program = glCreateProgram();
-  glAttachShader(cube_indicator_program, cube_indicator_vertex);
-  glAttachShader(cube_indicator_program, cube_indicator_fragment);
-  glLinkProgram(cube_indicator_program);
-
-  // Create cube indicator VAO
-  GLuint cube_indicator_vao;
-  glGenVertexArrays(1, &cube_indicator_vao);
-  glBindVertexArray(cube_indicator_vao);
-
-  GLuint cube_indicator_vbo;
-  std::vector<glm::vec<3, float>> cube_indicator_vertices = {
-      {-0.0005f, -0.0005f, -0.0005f},
-      {-0.0005f, -0.0005f, +1.0005f},
-      {+1.0005f, -0.0005f, +1.0005f},
-      {+1.0005f, -0.0005f, -0.0005f},
-      {-0.0005f, -0.0005f, -0.0005f},
-
-      {-0.0005f, +1.0005f, -0.0005f},
-      {-0.0005f, +1.0005f, +1.0005f},
-      {+1.0005f, +1.0005f, +1.0005f},
-      {+1.0005f, +1.0005f, -0.0005f},
-      {-0.0005f, +1.0005f, -0.0005f},
-
-      {-0.0005f, +1.0005f, +1.0005f},
-      {-0.0005f, -0.0005f, +1.0005f},
-      {+1.0005f, -0.0005f, +1.0005f},
-      {+1.0005f, +1.0005f, +1.0005f},
-      {+1.0005f, +1.0005f, -0.0005f},
-      {+1.0005f, -0.0005f, -0.0005f},
-      {-0.0005f, -0.0005f, -0.0005f},
-      {-0.0005f, +1.0005f, -0.0005f},
-      {+1.0005f, +1.0005f, -0.0005f},
-
-  };
-  glGenBuffers(1, &cube_indicator_vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, cube_indicator_vbo);
-  glBufferData(GL_ARRAY_BUFFER, cube_indicator_vertices.size() * sizeof(glm::vec<3, float>), cube_indicator_vertices.data(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, cube_indicator_vbo);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec<3, float>), (void*)0);
-
-  glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  CubeIndicatorRenderer::init();
 
   // Create crosshair shader program
   GLuint crosshair_vertex = compile_vertex_shader(read_file("shaders/crosshair.vert"));
@@ -205,15 +144,8 @@ int main() {
     // Draw cube indicator
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
-      glUseProgram(cube_indicator_program);
-      glBindVertexArray(cube_indicator_vao);
-      glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
-      glUniform3f(1, (float)(cube_indicator_pos.value().x - camera_pos.x), (float)(cube_indicator_pos.value().y - camera_pos.y), (float)(cube_indicator_pos.value().z - camera_pos.z));
-      glLineWidth(2.5f);
-      glDrawArrays(GL_LINE_STRIP, 0, cube_indicator_vertices.size());
+      CubeIndicatorRenderer::draw(camera_pos, camera_matrix, cube_indicator_pos.value());
     }
-
-    print(player->world_pos);
 
     // Draw crosshair
     glUseProgram(crosshair_program);

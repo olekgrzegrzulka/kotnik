@@ -1,12 +1,15 @@
 #pragma once
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include "aabb.hpp"
 #include "chunk.hpp"
+#include "chunk_worker.hpp"
 #include "common.hpp"
 #include "entity.hpp"
+#include "world_gen.hpp"
 
 struct ChunkMeshWorker;
 struct ChunkTerrainGenWorker;
@@ -16,22 +19,25 @@ class World {
   friend class WorldRenderer;
 
 public:
+  static const int32_t chunk_load_distance = 4;
+
   struct {
-    double gravity = -0.017;
+    double gravity = -0.012;
     double air_friction = 0.01;
 
   } physical_properties;
 
 private:
-  std::unordered_map<ChunkPos, Chunk, Vec3Hasher> chunks;
+  std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, Vec3Hasher> chunks;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
-  std::vector<ChunkPos> chunks_to_keep_loaded;
   std::vector<std::unique_ptr<Entity>> entities;
 
-  std::vector<ChunkMeshWorker*> chunk_mesh_workers;
   std::vector<ChunkTerrainGenWorker*> chunk_terrain_gen_workers;
+  std::shared_ptr<ChunkLightningWorker> lightning_worker;
 
   Player* player = nullptr;
+
+  std::shared_ptr<WorldGen> world_gen;
 
 public:
   World();
@@ -99,7 +105,9 @@ public:
 
   void spread_light(const CubePos light_cube_pos, std::unordered_set<CubePos, Vec3Hasher>& visited_cubes);
 
-  void generate_lightmap_all();
+  void request_player_chunk_light_update();
+
+  void request_chunk_light_update(ChunkPos chunkchunk_pos);
 
   std::unordered_map<uint32_t, CubeId> get_neigbours(CubePos _cube_pos, bool edges = false, bool corners = false) const;
 

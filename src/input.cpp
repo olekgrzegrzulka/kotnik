@@ -24,7 +24,6 @@ void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int 
 }
 
 void glfw_scroll_button_callback(GLFWwindow* window, double xoffset, double yoffset) {
-  print(xoffset, yoffset);
 }
 
 void init(GLFWwindow* window) {

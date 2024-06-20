@@ -1,10 +1,23 @@
 #pragma once
+#include <fstream>
 #include <iostream>
 #include <string>
 #include "glad/glad.h"
 
-GLuint compile_shader(std::string source, GLint type) {
-  GLuint shader;
+static std::string read_file(const std::string& filename) {
+  std::ifstream file(filename, std::ios::in);
+
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to open file '" + filename + "'!");
+  }
+  std::string source;
+  source = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+
+  return source;
+}
+
+static GLuint compile_shader(std::string source, GLint type) {
+  static GLuint shader;
   shader = glCreateShader(type);
   const char* test = source.c_str();
   glShaderSource(shader, 1, &test, nullptr);
@@ -31,7 +44,7 @@ GLuint compile_shader(std::string source, GLint type) {
   return shader;
 }
 
-GLuint compile_vertex_shader(std::string source) {
+static GLuint compile_vertex_shader(std::string source) {
   return compile_shader(source, GL_VERTEX_SHADER);
 }
 

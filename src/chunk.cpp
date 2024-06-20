@@ -1,7 +1,6 @@
 #include "chunk.hpp"
-#include <execution>
+#include <cassert>
 #include "chunk_renderer.hpp"
-#include "fast_noise_lite.h"
 #include "world.hpp"
 
 Chunk::Chunk(World& _world, ChunkPos _chunk_position) : world(_world), position(_chunk_position) {
@@ -10,6 +9,35 @@ Chunk::Chunk(World& _world, ChunkPos _chunk_position) : world(_world), position(
 Chunk::~Chunk() {
   if (renderer) {
     delete renderer;
+  }
+}
+
+void Chunk::update_mesh_update_flags(LocalPos local_pos) {
+  assert(is_local_pos_valid(local_pos));
+  flags.update_geometry = true;
+
+  if (local_pos.x == 0) {
+    flags.update_geometry_of_adjacent_chunks.left = true;
+  }
+
+  if (local_pos.x == CHUNK_SIZE - 1) {
+    flags.update_geometry_of_adjacent_chunks.right = true;
+  }
+
+  if (local_pos.y == 0) {
+    flags.update_geometry_of_adjacent_chunks.down = true;
+  }
+
+  if (local_pos.y == CHUNK_SIZE - 1) {
+    flags.update_geometry_of_adjacent_chunks.up = true;
+  }
+
+  if (local_pos.z == 0) {
+    flags.update_geometry_of_adjacent_chunks.front = true;
+  }
+
+  if (local_pos.z == CHUNK_SIZE - 1) {
+    flags.update_geometry_of_adjacent_chunks.back = true;
   }
 }
 
@@ -35,7 +63,7 @@ CubeId Chunk::get_cube(LocalPos local_pos) const {
 
 LightLevel Chunk::get_lightmap(LocalPos local_pos) const {
   assert(is_local_pos_valid(local_pos));
-  return lightmap[local_pos_to_index(local_pos)];
+  return lightmap.data[local_pos_to_index(local_pos)];
 }
 
 void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
@@ -46,7 +74,7 @@ void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   }
   cubes[local_pos_to_index(local_pos)] = cube_id;
 
-  flags.update_geometry = true;
+  update_mesh_update_flags(local_pos);
 
   // Compute heightmap
   const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];
@@ -90,7 +118,7 @@ void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
 
   cubes[local_pos_to_index(local_pos)] = cube_id;
 
-  flags.update_geometry = true;
+  update_mesh_update_flags(local_pos);
 
   // Compute heightmap
   const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];
@@ -112,6 +140,7 @@ void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
     heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = local_pos.y;
   }
 
+  // FIXME this could be done more effeciently
   update_occlusion_map(local_pos);
   update_occlusion_map(local_pos + LocalPos{-1, 0, 0});
   update_occlusion_map(local_pos + LocalPos{1, 0, 0});
@@ -132,7 +161,27 @@ void Chunk::set_cube_index_no_lock(uint32_t index, CubeId to) {
 }
 
 void Chunk::set_lightmap(LocalPos local_pos, LightLevel light_level) {
-  lightmap[local_pos_to_index(local_pos)] = light_level;
+  lightmap.data[local_pos_to_index(local_pos)] = light_level;
+}
+
+void Chunk::generate_lightmap(std::unordered_set<CubePos, Vec3Hasher>& visited_cubes) {
+  clear_lightmap();
+  for (int _x = 0; _x < CHUNK_SIZE; _x += 1) {
+    for (int _z = 0; _z < CHUNK_SIZE; _z += 1) {
+      auto _y = get_heightmap(_x, _z);
+      if (!_y.has_value()) { continue; }
+
+      // All air cubes over _y are sunlit
+      for (int __y = _y.value(); __y < CHUNK_SIZE; __y += 1) {
+        set_lightmap({_x, __y, _z}, {255, 0, 0});
+        auto local_pos = LocalPos{_x, __y, _z};
+        auto cube_pos = local_pos_to_cube_pos(position, local_pos);
+        world.spread_light(cube_pos, visited_cubes);
+      }
+    }
+  }
+
+  flags.update_geometry = true;
 }
 
 std::optional<uint16_t> Chunk::get_heightmap(uint16_t x, uint16_t z) const {

@@ -1,14 +1,12 @@
 #pragma once
 #include <algorithm>
 #include <array>
-#include <functional>
 #include <numeric>
+#include <unordered_map>
 #include <vector>
 #include <stdint.h>
 #include "aabb.hpp"
-#include "atlas.hpp"
 #include "common.hpp"
-#include "glm/glm.hpp"
 
 #define ATLAS_SIZE (16)
 

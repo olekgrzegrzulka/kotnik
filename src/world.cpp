@@ -1,27 +1,31 @@
 #include "world.hpp"
 #include <algorithm>
+#include <cstdio>
+#include <memory>
 #include <unordered_set>
+#include "chunk.hpp"
 #include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
 #include "entity.hpp"
 #include "player.hpp"
+#include "world_gen.hpp"
 
 World::World() {
-  for (size_t i = 0; i < 4; i += 1) {
-    chunk_mesh_workers.push_back(new ChunkMeshWorker);
+  world_gen = std::make_unique<WorldGen>(*this);
+
+  for (size_t i = 0; i < 2; i += 1) {
+    chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker(world_gen));
   }
 
-  for (size_t i = 0; i < 4; i += 1) {
-    chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker);
-  }
+  lightning_worker = std::make_shared<ChunkLightningWorker>();
 }
 
 World::~World() {
-  for (size_t i = 0; i < chunk_mesh_workers.size(); i += 1) {
-    delete chunk_mesh_workers[i];
-  }
+  // for (size_t i = 0; i < chunk_mesh_workers.size(); i += 1) {
+  //   delete chunk_mesh_workers[i];
+  // }
 
   for (size_t i = 0; i < chunk_terrain_gen_workers.size(); i += 1) {
     delete chunk_terrain_gen_workers[i];
@@ -51,9 +55,9 @@ CubeId World::get_cube(CubePos cube_pos) const {
 }
 
 void World::create_new_chunk(ChunkPos chunk_pos) {
-  chunks.emplace(chunk_pos, Chunk{*this, chunk_pos});
-  chunks.at(chunk_pos).renderer = new ChunkRenderer(chunks.at(chunk_pos));
-  Chunk& c = chunks.at(chunk_pos);
+  chunks.emplace(chunk_pos, std::make_unique<Chunk>(*this, chunk_pos));
+  auto& chunk = chunks.at(chunk_pos);
+  chunks.at(chunk_pos)->renderer = new ChunkRenderer(*chunk.get());
 }
 
 bool World::is_solid(CubePos cube_pos) const {
@@ -102,7 +106,7 @@ uint8_t World::get_sunlight(CubePos cube_pos) const {
 
   if (!chunks.contains(chunk_pos)) { return 0; }
   // if (!chunks.at(chunk_pos).get_heightmap(local_pos.x, local_pos.z).has_value()) { return 0; }
-  if (chunks.at(chunk_pos).get_heightmap(local_pos.x, local_pos.z).value_or(0) > local_pos.y) { return chunks.at(chunk_pos).get_heightmap(local_pos.x, local_pos.z).value() - local_pos.y - 1; }
+  if (chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z).value_or(0) > local_pos.y) { return chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z).value() - local_pos.y - 1; }
   int16_t value = CHUNK_SIZE - 1 - local_pos.y;
 
   for (size_t i = 1; i < 10; i += 1) {
@@ -112,12 +116,12 @@ uint8_t World::get_sunlight(CubePos cube_pos) const {
       continue;
     }
     // The chunk's column is empty, can't block light
-    if (!chunks.at(chunk_pos + ChunkPos{0, i, 0}).get_heightmap(local_pos.x, local_pos.z).has_value()) {
+    if (!chunks.at(chunk_pos + ChunkPos{0, i, 0})->get_heightmap(local_pos.x, local_pos.z).has_value()) {
       value += 16;
       continue;
     }
     // Chunk is blocking light, add distance from bottom of the chunk to the blocking cube and return
-    value += chunks.at(chunk_pos + ChunkPos{0, i, 0}).get_heightmap(local_pos.x, local_pos.z).value();
+    value += chunks.at(chunk_pos + ChunkPos{0, i, 0})->get_heightmap(local_pos.x, local_pos.z).value();
     return std::clamp(value - 16, 0, 255);
   }
 
@@ -129,7 +133,7 @@ std::optional<uint16_t> World::get_heightmap(CubePos cube_pos) const {
   auto [chunk_pos, local_pos] = cube_to_local(cube_pos);
 
   if (!chunks.contains(chunk_pos)) { return 0; }
-  return chunks.at(chunk_pos).get_heightmap(local_pos.x, local_pos.z);
+  return chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z);
 }
 
 LightLevel World::get_lightmap(CubePos cube_pos) const {
@@ -137,7 +141,7 @@ LightLevel World::get_lightmap(CubePos cube_pos) const {
   assert(is_local_pos_valid(local_pos));
 
   if (!chunks.contains(chunk_pos)) { return LightLevel{}; }
-  return chunks.at(chunk_pos).get_lightmap(local_pos);
+  return chunks.at(chunk_pos)->get_lightmap(local_pos);
 }
 
 // Returns cube position of first cuube in raycast, or empty optional if no solid cube encountered
@@ -188,11 +192,11 @@ const Chunk* World::get_chunk(ChunkPos chunk_pos) const {
     return nullptr;
   }
   auto& chunk = chunk_it->second;
-  if (!chunk.flags.ready) {
+  if (!chunk->flags.ready) {
     return nullptr;
   }
 
-  return &chunk;
+  return chunk.get();
 }
 
 void World::update_light(CubePos cube_pos) {
@@ -256,28 +260,20 @@ void World::spread_light(const CubePos light_cube_pos, std::unordered_set<CubePo
   }
 }
 
-void World::generate_lightmap_all() {
+void World::request_player_chunk_light_update() {
   std::unordered_set<CubePos, Vec3Hasher> visited_cubes;
+  if (!get_player()) { return; }
+  auto chunk_pos = world_pos_to_chunk_pos(get_player()->world_pos);
+  auto chunk_it = chunks.find(chunk_pos);
+  if (chunk_it == chunks.end()) { return; }
 
-  for (auto& [chunk_pos, chunk] : chunks) {
-    {
-      chunk.clear_lightmap();
-      for (int _x = 0; _x < CHUNK_SIZE; _x += 1) {
-        for (int _z = 0; _z < CHUNK_SIZE; _z += 1) {
-          auto _y = chunk.get_heightmap(_x, _z);
-          if (!_y.has_value()) { continue; }
+  request_chunk_light_update(chunk_pos);
+}
 
-          // All air cubes over _y are sunlit
-          for (int __y = _y.value(); __y < CHUNK_SIZE; __y += 1) {
-            chunk.set_lightmap({_x, __y, _z}, {255, 0, 0});
-            auto local_pos = LocalPos{_x, __y, _z};
-            auto cube_pos = local_pos_to_cube_pos(chunk_pos, local_pos);
-            spread_light(cube_pos, visited_cubes);
-          }
-        }
-      }
-    }
-  }
+void World::request_chunk_light_update(ChunkPos chunk_pos) {
+  Chunk* chunk = const_cast<Chunk*>(get_chunk(chunk_pos));
+  if (!chunk) { return; }
+  lightning_worker->add_to_queue(chunk);
 }
 
 std::unordered_map<uint32_t, CubeId> World::get_neigbours(CubePos _cube_pos, bool edges, bool corners) const {
@@ -388,7 +384,8 @@ void sort_vector_by_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T>
 }
 
 void World::update() {
-  player = nullptr;
+  lightning_worker->run_job();
+  // player = nullptr;
 
   // Entity update
   for (auto&& entity : entities) {
@@ -402,54 +399,45 @@ void World::update() {
 
   // Unlock chunks locked by terrain gen worker threads
   for (const auto& worker : chunk_terrain_gen_workers) {
-    if (worker->try_collecting()) {
-    }
+    worker->update();
   }
 
   // Load chunks near player
   ChunkPos chunk_load_center = (player) ? world_pos_to_chunk_pos(player->world_pos) : ChunkPos{0, 0, 0};
-  chunks_to_keep_loaded.clear();
-  for (int x = -8; x <= 8; x += 1) {
-    for (int z = -8; z <= 8; z += 1) {
-      for (int y = -4; y <= 4; y += 1) {
-        chunks_to_keep_loaded.emplace_back(chunk_load_center + ChunkPos{x, y, z});
+  for (int x = -chunk_load_distance; x <= chunk_load_distance; x += 1) {
+    for (int z = -chunk_load_distance; z <= chunk_load_distance; z += 1) {
+      for (int y = -chunk_load_distance; y <= chunk_load_distance; y += 1) {
+        ChunkPos chunk_pos{x, y, z};
+        if (!chunks.contains(chunk_load_center + chunk_pos)) {
+          create_new_chunk(chunk_load_center + chunk_pos);
+          break;
+        }
       }
     }
   }
 
-  sort_vector_by_distance(chunks_to_keep_loaded, chunk_load_center);
-
-  int i = 0;
-  for (const ChunkPos chunk_pos : chunks_to_keep_loaded) {
-    if (chunks.contains(chunk_pos)) { continue; }
-    create_new_chunk(chunk_pos);
-  }
-
-  // Unload chunks far from player
-  std::vector<ChunkPos> chunks_to_remove;
-  for (const auto& [chunk_pos, chunk] : chunks) {
-    if (std::find(chunks_to_keep_loaded.begin(), chunks_to_keep_loaded.end(), chunk_pos) == chunks_to_keep_loaded.end()) {
-      if (!(chunk.flags.is_write_locked())) {
-        chunks_to_remove.emplace_back(chunk_pos);
-      }
-    }
-  }
-  for (const auto chunk_pos : chunks_to_remove) {
-    chunks.erase(chunk_pos);
-  }
+  //  if (!(chunk.flags.is_write_locked() {chunks.erase(chunk_pos)}
 
   // Get list of chunks that were modified, so we can update their meshes
   std::vector<ChunkPos> chunks_not_ready;
+  std::vector<ChunkPos> chunks_to_be_unloaded;
 
   for (auto& [chunk_pos, chunk] : chunks) {
-    if (!chunk.flags.ready) {
+    if (!chunk->flags.ready) {
       chunks_not_ready.emplace_back(chunk_pos);
+      continue;
+    }
+
+    bool chunk_is_too_far = (std::abs(chunk_load_center.x - chunk_pos.x) > chunk_load_distance + 1) || (std::abs(chunk_load_center.y - chunk_pos.y) > chunk_load_distance + 1) || (std::abs(chunk_load_center.z - chunk_pos.z) > chunk_load_distance + 1);
+
+    if (chunk_is_too_far && (!chunk->flags.is_write_locked())) {
+      chunks_to_be_unloaded.emplace_back(chunk_pos);
       continue;
     }
 
     // Set cubes, which chunk neigbours requested to set
     std::unordered_map<CubePos, CubeId, Vec3Hasher> chunks_neigbour_chunks_failed_cubes;
-    for (auto [cube_pos, cube_id] : chunk.neigbour_chunks_cubes_to_set) {
+    for (auto [cube_pos, cube_id] : chunk->neigbour_chunks_cubes_to_set) {
       auto [neigb_chunk_pos, neigb_local_pos] = cube_to_local(cube_pos);
       auto neigb_chunk_it = chunks.find(neigb_chunk_pos);
 
@@ -459,34 +447,37 @@ void World::update() {
         continue;
       }
 
-      Chunk& neigb_chunk = neigb_chunk_it->second;
+      auto neigb_chunk = neigb_chunk_it->second.get();
 
       // Chunk is locked
-      if (neigb_chunk.flags.is_write_locked()) {
+      if (neigb_chunk->flags.is_write_locked()) {
         chunks_neigbour_chunks_failed_cubes.insert({cube_pos, cube_id});
         continue;
       }
 
       // Can only replace air block
-      if (neigb_chunk.get_cube(neigb_local_pos) != CubeId::AIR) {
+      if (neigb_chunk->get_cube(neigb_local_pos) != CubeId::AIR) {
         continue;
       }
 
-      neigb_chunk.set_cube(neigb_local_pos, cube_id);
+      neigb_chunk->set_cube(neigb_local_pos, cube_id);
     }
-    chunk.neigbour_chunks_cubes_to_set = chunks_neigbour_chunks_failed_cubes;
+    chunk->neigbour_chunks_cubes_to_set = chunks_neigbour_chunks_failed_cubes;
 
-    chunk.update();
+    chunk->update();
   }
 
   sort_vector_by_distance(chunks_not_ready, world_pos_to_chunk_pos(player->world_pos));
 
+  size_t i = 0;
   for (const ChunkPos chunk_pos : chunks_not_ready) {
-    for (const auto& worker : chunk_terrain_gen_workers) {
-      if (worker->run_job(&(chunks.at(chunk_pos)))) {
-        break;
-      }
-    }
+    auto& worker = chunk_terrain_gen_workers[i % chunk_terrain_gen_workers.size()];
+    worker->add_to_queue(chunks.at(chunk_pos).get());
+    i += 1;
+  }
+
+  for (const ChunkPos chunk_pos : chunks_to_be_unloaded) {
+    chunks.erase(chunk_pos);
   }
 }
 

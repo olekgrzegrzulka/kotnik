@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project (cube_game)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror=shadow ${MY_FLAGS} -Werror=return-type -O3 -o cube_game.out" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror=shadow -Werror=switch ${MY_FLAGS} -Werror=return-type -O3 -o cube_game.out" )
 set(CMAKE_EXE_LINKER_FLAGS "-lglfw")
 SET (CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 23)
@@ -21,6 +21,9 @@ set(SOURCES
     ./src/input.cpp
     ./src/chunk_renderer.cpp
     ./src/chunk_worker.cpp
+    ./src/biome_map.cpp
+    ./src/world_gen.cpp
+    ./src/biome.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})

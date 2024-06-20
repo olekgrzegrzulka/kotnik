@@ -1,9 +1,6 @@
 #pragma once
 #include <chrono>
 #include <iostream>
-#include <limits>
-#include <map>
-#include <set>
 #include <glm/glm.hpp>
 #include <stdint.h>
 
@@ -88,8 +85,23 @@ static void print(std::vector<T> vec) {
   }
 }
 
-// typedef std::set<LocalPos, Vec3Comparator> CubeSet;
-// typedef std::map<LocalPos, Vec3Comparator> CubeMap;
+template <typename T>
+constexpr glm::vec<3, T> Vec3Left = {-1, 0, 0};
+
+template <typename T>
+constexpr glm::vec<3, T> Vec3Right = {1, 0, 0};
+
+template <typename T>
+constexpr glm::vec<3, T> Vec3Up = {0, 1, 0};
+
+template <typename T>
+constexpr glm::vec<3, T> Vec3Down = {0, -1, 0};
+
+template <typename T>
+constexpr glm::vec<3, T> Vec3Forward = {0, 0, -1};
+
+template <typename T>
+constexpr glm::vec<3, T> Vec3Back = {0, 0, 1};
 
 template <typename Arg>
 static void print(Arg&& arg) {

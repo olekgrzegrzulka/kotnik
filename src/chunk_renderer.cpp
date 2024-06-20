@@ -1,10 +1,8 @@
 #include "chunk_renderer.hpp"
-#include <chrono>
 #include <unordered_map>
 #include "chunk.hpp"
 #include "cubes.hpp"
 #include "glad/glad.h"
-#include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
 #define AMBIENT_OCCLUSION (true)
@@ -88,12 +86,18 @@ inline static void get_cubes_visible_faces(const std::vector<const Chunk*>& chun
   // return;
 
   std::unordered_map<Dir, LightLevel> light_levels;
-  light_levels[Dir::LEFT] = {0, 0, 0};   /*world.get_lightmap(cube_pos + LocalPos{-1, 0, 0});*/
-  light_levels[Dir::RIGHT] = {0, 0, 0};  /*world.get_lightmap(cube_pos + LocalPos{1, 0, 0});*/
-  light_levels[Dir::BOTTOM] = {0, 0, 0}; /*world.get_lightmap(cube_pos + LocalPos{0, -1, 0});*/
-  light_levels[Dir::TOP] = {0, 0, 0};    /*world.get_lightmap(cube_pos + LocalPos{0, 1, 0});*/
-  light_levels[Dir::FRONT] = {0, 0, 0};  /*world.get_lightmap(cube_pos + LocalPos{0, 0, -1});*/
-  light_levels[Dir::BACK] = {0, 0, 0};   /*world.get_lightmap(cube_pos + LocalPos{0, 0, 1});*/
+  // light_levels[Dir::LEFT] = chunk.world.get_lightmap(cube_pos + LocalPos{-1, 0, 0});
+  // light_levels[Dir::RIGHT] = chunk.world.get_lightmap(cube_pos + LocalPos{1, 0, 0});
+  // light_levels[Dir::BOTTOM] = chunk.world.get_lightmap(cube_pos + LocalPos{0, -1, 0});
+  // light_levels[Dir::TOP] = chunk.world.get_lightmap(cube_pos + LocalPos{0, 1, 0});
+  // light_levels[Dir::FRONT] = chunk.world.get_lightmap(cube_pos + LocalPos{0, 0, -1});
+  // light_levels[Dir::BACK] = chunk.world.get_lightmap(cube_pos + LocalPos{0, 0, 1});
+  light_levels[Dir::LEFT] = {255, 0, 0};
+  light_levels[Dir::RIGHT] = {255, 0, 0};
+  light_levels[Dir::BOTTOM] = {255, 0, 0};
+  light_levels[Dir::TOP] = {255, 0, 0};
+  light_levels[Dir::FRONT] = {255, 0, 0};
+  light_levels[Dir::BACK] = {255, 0, 0};
 
   get_vertices(vertices, cube_pos, chunk.get_cube(local_pos), neigbours, light_levels);
 }

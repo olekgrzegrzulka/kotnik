@@ -1,13 +1,13 @@
 #pragma once
 #include <array>
-#include <atomic>
 #include <bitset>
 #include <optional>
-#include <utility> // for std::pair
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 #include <stdint.h>
 #include "common.hpp"
-#include "cubes.hpp"
 
 #define CHUNK_SIZE (32)
 #define CHUNK_CUBES (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
@@ -86,6 +86,18 @@ public:
 
     bool update_geometry = false;
 
+    struct {
+      bool up = false;
+      bool down = false;
+      bool left = false;
+      bool right = false;
+      bool front = false;
+      bool back = false;
+    } update_geometry_of_adjacent_chunks;
+
+    // Chunk is too far from view, and may be unloaded an any time
+    bool marked_for_unload = false;
+
     // When > 0 prevents chunk data from being modified, instead all chunk modifications are sent to event_queue
     size_t threads_reading = 0;
 
@@ -100,7 +112,11 @@ public:
       return thread_writing || threads_reading > 0;
     }
 
+    bool is_being_generated = false;
+
   } flags;
+
+  void update_mesh_update_flags(LocalPos local_pos);
 
   std::unordered_map<CubePos, CubeId, Vec3Hasher> neigbour_chunks_cubes_to_set;
 
@@ -113,10 +129,13 @@ public:
 
   std::vector<ChunkEvent> event_queue;
 
+  struct {
+    // bool locked = false;
+    std::array<LightLevel, CHUNK_CUBES> data{};
+  } lightmap;
+
 private:
   std::array<CubeId, CHUNK_CUBES> cubes{};
-
-  std::array<LightLevel, CHUNK_CUBES> lightmap{};
 
   // A true value means that the cube at index is occluded. All cubes with neigbours outside chunk bounds always have value of false
   std::bitset<CHUNK_CUBES> occlusion_map;
@@ -136,7 +155,7 @@ public:
   bool is_solid(LocalPos at) const;
 
   void clear_lightmap() {
-    lightmap.fill({0, 0, 0});
+    lightmap.data.fill({0, 0, 0});
   }
 
   CubeId get_cube(LocalPos at) const;
@@ -151,6 +170,8 @@ public:
   void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
 
   void set_lightmap(LocalPos local_pos, LightLevel cube_id);
+
+  void generate_lightmap(std::unordered_set<CubePos, Vec3Hasher>& visited_cubes);
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
 

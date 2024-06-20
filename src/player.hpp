@@ -65,7 +65,7 @@ public:
   WorldPos velocity{};
   double pitch = 0.0;
   double yaw = 0.0;
-  bool is_flying = false;
+  bool is_flying = true;
 
   AABB aabb{{0.15, 0.9, 0.15}};
   AABB aabb_ground{{0.17, 0.1, 0.17}, {0.0, -0.83, 0.0}};
@@ -83,6 +83,7 @@ public:
       {"place", {Input::Mouse::MOUSE_BUTTON_RIGHT}},
       {"next_cube", {Input::Key::KEY_Q}},
       {"switch_flying", {Input::Key::KEY_F}},
+      {"reload_lightning", {Input::Key::KEY_2}},
   };
 
 public:
@@ -155,6 +156,10 @@ public:
 
     if (input_just_released("switch_flying")) {
       is_flying = !is_flying;
+    }
+
+    if (input_just_released("reload_lightning")) {
+      world.request_player_chunk_light_update();
     }
   }
 
@@ -233,6 +238,8 @@ public:
 
   void update_velocity() {
     const double walking_speed = (is_flying) ? 0.5 : 0.1;
+    static const double jump_power = 0.18;
+
     auto walking_vector = (get_walking_dir() * walking_speed);
 
     velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25);
@@ -252,7 +259,7 @@ public:
       velocity.y *= 0.92;
     } else {
       if (velocity.y == 0.0 && world.aabb_get_solid_cubes(aabb_ground, world_pos).size() > 0) {
-        velocity.y += 0.22 * (input_held("ascend"));
+        velocity.y += jump_power * (input_held("ascend"));
       }
       if (!is_flying) { velocity.y += world.physical_properties.gravity; }
       velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
