@@ -87,17 +87,17 @@ private:
 };
 
 WorldGen::WorldGen(World& w) : world(w) {
-  constexpr int seed = 888;
+  constexpr int seed = 1312;
 
   noise_heightmap.SetSeed(seed);
-  noise_heightmap.SetFrequency(0.008564f);
+  noise_heightmap.SetFrequency(0.007264f);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_heightmap.SetFractalOctaves(3);
   noise_heightmap.SetFractalGain(0.4f);
   noise_heightmap.SetFractalLacunarity(2.57f);
 
   noise_3d.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_3d.SetFrequency(0.005f);
+  noise_3d.SetFrequency(0.00411f);
   noise_3d.SetSeed(seed);
   noise_3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_3d.SetFractalOctaves(3);
@@ -107,14 +107,26 @@ WorldGen::WorldGen(World& w) : world(w) {
   noise_3d.SetDomainWarpAmp(80.0f);
 
   noise_humidity.SetSeed(seed + 1);
-  noise_humidity.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_Value);
-  noise_humidity.SetFrequency(0.0077f);
+  noise_humidity.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
+  noise_humidity.SetFrequency(0.00117f);
+  noise_humidity.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_humidity.SetFractalOctaves(3);
+  noise_humidity.SetFractalLacunarity(2.65f);
+  noise_humidity.SetFractalGain(0.418f);
 
   noise_temperature.SetSeed(seed + 2);
-  noise_temperature.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_Value);
-  noise_temperature.SetFrequency(0.0077f);
+  noise_temperature.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
+  noise_temperature.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+  noise_temperature.SetFrequency(0.00117f);
   noise_temperature.SetFractalOctaves(3);
+  noise_temperature.SetFractalLacunarity(3.15f);
+  noise_temperature.SetFractalGain(0.418f);
+
+  noise_rng.SetSeed(seed + 3);
+  noise_rng.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
+  noise_rng.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+  noise_rng.SetFrequency(0.54117f);
+  noise_rng.SetFractalOctaves(3);
 }
 
 BlendedBiome WorldGen::get_blended_biome(WorldPos world_pos) const {
@@ -132,7 +144,7 @@ bool WorldGen::is_ground(WorldPos pos, const BlendedBiome& blended_biome) const 
 
   float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.get_noise_height_multiplier();
 
-  float value_3d = (noise_3d.GetNoise(pos.x, pos.y * 2.0f, pos.z) + 1.0f) * 0.5f * blended_biome.get_noise_3d_multiplier();
+  float value_3d = (noise_3d.GetNoise(pos.x, pos.y * 2.5f, pos.z) + 1.0f) * 0.5f * blended_biome.get_noise_3d_multiplier();
   value_3d = 1.0f + value_3d * 0.032f;
   float value = (blended_biome.get_base_height() + value_height) * value_3d;
 
@@ -155,10 +167,17 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
       auto blended_biome = get_blended_biome({x, 0, z});
 
       for (size_t y_local = 0; y_local < CHUNK_SIZE; y_local += 1) {
-        // float y = chunk->position.y * CHUNK_SIZE + (int)y_local;
+        float y = chunk->position.y * CHUNK_SIZE + (int)y_local;
 
         bool solid = chunk_solid_cubes_array.is_solid({x_local, y_local, z_local});
-        if (!solid) { continue; }
+        if (!solid) {
+          if (chunk_solid_cubes_array.is_solid({x_local, y_local - 1, z_local})) {
+            float rng = noise_rng.GetNoise(x, y, z) * 0.5f + 0.5f;
+            auto cube = blended_biome.get_ground_cube((int32_t)y, -1, rng);
+            chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
+          }
+          continue;
+        }
         int depth = 0;
         for (; depth < 4; depth += 1) {
           if (!chunk_solid_cubes_array.is_solid({x_local, y_local + depth + 1, z_local})) {
@@ -166,7 +185,8 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
           }
         }
 
-        auto cube = blended_biome.get_ground_cube(depth);
+        float rng = noise_rng.GetNoise(x, y, z) * 0.5f + 0.5f;
+        auto cube = blended_biome.get_ground_cube((int32_t)y, depth, rng);
         chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
       }
     }

@@ -27,4 +27,5 @@ private:
   FastNoiseLite noise_3d;
   FastNoiseLite noise_humidity;
   FastNoiseLite noise_temperature;
+  FastNoiseLite noise_rng;
 };
