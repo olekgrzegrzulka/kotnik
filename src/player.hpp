@@ -1,7 +1,5 @@
 #pragma once
-#include <set>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -36,15 +34,15 @@ public:
     _just_pressed = false;
     _just_released = false;
     _held = false;
-    if (!key_state && new_key_state) { _just_pressed = true; }
-    if (key_state && !new_key_state) { _just_released = true; }
+    if ((!key_state) && new_key_state) { _just_pressed = true; }
+    if (key_state && (!new_key_state)) { _just_released = true; }
     if (key_state && new_key_state) { _held = true; }
     key_state = new_key_state;
   }
 
 private:
   input_t key;
-  bool key_state;
+  bool key_state = false;
   bool _just_pressed = false;
   bool _just_released = false;
   bool _held = false;
