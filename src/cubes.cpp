@@ -93,10 +93,14 @@ cubes::cubes() {
   cube_array[7] = create_full_cube_with_single_uv("Leaves", {9.0f, 0.0f});
   cube_array[7].set_occlusion_mode(NEVER).set_ao(false);
 
-  cube_array[8] = create_x_shape_cube("Grass plant", {13.0f, 0.0f});
+  cube_array[8] = create_x_shape_cube("Grass Plant", {13.0f, 0.0f});
   cube_array[9] = create_full_cube_with_single_uv("Water", {0.0f, 1.0f});
 
   cube_array[9].set_occlusion_mode(IF_SAME_ID).set_is_translucent(true).set_ao(false);
+
+  cube_array[10] = create_full_cube_with_single_uv("Stone Bricks", {10.0f, 0.0f});
+  cube_array[11] = create_full_cube_with_single_uv("Stone Bricks", {11.0f, 0.0f});
+  cube_array[12] = create_full_cube_with_single_uv("Stone Tiles", {12.0f, 0.0f});
 }
 
 constexpr cubes::Cube cubes::create_full_cube_with_single_uv(

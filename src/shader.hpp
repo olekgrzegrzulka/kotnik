@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include "common.hpp"
 #include "glad/glad.h"
@@ -38,7 +37,7 @@ private:
     std::ifstream file{"./shaders/" + file_name};
 
     if (!file.is_open()) {
-      throw std::runtime_error("failed to open shader file " + file_name);
+      error("failed to open shader file " + file_name);
     }
 
     std::stringstream file_string;
@@ -59,17 +58,14 @@ private:
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
 
     if (compile_status == GL_FALSE) {
-      GLint maxLength = 0;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+      GLint max_log_length = 0;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_log_length);
 
-      char* infoLog = new char[maxLength];
-      glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
+      char* info_log = new char[max_log_length];
+      glGetShaderInfoLog(shader, max_log_length, &max_log_length, info_log);
 
-      print("shader compilation error:");
-      print(infoLog);
-
-      delete[] infoLog;
-      throw std::runtime_error("");
+      error("shader compilation error:\n", info_log);
+      delete[] info_log;
     }
 
     return shader;

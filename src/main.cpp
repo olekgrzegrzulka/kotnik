@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "cubes.hpp"
+#include "common.hpp"
 #define GLM_FORCE_RADIANS
 #include "glad/glad.h"
 
@@ -28,7 +28,7 @@ int main() {
   glfwInit();
 
   glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);

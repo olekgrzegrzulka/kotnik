@@ -1,7 +1,6 @@
 #pragma once
 #define STB_IMAGE_IMPLEMENTATION
 
-#include <stdexcept>
 #include "common.hpp"
 #include "glad/glad.h"
 #include "stb_image.h"
@@ -25,7 +24,7 @@ private:
     stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
     if (!data) {
-      throw std::runtime_error("Failed to load texture" + file_path);
+      error("failed to load texture" + file_path);
     }
 
     GLuint texture_ = 0;

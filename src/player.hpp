@@ -53,7 +53,8 @@ private:
     } else if (auto value2 = std::get_if<Input::Mouse>(&key)) {
       return Input::mouse_pressed(*value2);
     }
-    throw "KeyState::get_key(): bad key!";
+    warn("KeyState::get_key(): bad key");
+    return false;
   }
 };
 

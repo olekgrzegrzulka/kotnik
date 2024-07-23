@@ -20,6 +20,9 @@ enum class CubeId : u16 {
   LEAVES,
   GRASS_PLANT,
   WATER,
+  STONE_BRICKS,
+  STONE_BRICKS2,
+  STONE_TILES,
 
   CUBE_ID_SIZE,
 };
