@@ -8,6 +8,7 @@
 #include "chunk.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
+#include "cubes.hpp"
 #include "entity.hpp"
 #include "world_gen.hpp"
 
@@ -15,11 +16,48 @@ struct ChunkMeshWorker;
 struct ChunkTerrainGenWorker;
 class Player;
 
+struct NeigbourCubeIds {
+  std::optional<CubeId> center;
+  // Straight neigbours
+  std::optional<CubeId> left;
+  std::optional<CubeId> right;
+  std::optional<CubeId> bottom;
+  std::optional<CubeId> top;
+  std::optional<CubeId> front;
+  std::optional<CubeId> back;
+
+  // Edge neighbours
+  std::optional<CubeId> left_bottom;
+  std::optional<CubeId> right_bottom;
+  std::optional<CubeId> front_bottom;
+  std::optional<CubeId> back_bottom;
+
+  std::optional<CubeId> left_top;
+  std::optional<CubeId> right_top;
+  std::optional<CubeId> front_top;
+  std::optional<CubeId> back_top;
+
+  std::optional<CubeId> left_front;
+  std::optional<CubeId> right_front;
+  std::optional<CubeId> left_back;
+  std::optional<CubeId> right_back;
+
+  // Corner neighbours
+  std::optional<CubeId> left_bottom_front;
+  std::optional<CubeId> left_bottom_back;
+  std::optional<CubeId> left_top_front;
+  std::optional<CubeId> left_top_back;
+  std::optional<CubeId> right_bottom_front;
+  std::optional<CubeId> right_bottom_back;
+  std::optional<CubeId> right_top_front;
+  std::optional<CubeId> right_top_back;
+};
+
 class World {
   friend class WorldRenderer;
 
 public:
-  static const int32_t chunk_load_distance = 4;
+  static const i32 chunk_load_distance = 4;
 
   struct {
     double gravity = -0.012;
@@ -61,6 +99,8 @@ public:
 
   CubeId get_cube(CubePos cube_pos) const;
 
+  NeigbourCubeIds get_neigbour_ids(CubePos cube_pos, bool edges, bool corners) const;
+
   bool is_solid(CubePos cube_pos) const;
 
   bool has_solid_neigbour(CubePos world_position) const;
@@ -99,7 +139,7 @@ public:
 
   LightLevel get_lightmap(CubePos cube_pos) const;
 
-  const Chunk* get_chunk(ChunkPos chunk_pos) const;
+  Chunk* get_chunk(ChunkPos chunk_pos) const;
 
   void update_light(CubePos cube_pos);
 
@@ -109,9 +149,9 @@ public:
 
   void request_chunk_light_update(ChunkPos chunkchunk_pos);
 
-  std::unordered_map<uint32_t, CubeId> get_neigbours(CubePos _cube_pos, bool edges = false, bool corners = false) const;
+  std::unordered_map<u32, CubeId> get_neigbours(CubePos _cube_pos, bool edges = false, bool corners = false) const;
 
-  std::unordered_map<uint32_t, CubeId> get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges = false, bool corners = false) const;
+  std::unordered_map<u32, CubeId> get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges = false, bool corners = false) const;
 
   bool is_chunk_ready(ChunkPos chunk_pos);
 

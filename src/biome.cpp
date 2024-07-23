@@ -1,5 +1,3 @@
-#pragma once
-
 #include "biome.hpp"
 
 namespace Biomes {

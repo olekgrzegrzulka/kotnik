@@ -1,9 +1,11 @@
-#include <iomanip>
-#include <ios>
+#include <cstdlib>
+#include "cubes.hpp"
 #define GLM_FORCE_RADIANS
 #include "glad/glad.h"
 
 #include <chrono>
+#include <iomanip>
+#include <ios>
 #include <iostream>
 #include <vector>
 #include <GLFW/glfw3.h>
@@ -28,7 +30,7 @@ int main() {
   glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
   glfwMakeContextCurrent(window);
-  glfwSetWindowSizeCallback(window, [](GLFWwindow* window, int width, int height) {
+  glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
   });
   const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -41,40 +43,21 @@ int main() {
   // Configure OpenGL
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glCullFace(GL_BACK);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // Load textures
-  GLuint texture = load_texture("assets/atlas.png");
-  GLuint texture_sampler = create_sampler();
+  Texture atlas_texture{"atlas.png"};
 
-  // Create cube shader program
-  std::string vertexShaderSource = read_file("shaders/cube.vert");
-  std::string fragmentShaderSource = read_file("shaders/cube.frag");
-  GLuint vertexShader = compile_vertex_shader(vertexShaderSource);
-  GLuint fragmentShader = compile_fragment_shader(fragmentShaderSource);
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  glLinkProgram(shaderProgram);
+  Shader cube_shader{"cube"};
 
   CubeIndicatorRenderer::init();
 
-  // Create crosshair shader program
-  GLuint crosshair_vertex = compile_vertex_shader(read_file("shaders/crosshair.vert"));
-  GLuint crosshair_fragment = compile_fragment_shader(read_file("shaders/crosshair.frag"));
-  GLuint crosshair_program = glCreateProgram();
-  glAttachShader(crosshair_program, crosshair_vertex);
-  glAttachShader(crosshair_program, crosshair_fragment);
-  glLinkProgram(crosshair_program);
+  Shader crosshair_shader{"crosshair"};
 
-  // Create crosshair texture and sampler
-  GLuint crosshair_texture = load_texture("assets/crosshair.png");
-  GLuint crosshair_sampler;
-  glCreateSamplers(1, &crosshair_sampler);
-  glSamplerParameteri(crosshair_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(crosshair_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(crosshair_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glSamplerParameteri(crosshair_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  Texture crosshair_texture{"crosshair.png"};
 
   // Create crosshair VAO
   GLuint crosshair_vao;
@@ -107,7 +90,7 @@ int main() {
 
   World world;
   WorldRenderer world_renderer(world);
-  world.add_entity<Player>({1500, 60, 800});
+  world.add_entity<Player>({0, 20, 0});
 
   Input::init(window);
 
@@ -136,9 +119,8 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw cubes
-    glUseProgram(shaderProgram);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glBindSampler(0, texture_sampler);
+    cube_shader.use();
+    atlas_texture.bind(0);
     world_renderer.update(camera_pos, camera_matrix);
 
     // Draw cube indicator
@@ -148,10 +130,9 @@ int main() {
     }
 
     // Draw crosshair
-    glUseProgram(crosshair_program);
+    crosshair_shader.use();
     glBindVertexArray(crosshair_vao);
-    glBindSampler(0, crosshair_sampler);
-    glBindTextureUnit(0, crosshair_texture);
+    crosshair_texture.bind(0);
     glUniform1f(0, aspect_ratio);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -164,11 +145,6 @@ int main() {
     uint16_t delta = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
     usleep(std::max(delta - 16666, 0));
   }
-
-  // Clean up and exit
-  glDeleteProgram(shaderProgram);
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
 
   glfwTerminate();
   return 0;

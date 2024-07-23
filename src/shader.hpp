@@ -1,53 +1,98 @@
 #pragma once
+
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include "common.hpp"
 #include "glad/glad.h"
 
-static std::string read_file(const std::string& filename) {
-  std::ifstream file(filename, std::ios::in);
-
-  if (!file.is_open()) {
-    throw std::runtime_error("Failed to open file '" + filename + "'!");
-  }
-  std::string source;
-  source = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-
-  return source;
-}
-
-static GLuint compile_shader(std::string source, GLint type) {
-  static GLuint shader;
-  shader = glCreateShader(type);
-  const char* test = source.c_str();
-  glShaderSource(shader, 1, &test, nullptr);
-  glCompileShader(shader);
-
-  // Check compilation
-  GLint ok = GL_FALSE;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-  if (ok == GL_FALSE) {
-    GLint maxLength = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-
-    char* infoLog = new char[maxLength];
-    glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
-
-    std::cout << "Shader compilation error:\n";
-    std::cout << infoLog << "\n";
-
-    delete[] infoLog;
-    glDeleteShader(shader);
-    exit(1);
+struct Shader {
+public:
+  Shader(std::string file_name) {
+    vertex_shader = compile_vertex_shader(read_shader_file(file_name + ".vert"));
+    fragment_shader = compile_fragment_shader(read_shader_file(file_name + ".frag"));
+    shader_program = create_shader_program();
   }
 
-  return shader;
-}
+  ~Shader() {
+    if (vertex_shader != 0) {
+      glDeleteShader(vertex_shader);
+    }
 
-static GLuint compile_vertex_shader(std::string source) {
-  return compile_shader(source, GL_VERTEX_SHADER);
-}
+    if (fragment_shader != 0) {
+      glDeleteShader(fragment_shader);
+    }
 
-GLuint compile_fragment_shader(std::string source) {
-  return compile_shader(source, GL_FRAGMENT_SHADER);
-}
+    if (shader_program != 0) {
+      glDeleteProgram(shader_program);
+    }
+  };
+
+  void use() {
+    glUseProgram(shader_program);
+  }
+
+private:
+  std::string read_shader_file(std::string file_name) const {
+    std::ifstream file{"./shaders/" + file_name};
+
+    if (!file.is_open()) {
+      throw std::runtime_error("failed to open shader file " + file_name);
+    }
+
+    std::stringstream file_string;
+    file_string << file.rdbuf();
+
+    return file_string.str();
+  }
+
+  GLuint compile_shader(std::string source_, GLint type) const {
+    GLuint shader;
+    shader = glCreateShader(type);
+    const char* source = source_.c_str();
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+
+    // Check compilation
+    GLint compile_status = GL_FALSE;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
+
+    if (compile_status == GL_FALSE) {
+      GLint maxLength = 0;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+
+      char* infoLog = new char[maxLength];
+      glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
+
+      print("shader compilation error:");
+      print(infoLog);
+
+      delete[] infoLog;
+      throw std::runtime_error("");
+    }
+
+    return shader;
+  }
+
+  GLuint compile_vertex_shader(std::string source) const {
+    return compile_shader(source, GL_VERTEX_SHADER);
+  }
+
+  GLuint compile_fragment_shader(std::string source) const {
+    return compile_shader(source, GL_FRAGMENT_SHADER);
+  }
+
+  GLuint create_shader_program() const {
+    GLuint shader_program_ = glCreateProgram();
+    glAttachShader(shader_program_, vertex_shader);
+    glAttachShader(shader_program_, fragment_shader);
+    glLinkProgram(shader_program_);
+    return shader_program_;
+  }
+
+public:
+  GLuint shader_program{};
+  GLuint vertex_shader{};
+  GLuint fragment_shader{};
+};

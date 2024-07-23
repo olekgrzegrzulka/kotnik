@@ -1,21 +1,15 @@
+#include <memory>
 #include <glm/gtc/type_ptr.hpp>
 #include "common.hpp"
 #include "shader.hpp"
 
 namespace CubeIndicatorRenderer {
-static GLuint cube_indicator_program = 0;
+static std::unique_ptr<Shader> cube_indicator_shader;
 static GLuint cube_indicator_vao = 0;
 static std::vector<glm::vec<3, float>> cube_indicator_vertices;
 
 static void init() {
-  // Create cube indicator shader program
-  GLuint cube_indicator_vertex = compile_vertex_shader(read_file("shaders/cube_indicator.vert"));
-  GLuint cube_indicator_fragment = compile_fragment_shader(read_file("shaders/cube_indicator.frag"));
-  cube_indicator_program = glCreateProgram();
-  glAttachShader(cube_indicator_program, cube_indicator_vertex);
-  glAttachShader(cube_indicator_program, cube_indicator_fragment);
-  glLinkProgram(cube_indicator_program);
-
+  cube_indicator_shader = std::make_unique<Shader>("cube_indicator");
   // Create cube indicator VAO
   glGenVertexArrays(1, &cube_indicator_vao);
   glBindVertexArray(cube_indicator_vao);
@@ -56,7 +50,7 @@ static void init() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 static void draw(WorldPos camera_pos, const glm::mat4& camera_matrix, CubePos cube_indicator_pos) {
-  glUseProgram(cube_indicator_program);
+  cube_indicator_shader->use();
   glBindVertexArray(cube_indicator_vao);
   glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
   glUniform3f(1, (float)(cube_indicator_pos.x - camera_pos.x), (float)(cube_indicator_pos.y - camera_pos.y), (float)(cube_indicator_pos.z - camera_pos.z));

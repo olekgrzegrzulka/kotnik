@@ -8,6 +8,7 @@
 #include <vector>
 #include <stdint.h>
 #include "common.hpp"
+#include "cubes.hpp"
 
 #define CHUNK_SIZE (32)
 #define CHUNK_CUBES (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
@@ -37,15 +38,15 @@ constexpr static size_t local_pos_to_index(LocalPos pos) {
 
 // Returns cube position of given a chunk position and a (not necessarily in chunk bounds) local position
 constexpr static CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos local_pos) {
-  return (chunk_pos * (int32_t)CHUNK_SIZE) + local_pos;
+  return (chunk_pos * (i32)CHUNK_SIZE) + local_pos;
 }
 
 // Returns chunk position that contains the given world position
 constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
   ChunkPos chunk_pos;
-  chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (int32_t)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
-  chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (int32_t)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
-  chunk_pos.z = (cube_pos.z >= 0) ? (cube_pos.z / (int32_t)CHUNK_SIZE) : ((cube_pos.z - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
+  chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (i32)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
+  chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (i32)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
+  chunk_pos.z = (cube_pos.z >= 0) ? (cube_pos.z / (i32)CHUNK_SIZE) : ((cube_pos.z - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
 
   return chunk_pos;
 }
@@ -53,11 +54,11 @@ constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
 // Returns a pair of chunk and local positions of a global cube position
 constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos) {
   ChunkPos chunk_pos;
-  chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (int32_t)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
-  chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (int32_t)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
-  chunk_pos.z = (cube_pos.z >= 0) ? (cube_pos.z / (int32_t)CHUNK_SIZE) : ((cube_pos.z - CHUNK_SIZE + 1) / (int32_t)CHUNK_SIZE);
+  chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (i32)CHUNK_SIZE) : ((cube_pos.x - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
+  chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (i32)CHUNK_SIZE) : ((cube_pos.y - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
+  chunk_pos.z = (cube_pos.z >= 0) ? (cube_pos.z / (i32)CHUNK_SIZE) : ((cube_pos.z - CHUNK_SIZE + 1) / (i32)CHUNK_SIZE);
 
-  LocalPos local_pos = cube_pos - ((int32_t)CHUNK_SIZE * chunk_pos);
+  LocalPos local_pos = cube_pos - ((i32)CHUNK_SIZE * chunk_pos);
   return {chunk_pos, local_pos};
 }
 
@@ -116,6 +117,8 @@ public:
 
   } flags;
 
+  WorldPos get_center_pos() const;
+
   void update_mesh_update_flags(LocalPos local_pos);
 
   std::unordered_map<CubePos, CubeId, Vec3Hasher> neigbour_chunks_cubes_to_set;
@@ -163,8 +166,8 @@ public:
 
   void set_cube(LocalPos local_pos, CubeId cube_id);
   void set_cube_no_lock(LocalPos local_pos, CubeId cube_id);
-  void set_cube_index(uint32_t index, CubeId cube_id);
-  void set_cube_index_no_lock(uint32_t index, CubeId cube_id);
+  void set_cube_index(u32 index, CubeId cube_id);
+  void set_cube_index_no_lock(u32 index, CubeId cube_id);
 
   // Allows changing cubes of different chunks by storing them, for World to set them later.
   void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);

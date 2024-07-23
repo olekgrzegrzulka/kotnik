@@ -2,27 +2,24 @@
 #include <chrono>
 #include <iostream>
 #include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include <stdint.h>
 
-typedef glm::vec<3, int32_t> ChunkPos;
-typedef glm::vec<3, int32_t> CubePos;
-typedef glm::vec<3, int32_t> LocalPos;
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
+
+typedef glm::vec<3, i32> ChunkPos;
+typedef glm::vec<3, i32> CubePos;
+typedef glm::vec<3, i32> LocalPos;
 typedef glm::vec<3, double> WorldPos;
-typedef glm::vec<3, uint8_t> LightLevel;
-
-enum class CubeId : uint16_t {
-  AIR = 0,
-  DIRT,
-  GRASS,
-  STONE,
-  SAND,
-  GRAVEL,
-  WOOD,
-  LEAVES,
-  GRASS_PLANT,
-
-  CUBE_ID_SIZE,
-};
+typedef glm::vec<3, u8> LightLevel;
 
 enum Dir {
   NONE = 0,
@@ -110,7 +107,7 @@ static void print(Arg&& arg) {
 
 template <typename... Args, typename FirstArg>
 static void print(FirstArg&& first_arg, Args&&... args) {
-  std::cout << first_arg << " ";
+  std::cout << first_arg;
   print(args...);
 }
 
@@ -127,6 +124,16 @@ static CubePos floor_position(WorldPos pos) {
       glm::floor(pos.x),
       glm::floor(pos.y),
       glm::floor(pos.z)};
+}
+
+template <typename T>
+static void sort_vector_by_manhattan_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T> to) {
+  using Vec3T = glm::vec<3, T>;
+  std::sort(vector.begin(), vector.end(), [&](const Vec3T a, const Vec3T b) {
+    ChunkPos first = glm::abs(to - a);
+    ChunkPos second = glm::abs(to - b);
+    return first.x + first.y + first.z < second.x + second.y + second.z;
+  });
 }
 
 struct ScopeTimer {

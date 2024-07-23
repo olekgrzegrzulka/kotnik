@@ -42,7 +42,7 @@ bool ChunkMeshWorker::run_job(Chunk* chunk) {
   }
 
   std::thread thread([=, this]() {
-    chunk->renderer->recreate_geometry(this->surrounding_chunks);
+    chunk->renderer->rebuild_mesh(this->surrounding_chunks);
     this->finished = true;
   });
   thread.detach();

@@ -1,26 +1,35 @@
 #pragma once
+
+#include "chunk.hpp"
+#include "glad/glad.h"
+
+#include <cstdlib>
 #include <unordered_set>
 #include <vector>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 #include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "player.hpp"
 #include "world.hpp"
 
+static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector, ChunkPos to) {
+  std::sort(vector.begin(), vector.end(), [&](const Chunk* a, const Chunk* b) {
+    ChunkPos first = glm::abs(to - a->position);
+    ChunkPos second = glm::abs(to - b->position);
+    return first.x + first.y + first.z < second.x + second.y + second.z;
+  });
+}
+
 class WorldRenderer final {
+public:
+  static constexpr bool ambient_occlusion_enabled = true;
+
+private:
   World& world;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
   std::vector<ChunkMeshWorker*> chunk_mesh_workers;
-
-  template <typename T>
-  void sort_vector_by_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T> pos) {
-    using Vec3T = glm::vec<3, T>;
-    std::sort(vector.begin(), vector.end(), [&](const Vec3T a, const Vec3T b) {
-      Vec3T first = pos - a;
-      Vec3T second = pos - b;
-      return std::abs(first.x) + std::abs(first.y) + std::abs(first.z) < std::abs(second.x) + std::abs(second.y) + std::abs(second.z);
-    });
-  }
 
 public:
   WorldRenderer(World& _world) : world(_world) {
@@ -41,6 +50,12 @@ public:
       if (worker->try_collecting()) {
       }
     }
+
+    static constexpr glm::vec3 light = {0.41f, 0.82f, 0.41f};
+    /* matrix     */ glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
+    /* light dir  */ glUniform3f(1, light.x, light.y, light.z);
+    /* camera pos */ glUniform3f(2, camera_pos.x, camera_pos.y, camera_pos.z);
+    /* alpha      */ glUniform1f(3, 1.0);
 
     for (auto& [chunk_pos, chunk] : world.chunks) {
       if (chunk->renderer->can_swap_buffers) {
@@ -84,7 +99,22 @@ public:
       }
 
       if (chunk->flags.ready) {
-        chunk->renderer->draw(camera_pos, camera_matrix);
+        chunk->renderer->draw();
+      }
+    }
+
+    std::vector<Chunk*> chunks_sorted_by_distance_to_player;
+    for (auto& [chunk_pos, chunk] : world.chunks) {
+      chunks_sorted_by_distance_to_player.emplace_back(chunk.get());
+    }
+    ChunkPos player_chunk_pos = world.player->world_pos / static_cast<double>(CHUNK_SIZE);
+    sort_chunk_vector_by_manhattan_distance(chunks_sorted_by_distance_to_player, player_chunk_pos);
+
+    /* alpha      */ glUniform1f(3, 0.8);
+    for (auto it = chunks_sorted_by_distance_to_player.rbegin(); it != chunks_sorted_by_distance_to_player.rend(); ++it) {
+      Chunk* chunk = *it;
+      if (chunk->flags.ready) {
+        chunk->renderer->draw_translucent();
       }
     }
 
@@ -94,7 +124,7 @@ public:
     for (auto x : chunks_awaiting_mesh_update) {
       chunks_awaiting_mesh_update_sorted_by_distance.emplace_back(x);
     }
-    sort_vector_by_distance(chunks_awaiting_mesh_update_sorted_by_distance, (world.player) ? world_pos_to_chunk_pos(world.player->get_world_pos()) : ChunkPos{0, 0, 0});
+    // sort_vector_by_distance(chunks_awaiting_mesh_update_sorted_by_distance, (world.player) ? world_pos_to_chunk_pos(world.player->get_world_pos()) : ChunkPos{0, 0, 0});
 
     for (const ChunkPos chunk_pos : chunks_awaiting_mesh_update_sorted_by_distance) {
       const Chunk* chunk = world.get_chunk(chunk_pos);

@@ -17,7 +17,7 @@ const BlendedBiome BiomeMap::create_blended_biome(float humidity, float temperat
         std::abs(temperature - biome_info.temperature));
     distance /= biome_info.power;
 
-    float strength = 1.0f / std::pow((distance + 0.001f), 3.0f);
+    float strength = 1.0f / std::pow((distance + 0.001f), 5.0f);
 
     if (strength > strongest_biome_strength) {
       strongest_biome_strength = strength;

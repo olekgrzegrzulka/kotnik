@@ -2,8 +2,7 @@
 #include <array>
 #include <atomic>
 #include <vector>
-#include <stdint.h>
-#include "cubes.hpp" // for Vertex
+#include "cubes.hpp"
 
 class Chunk;
 
@@ -13,17 +12,23 @@ public:
 
   int drawing_index = 0;
   int building_index = 1;
-  std::array<std::vector<SparseVertex>, 2> vertices{};
-  std::array<uint32_t, 2> vbos{};
-  std::array<uint32_t, 2> vaos{};
+
+  std::array<std::vector<cubes::CompactVertex>, 2> vertices{};
+  std::array<std::vector<cubes::CompactVertex>, 2> vertices_translucent{};
+
+  std::array<u32, 2> vbos{};
+  std::array<u32, 2> vaos{};
+
+  std::array<u32, 2> vbos_translucent{};
+  std::array<u32, 2> vaos_translucent{};
 
   std::atomic<bool> can_swap_buffers;
   std::atomic<bool> is_running;
 
-  void recreate_geometry(std::vector<Chunk*> chunk_list);
-  void swap_buffers();
-  void draw(WorldPos camera_pos, const glm::mat4& camera_matrix) const;
-
 public:
+  void rebuild_mesh(std::vector<Chunk*> chunk_list);
+  void swap_buffers();
+  void draw() const;
+  void draw_translucent() const;
   ChunkRenderer(Chunk& _chunk);
 };

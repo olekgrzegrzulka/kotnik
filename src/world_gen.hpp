@@ -11,13 +11,14 @@ class World;
 
 class WorldGen {
 public:
-  WorldGen(World& w);
+  WorldGen(World& w, i32 seed);
 
   void generate_chunk(Chunk* chunk) const;
 
   Biomes::BlendedBiome get_blended_biome(WorldPos world_pos) const;
   bool is_ground(WorldPos pos, const Biomes::BlendedBiome& blended_biome) const;
   bool is_ground(WorldPos pos) const;
+  float get_cube_rng(WorldPos pos) const;
 
 private:
   World& world;

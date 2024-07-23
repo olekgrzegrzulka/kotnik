@@ -1,46 +1,67 @@
 #pragma once
 #define STB_IMAGE_IMPLEMENTATION
-#include <iostream>
+
 #include <stdexcept>
+#include "common.hpp"
 #include "glad/glad.h"
 #include "stb_image.h"
 
-GLuint load_texture(const char* path) {
-  int width, height, channels;
-  stbi_uc* data = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
-
-  if (data == nullptr) {
-    throw std::runtime_error("Failed to load texture" + std::string(path));
+class Texture {
+public:
+  Texture(std::string file_name) {
+    std::string file_path = "./assets/" + file_name;
+    texture = Texture::load_texture(file_path);
+    sampler = Texture::create_sampler();
   }
 
-  GLuint texture;
-  glGenTextures(1, &texture);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  void bind(u32 slot) {
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindSampler(slot, sampler);
+  }
 
-  glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, width, height);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+private:
+  static GLuint load_texture(std::string file_path) {
+    int width, height, channels;
+    stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-  glGenerateMipmap(GL_TEXTURE_2D);
+    if (!data) {
+      throw std::runtime_error("Failed to load texture" + file_path);
+    }
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    GLuint texture_ = 0;
 
-  glBindTexture(GL_TEXTURE_2D, 0);
-  stbi_image_free(data);
+    glGenTextures(1, &texture_);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_);
 
-  return texture;
-}
+    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, width, height);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-GLuint create_sampler() {
-  GLuint texture_sampler;
-  glCreateSamplers(1, &texture_sampler);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-  glSamplerParameteri(texture_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
-  return texture_sampler;
-}
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    stbi_image_free(data);
+
+    return texture_;
+  }
+
+  GLuint create_sampler() const {
+    GLuint sampler_ = 0;
+    glCreateSamplers(1, &sampler_);
+    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glSamplerParameteri(sampler_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glSamplerParameteri(sampler_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    return sampler_;
+  }
+
+private:
+  GLuint texture = 0;
+  GLuint sampler = 0;
+};

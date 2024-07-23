@@ -13,7 +13,7 @@
 #include "world_gen.hpp"
 
 World::World() {
-  world_gen = std::make_unique<WorldGen>(*this);
+  world_gen = std::make_unique<WorldGen>(*this, 18);
 
   for (size_t i = 0; i < 2; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker(world_gen));
@@ -52,6 +52,63 @@ CubeId World::get_cube(CubePos cube_pos) const {
   const Chunk* chunk = get_chunk(chunk_pos);
   if (!chunk) { return CubeId::AIR; }
   return ((Chunk*)chunk)->get_cube(local_pos);
+}
+
+NeigbourCubeIds World::get_neigbour_ids(CubePos cube_pos, bool edges, bool corners) const {
+
+  auto get_neigbour_ = [&](CubePos offset_pos) -> CubeId {
+    auto [chunk_pos, local_pos] = cube_to_local(cube_pos + offset_pos);
+
+    Chunk* c = get_chunk(chunk_pos);
+
+    if (!c) return CubeId::AIR;
+
+    return c->get_cube(local_pos);
+  };
+
+  NeigbourCubeIds neigbours{};
+
+  neigbours.center = get_neigbour_({0, 0, 0});
+
+  // Straight neigbours
+  neigbours.left = get_neigbour_({-1, 0, 0});
+  neigbours.right = get_neigbour_({+1, 0, 0});
+  neigbours.bottom = get_neigbour_({0, -1, 0});
+  neigbours.top = get_neigbour_({0, +1, 0});
+  neigbours.front = get_neigbour_({0, 0, -1});
+  neigbours.back = get_neigbour_({0, 0, +1});
+
+  // Edge neighbours
+  if (edges) {
+    neigbours.left_bottom = get_neigbour_({-1, -1, 0});
+    neigbours.right_bottom = get_neigbour_({+1, -1, 0});
+    neigbours.front_bottom = get_neigbour_({0, -1, -1});
+    neigbours.back_bottom = get_neigbour_({0, -1, +1});
+
+    neigbours.left_top = get_neigbour_({-1, +1, 0});
+    neigbours.right_top = get_neigbour_({+1, +1, 0});
+    neigbours.front_top = get_neigbour_({0, +1, -1});
+    neigbours.back_top = get_neigbour_({0, +1, +1});
+
+    neigbours.left_front = get_neigbour_({-1, 0, -1});
+    neigbours.right_front = get_neigbour_({+1, 0, -1});
+    neigbours.left_back = get_neigbour_({-1, 0, +1});
+    neigbours.right_back = get_neigbour_({+1, 0, +1});
+  }
+
+  // Corner neighbours
+  if (corners) {
+    neigbours.left_bottom_front = get_neigbour_({-1, -1, -1});
+    neigbours.left_bottom_back = get_neigbour_({-1, -1, +1});
+    neigbours.left_top_front = get_neigbour_({-1, +1, -1});
+    neigbours.left_top_back = get_neigbour_({-1, +1, +1});
+    neigbours.right_bottom_front = get_neigbour_({+1, -1, -1});
+    neigbours.right_bottom_back = get_neigbour_({+1, -1, +1});
+    neigbours.right_top_front = get_neigbour_({+1, +1, -1});
+    neigbours.right_top_back = get_neigbour_({+1, +1, +1});
+  }
+
+  return neigbours;
 }
 
 void World::create_new_chunk(ChunkPos chunk_pos) {
@@ -186,7 +243,7 @@ std::unordered_set<CubePos, Vec3Hasher> World::raycast_get_overlapping_cubes(Wor
   return set;
 }
 
-const Chunk* World::get_chunk(ChunkPos chunk_pos) const {
+Chunk* World::get_chunk(ChunkPos chunk_pos) const {
   const auto& chunk_it = chunks.find(chunk_pos);
   if (chunk_it == chunks.end()) {
     return nullptr;
@@ -276,8 +333,8 @@ void World::request_chunk_light_update(ChunkPos chunk_pos) {
   lightning_worker->add_to_queue(chunk);
 }
 
-std::unordered_map<uint32_t, CubeId> World::get_neigbours(CubePos _cube_pos, bool edges, bool corners) const {
-  std::unordered_map<uint32_t, CubeId> map;
+std::unordered_map<u32, CubeId> World::get_neigbours(CubePos _cube_pos, bool edges, bool corners) const {
+  std::unordered_map<u32, CubeId> map;
 
   for (int x = -1; x <= 1; x += 1) {
     for (int y = -1; y <= 1; y += 1) {
@@ -290,7 +347,7 @@ std::unordered_map<uint32_t, CubeId> World::get_neigbours(CubePos _cube_pos, boo
 
         LocalPos cube_pos_neigbour = _cube_pos + LocalPos{x, y, z};
 
-        uint32_t dir = 0;
+        u32 dir = 0;
         if (x == -1) { dir += Dir::LEFT; }
         if (x == 1) { dir += Dir::RIGHT; }
         if (y == -1) { dir += Dir::BOTTOM; }
@@ -312,8 +369,8 @@ bool World::is_chunk_ready(ChunkPos chunk_pos) {
   return chunk->flags.ready;
 }
 
-std::unordered_map<uint32_t, CubeId> World::get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges, bool corners) const {
-  std::unordered_map<uint32_t, CubeId> map;
+std::unordered_map<u32, CubeId> World::get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges, bool corners) const {
+  std::unordered_map<u32, CubeId> map;
 
   auto _get_neigbour = [&](int x, int y, int z) {
     if (!corners && x != 0 && y != 0 && z != 0) { return; }
@@ -323,7 +380,7 @@ std::unordered_map<uint32_t, CubeId> World::get_neigbours(const Chunk& chunk, Lo
       if (y != 0 && z != 0 && x == 0) { return; }
     }
 
-    uint32_t dir = 0;
+    u32 dir = 0;
     if (x == -1) { dir += Dir::LEFT; }
     if (x == 1) { dir += Dir::RIGHT; }
     if (y == -1) { dir += Dir::BOTTOM; }
@@ -371,16 +428,6 @@ std::unordered_map<uint32_t, CubeId> World::get_neigbours(const Chunk& chunk, Lo
   _get_neigbour(1, 1, 1);
 
   return map;
-}
-
-template <typename T>
-void sort_vector_by_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T> pos) {
-  using Vec3T = glm::vec<3, T>;
-  std::sort(vector.begin(), vector.end(), [&](const Vec3T a, const Vec3T b) {
-    Vec3T first = pos - a;
-    Vec3T second = pos - b;
-    return std::abs(first.x) + std::abs(first.y) + std::abs(first.z) < std::abs(second.x) + std::abs(second.y) + std::abs(second.z);
-  });
 }
 
 void World::update() {
@@ -467,7 +514,7 @@ void World::update() {
     chunk->update();
   }
 
-  sort_vector_by_distance(chunks_not_ready, world_pos_to_chunk_pos(player->world_pos));
+  sort_vector_by_manhattan_distance(chunks_not_ready, world_pos_to_chunk_pos(player->world_pos));
 
   size_t i = 0;
   for (const ChunkPos chunk_pos : chunks_not_ready) {
@@ -498,8 +545,8 @@ std::vector<CubePos> World::aabb_get_overlapping_cubes(AABB aabb, WorldPos world
   return overlapping_cubes;
 }
 
-static constexpr AABB full_cube_aabb = AABB{.half_extents = {0.5, 0.5, 0.5}, .offset = {0.0, 0.0, 0.0}};
 bool World::aabb_is_overlapping_cube(AABB aabb, WorldPos world_pos, CubePos cube_pos) {
+  static constexpr AABB full_cube_aabb = AABB{.half_extents = {0.5, 0.5, 0.5}, .offset = {0.0, 0.0, 0.0}};
   return AABB::test(
       aabb, world_pos,
       full_cube_aabb, WorldPos{cube_pos} + WorldPos{0.5, 0.5, 0.5});
@@ -510,9 +557,9 @@ std::vector<CubePos> World::aabb_get_solid_cubes(AABB aabb, WorldPos world_pos) 
   std::vector<CubePos> overlapping_cubes = aabb_get_overlapping_cubes(aabb, world_pos);
 
   for (auto cube_pos : overlapping_cubes) {
-    auto properties = cube_properties.at(static_cast<size_t>(get_cube(cube_pos)));
-    bool collider_overlapping = std::any_of(properties.collider_aabb.cbegin(), properties.collider_aabb.cend(), [&](auto& cube_aabb) {
-      return AABB::test(aabb, world_pos, cube_aabb, WorldPos{cube_pos} + WorldPos{0.5, 0.5, 0.5});
+    auto cube = cubes::get(get_cube(cube_pos));
+    bool collider_overlapping = std::any_of(cube.collider_aabbs.begin(), cube.collider_aabbs.end(), [&](auto& cube_aabb) {
+      return AABB::test(aabb, world_pos, cube_aabb, WorldPos{cube_pos} /* + WorldPos{0.5, 0.5, 0.5} */);
     });
     if (collider_overlapping) {
       solid_cubes.emplace_back(cube_pos);

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <string>
 #include "common.hpp"
+#include "cubes.hpp"
 
 namespace Biomes {
 
@@ -15,8 +15,10 @@ struct Biome {
   virtual constexpr float get_noise_spiky_multiplier() const = 0;
   virtual constexpr float get_noise_3d_multiplier() const = 0;
 
-  virtual constexpr std::optional<int32_t> get_water_level() const = 0;
-  virtual constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const = 0;
+  virtual constexpr std::optional<i32> get_water_level() const = 0;
+  virtual constexpr CubeId get_ground_cube(i32 y, i32 depth, float rng) const = 0;
+  virtual constexpr CubeId get_foliage_cube(i32 y, float rng) const = 0;
+  virtual constexpr CubeId get_air_cube(i32 y, float rng) const = 0;
 
   virtual ~Biome() = default;
 };
@@ -37,19 +39,28 @@ struct BiomeFlatlands final : public Biome {
   constexpr float
   get_noise_3d_multiplier() const override { return 2.0f; }
 
-  constexpr std::optional<int32_t>
+  constexpr std::optional<i32>
   get_water_level() const override { return {}; }
 
-  constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) const override {
     if (depth >= 4) {
       return CubeId::STONE;
     } else if (depth >= 1) {
       return CubeId::DIRT;
     } else if (depth == 0) {
       return CubeId::GRASS;
-    } else if (depth == -1 && rng > 0.7f) {
+    }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube([[maybe_unused]] i32 y, float rng) const override {
+    if (rng > 0.7f) {
       return CubeId::GRASS_PLANT;
     }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube([[maybe_unused]] i32 y, [[maybe_unused]] float rng) const override {
     return CubeId::AIR;
   }
 };
@@ -70,15 +81,23 @@ struct BiomeDesert final : public Biome {
   constexpr float
   get_noise_3d_multiplier() const override { return 3.0f; }
 
-  constexpr std::optional<int32_t>
+  constexpr std::optional<i32>
   get_water_level() const override { return {}; }
 
-  constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube(i32, i32 depth, float) const override {
     if (depth >= 4) {
       return CubeId::STONE;
     } else if (depth >= 0) {
       return CubeId::SAND;
     }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube(i32, float) const override {
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube(i32, float) const override {
     return CubeId::AIR;
   }
 };
@@ -97,21 +116,30 @@ struct BiomeHighlands final : public Biome {
   get_noise_spiky_multiplier() const override { return 0.0f; }
 
   constexpr float
-  get_noise_3d_multiplier() const override { return 60.0f; }
+  get_noise_3d_multiplier() const override { return 40.0f; }
 
-  constexpr std::optional<int32_t>
+  constexpr std::optional<i32>
   get_water_level() const override { return {}; }
 
-  constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube(i32, i32 depth, float) const override {
     if (depth >= 4) {
       return CubeId::STONE;
     } else if (depth >= 1) {
       return CubeId::DIRT;
     } else if (depth == 0) {
       return CubeId::GRASS;
-    } else if (depth == -1 && rng > 0.7f) {
+    }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube(i32, float rng) const override {
+    if (rng > 0.7f) {
       return CubeId::GRASS_PLANT;
     }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube(i32, float) const override {
     return CubeId::AIR;
   }
 };
@@ -124,27 +152,36 @@ struct BiomeHillylands final : public Biome {
   get_base_height() const override { return 0.0f; }
 
   constexpr float
-  get_noise_height_multiplier() const override { return 25.0f; }
+  get_noise_height_multiplier() const override { return 20.0f; }
 
   constexpr float
   get_noise_spiky_multiplier() const override { return 0.0f; }
 
   constexpr float
-  get_noise_3d_multiplier() const override { return 12.0f; }
+  get_noise_3d_multiplier() const override { return 10.0f; }
 
-  constexpr std::optional<int32_t>
+  constexpr std::optional<i32>
   get_water_level() const override { return {}; }
 
-  constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube(i32, i32 depth, float) const override {
     if (depth >= 4) {
       return CubeId::STONE;
     } else if (depth >= 1) {
       return CubeId::DIRT;
     } else if (depth == 0) {
       return CubeId::GRASS;
-    } else if (depth == -1 && rng > 0.7f) {
+    }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube(i32, float rng) const override {
+    if (rng > 0.7f) {
       return CubeId::GRASS_PLANT;
     }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube(i32, float) const override {
     return CubeId::AIR;
   }
 };
@@ -165,15 +202,23 @@ struct BiomeOcean final : public Biome {
   constexpr float
   get_noise_3d_multiplier() const override { return 1.0f; }
 
-  constexpr std::optional<int32_t>
+  constexpr std::optional<i32>
   get_water_level() const override { return {}; }
 
-  constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube(i32, i32 depth, float) const override {
     if (depth >= 4) {
       return CubeId::STONE;
     } else if (depth >= 0) {
       return CubeId::SAND;
     }
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube(i32, float) const override {
+    return CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube(i32, float) const override {
     return CubeId::AIR;
   }
 };
@@ -191,24 +236,32 @@ struct BlendedBiome final : public Biome {
 
   const Biome* strongest_biome;
 
-  virtual constexpr std::string get_name() const override {
+  constexpr std::string get_name() const override {
     return strongest_biome ? (strongest_biome->get_name()) : "";
   }
 
-  virtual constexpr float get_base_height() const override { return base_height; }
+  constexpr float get_base_height() const override { return base_height; }
 
-  virtual constexpr float get_noise_height_multiplier() const override { return noise_height_multiplier; }
+  constexpr float get_noise_height_multiplier() const override { return noise_height_multiplier; }
 
-  virtual constexpr float get_noise_spiky_multiplier() const override { return noise_spiky_multiplier; }
+  constexpr float get_noise_spiky_multiplier() const override { return noise_spiky_multiplier; }
 
-  virtual constexpr float get_noise_3d_multiplier() const override { return noise_3d_multiplier; }
+  constexpr float get_noise_3d_multiplier() const override { return noise_3d_multiplier; }
 
-  virtual constexpr std::optional<int32_t> get_water_level() const override {
-    return (strongest_biome) ? (strongest_biome->get_water_level()) : (std::optional<int32_t>{});
+  constexpr std::optional<i32> get_water_level() const override {
+    return (strongest_biome) ? (strongest_biome->get_water_level()) : (std::optional<i32>{});
   }
 
-  virtual constexpr CubeId get_ground_cube(int32_t y, int32_t depth, float rng) const override {
+  constexpr CubeId get_ground_cube(i32 y, i32 depth, float rng) const override {
     return (strongest_biome) ? (strongest_biome->get_ground_cube(y, depth, rng)) : CubeId::AIR;
+  }
+
+  constexpr CubeId get_foliage_cube(i32 y, float rng) const override {
+    return (strongest_biome) ? (strongest_biome->get_foliage_cube(y, rng)) : CubeId::AIR;
+  }
+
+  constexpr CubeId get_air_cube(i32 y, float rng) const override {
+    return (strongest_biome) ? (strongest_biome->get_air_cube(y, rng)) : CubeId::AIR;
   }
 
 private:

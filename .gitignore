@@ -38,3 +38,7 @@ compile_commands.json
 # IDE
 .idea
 .vscode
+
+# Project-specific
+kotnik
+ideas.txt

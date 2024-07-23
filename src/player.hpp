@@ -240,8 +240,8 @@ public:
 
     auto walking_vector = (get_walking_dir() * walking_speed);
 
-    velocity.x = std::lerp(velocity.x, walking_vector.x, 0.25);
-    velocity.z = std::lerp(velocity.z, walking_vector.z, 0.25);
+    velocity.x = std::lerp(velocity.x, walking_vector.x, 0.2);
+    velocity.z = std::lerp(velocity.z, walking_vector.z, 0.2);
 
     if (glm::length(walking_vector) == 0.0) {
       if (std::abs(velocity.x) < 0.0001) {
