@@ -238,6 +238,7 @@ public:
   void update_velocity() {
     const double walking_speed = (is_flying) ? 0.5 : 0.1;
     static const double jump_power = 0.18;
+    static int jump_delay = 0;
 
     auto walking_vector = (get_walking_dir() * walking_speed);
 
@@ -258,7 +259,12 @@ public:
       velocity.y *= 0.92;
     } else {
       if (velocity.y == 0.0 && world.aabb_get_solid_cubes(aabb_ground, world_pos).size() > 0) {
-        velocity.y += jump_power * (input_held("ascend"));
+        if (jump_delay > 0) { jump_delay -= 1; }
+
+        if (input_held("ascend") && jump_delay == 0) {
+          velocity.y += jump_power;
+          jump_delay = 2;
+        }
       }
       if (!is_flying) { velocity.y += world.physical_properties.gravity; }
       velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
