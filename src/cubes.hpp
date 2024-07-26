@@ -7,8 +7,6 @@
 
 struct NeigbourCubeIds;
 
-#define ATLAS_SIZE (16)
-
 enum class CubeId : u16 {
   AIR = 0,
   DIRT,

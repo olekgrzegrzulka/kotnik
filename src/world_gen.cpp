@@ -1,49 +1,91 @@
 #include "world_gen.hpp"
 #include <algorithm>
+#include <array>
 #include <cstdlib>
+#include <optional>
+#include <vector>
 #include "biome.hpp"
 #include "biome_map.hpp"
 #include "chunk.hpp"
 #include "common.hpp"
+#include "cubes.hpp"
 #include "world.hpp"
-
-using Biomes::BlendedBiome;
 
 struct ChunkGenArray {
 public:
-  static constexpr u32 lip_negative_x = 0;
-  static constexpr u32 lip_positive_x = 0;
-
-  static constexpr u32 lip_negative_y = 1;
-  static constexpr u32 lip_positive_y = 4;
-
-  static constexpr u32 lip_negative_z = 0;
-  static constexpr u32 lip_positive_z = 0;
+  static constexpr i32 lip_negative_y = 1;
+  static constexpr i32 lip_positive_y = 4;
 
   struct CubeData {
     bool is_solid;
     float rng;
   };
 
-  ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
-    begin = chunk_pos * CHUNK_SIZE - CubePos{lip_negative_x, lip_negative_y, lip_negative_z};
-    end = chunk_pos * CHUNK_SIZE + CubePos{CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1} + CubePos{lip_positive_x, lip_positive_y, lip_positive_z};
+  // Used for lerping biome samples across chunk to reduce jagginess
+  struct SmoothBiomeGrid {
+    // (1 + biome_samples_subdivisions) ^ 2 samples will be used
+    static constexpr size_t biome_samples_subdivisions = 2;
 
-    static constexpr size_t array_size = ((CHUNK_SIZE + lip_negative_x + lip_positive_x) *
+    static constexpr size_t biome_sample_step_size = CHUNK_SIZE >> biome_samples_subdivisions;
+    static constexpr size_t biome_sample_grid_extents = (CHUNK_SIZE / biome_sample_step_size) + 1;
+    static_assert(biome_sample_step_size >= 1);
+
+    SmoothBiomeGrid(const WorldGen& world_gen, CubePos begin) {
+      for (i32 z = 0; z < biome_sample_grid_extents; z += 1) {
+        for (i32 x = 0; x < biome_sample_grid_extents; x += 1) {
+          data[x + z * biome_sample_grid_extents] = world_gen.get_blended_biome(begin + CubePos{x * biome_sample_step_size, 0, z * biome_sample_step_size});
+        }
+      }
+    }
+
+    biomes::Biome get_biome(i32 x_local, i32 z_local) {
+      float coefficient_x = (float)(x_local % biome_sample_step_size) / (float)(biome_sample_step_size);
+      float coefficient_z = (float)(z_local % (biome_sample_step_size)) / (float)(biome_sample_step_size);
+
+      int biome_grid_x = x_local / biome_sample_step_size;
+      int biome_grid_z = z_local / biome_sample_step_size;
+
+      size_t i_front_left = biome_grid_x + biome_grid_z * biome_sample_grid_extents;
+      size_t i_front_right = biome_grid_x + 1 + biome_grid_z * biome_sample_grid_extents;
+      size_t i_back_left = biome_grid_x + (biome_grid_z + 1) * biome_sample_grid_extents;
+      size_t i_back_right = biome_grid_x + 1 + (biome_grid_z + 1) * biome_sample_grid_extents;
+
+      biomes::Biome blended_biome_front = biomes::biome_lerp(data[i_front_left], data[i_front_right], coefficient_x);
+      biomes::Biome blended_biome_back = biomes::biome_lerp(data[i_back_left], data[i_back_right], coefficient_x);
+
+      return biomes::biome_lerp(blended_biome_front, blended_biome_back, coefficient_z);
+    }
+
+    std::array<biomes::Biome, biome_sample_grid_extents * biome_sample_grid_extents> data;
+  };
+
+  ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
+    using Biome = biomes::Biome;
+    begin = chunk_pos * CHUNK_SIZE - CubePos{0, lip_negative_y, 0};
+    end = chunk_pos * CHUNK_SIZE + CubePos{CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1} + CubePos{0, lip_positive_y, 0};
+
+    static constexpr size_t array_size = ((CHUNK_SIZE) *
                                           (CHUNK_SIZE + lip_negative_y + lip_positive_y) *
-                                          (CHUNK_SIZE + lip_negative_z + lip_positive_z));
+                                          (CHUNK_SIZE));
 
     data.resize(array_size);
 
-    for (i32 x_local = -lip_negative_x; x_local < (i32)(CHUNK_SIZE + lip_positive_x); x_local += 1) {
-      for (i32 z_local = -lip_negative_z; z_local < (i32)(CHUNK_SIZE + lip_positive_z); z_local += 1) {
-        LocalPos local_pos = {x_local, 0, z_local};
-        WorldPos world_pos = begin + local_pos;
+    SmoothBiomeGrid biome_grid(wg, begin);
 
-        auto blended_biome = world_gen.get_blended_biome(world_pos);
+    // Generate the chunk in checkerboard pattern, which will be fixed later
+    // This will reduce noise function calls
+    for (i32 x_local = 0; x_local < (i32)(CHUNK_SIZE); x_local += 1) {
+      for (i32 z_local = 0; z_local < (i32)(CHUNK_SIZE); z_local += 1) {
+
+        Biome blended_biome = biome_grid.get_biome(x_local, z_local);
 
         for (i32 y_local = -lip_negative_y; y_local < (i32)(CHUNK_SIZE + lip_positive_y); y_local += 1) {
-          local_pos.y = y_local;
+          LocalPos local_pos = {x_local, y_local, z_local};
+          WorldPos world_pos = begin + local_pos;
+
+          // Checkerboard
+          if ((x_local + y_local + z_local) % 2 == 1) { continue; }
+
           world_pos.y = begin.y + local_pos.y;
           size_t i = get_index(local_pos);
           assert(local_pos == index_to_local_pos(i));
@@ -54,33 +96,75 @@ public:
         }
       }
     }
-  }
 
+    // Fix the skipped cubes in checkerboard generation
+    auto data_uncheckered = data;
+
+    for (i32 x_local = 0; x_local < (i32)(CHUNK_SIZE); x_local += 1) {
+      for (i32 z_local = 0; z_local < (i32)(CHUNK_SIZE); z_local += 1) {
+        for (i32 y_local = -lip_negative_y; y_local < (i32)(CHUNK_SIZE + lip_positive_y); y_local += 1) {
+          LocalPos local_pos = {x_local, y_local, z_local};
+
+          // Alternate checkerboard
+          if ((x_local + y_local + z_local) % 2 == 0) { continue; }
+
+          size_t i = get_index(local_pos);
+
+          i32 neigbour_count_any = 0;
+          i32 neigbour_count_solid = 0;
+
+          static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
+          for (LocalPos o : offsets) {
+            auto c = get_cube_info_or_empty(local_pos + LocalPos{o.x, o.y, o.z});
+            if (!c.has_value()) { continue; }
+            neigbour_count_any += 1;
+            neigbour_count_solid += (int)c->is_solid;
+          }
+
+          float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
+
+          if (occlusion >= 0.5f) {
+            data_uncheckered[i].is_solid = true;
+          }
+        }
+      }
+    }
+
+    data = data_uncheckered;
+  }
   CubeData get_cube_info(LocalPos local_pos) {
     size_t index = get_index(local_pos);
     assert(index < data.size());
     return data.at(index);
   }
 
+  std::optional<CubeData> get_cube_info_or_empty(LocalPos local_pos) {
+    size_t index = get_index(local_pos);
+    if (index >= data.size()) {
+      return std::nullopt;
+    }
+    return data.at(index);
+  }
+
   size_t get_index(LocalPos local_pos) {
     size_t index = 0;
-    index += local_pos.x + lip_negative_x;
-    index += (CHUNK_SIZE + lip_negative_x + lip_positive_x) * (local_pos.y + lip_negative_y);
-    index += (CHUNK_SIZE + lip_negative_x + lip_positive_x) * (CHUNK_SIZE + lip_negative_y + lip_positive_y) * (local_pos.z + lip_negative_z);
+    index += local_pos.x + 0;
+    index += (CHUNK_SIZE + 0 + 0) * (local_pos.y + lip_negative_y);
+    index += (CHUNK_SIZE + 0 + 0) * (CHUNK_SIZE + lip_negative_y + lip_positive_y) * (local_pos.z + 0);
 
     return index;
   }
 
   LocalPos index_to_local_pos(size_t index) {
     LocalPos local_pos;
-    local_pos.z = (index / ((CHUNK_SIZE + lip_negative_x + lip_positive_x) * (CHUNK_SIZE + lip_negative_y + lip_positive_y))) % (CHUNK_SIZE + lip_negative_z + lip_positive_z);
-    local_pos.z -= lip_negative_z;
+    local_pos.z = (index / ((CHUNK_SIZE + 0 + 0) * (CHUNK_SIZE + lip_negative_y + lip_positive_y))) % (CHUNK_SIZE + 0 + 0);
+    local_pos.z -= 0;
 
-    local_pos.y = (index / ((CHUNK_SIZE + lip_negative_x + lip_positive_x))) % (CHUNK_SIZE + lip_negative_y + lip_positive_y);
+    local_pos.y = (index / ((CHUNK_SIZE + 0 + 0))) % (CHUNK_SIZE + lip_negative_y + lip_positive_y);
     local_pos.y -= lip_negative_y;
 
-    local_pos.x = (index) % (CHUNK_SIZE + lip_negative_x + lip_positive_x);
-    local_pos.x -= lip_negative_x;
+    local_pos.x = (index) % (CHUNK_SIZE + 0 + 0);
+    local_pos.x -= 0;
 
     return local_pos;
   }
@@ -102,7 +186,7 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_heightmap.SetFractalLacunarity(2.57f);
 
   noise_3d.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_3d.SetFrequency(0.00311f);
+  noise_3d.SetFrequency(0.00191f);
   noise_3d.SetSeed(seed);
   noise_3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_3d.SetFractalOctaves(3);
@@ -113,19 +197,19 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
 
   noise_humidity.SetSeed(seed + 1);
   noise_humidity.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_humidity.SetFrequency(0.00217f);
+  noise_humidity.SetFrequency(0.00244f);
   noise_humidity.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
-  noise_humidity.SetFractalOctaves(3);
-  noise_humidity.SetFractalLacunarity(2.65f);
-  noise_humidity.SetFractalGain(0.418f);
+  noise_humidity.SetFractalOctaves(4);
+  noise_humidity.SetFractalLacunarity(2.2f);
+  noise_humidity.SetFractalGain(0.4f);
 
   noise_temperature.SetSeed(seed + 2);
   noise_temperature.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
   noise_temperature.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
-  noise_temperature.SetFrequency(0.00217f);
-  noise_temperature.SetFractalOctaves(3);
-  noise_temperature.SetFractalLacunarity(3.15f);
-  noise_temperature.SetFractalGain(0.418f);
+  noise_temperature.SetFrequency(0.00244f);
+  noise_temperature.SetFractalOctaves(4);
+  noise_temperature.SetFractalLacunarity(2.2f);
+  noise_temperature.SetFractalGain(0.4f);
 
   noise_rng.SetSeed(seed + 3);
   noise_rng.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
@@ -134,24 +218,23 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_rng.SetFractalOctaves(3);
 }
 
-BlendedBiome WorldGen::get_blended_biome(WorldPos world_pos) const {
+biomes::Biome WorldGen::get_blended_biome(WorldPos world_pos) const {
   float humidity = noise_humidity.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f;
   humidity = std::clamp(humidity, 0.0f, 1.0f);
 
   float temperature = noise_temperature.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f;
   temperature = std::clamp(temperature, 0.0f, 1.0f);
 
-  auto blended_biome = biome_map.get_biome(humidity, temperature);
-  return blended_biome;
+  return biomemap::get_biome(humidity, temperature);
 }
 
-bool WorldGen::is_ground(WorldPos pos, const BlendedBiome& blended_biome) const {
+bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const {
 
-  float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.get_noise_height_multiplier();
+  float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
 
-  float value_3d = (noise_3d.GetNoise(pos.x, pos.y * 2.5f, pos.z) + 1.0f) * 0.5f * blended_biome.get_noise_3d_multiplier();
+  float value_3d = (noise_3d.GetNoise(pos.x, pos.y * 2.5f, pos.z) + 1.0f) * 0.5f * blended_biome.noise_3d_multiplier;
   value_3d = 1.0f + value_3d * 0.032f;
-  float value = (blended_biome.get_base_height() + value_height) * value_3d;
+  float value = (blended_biome.base_height + value_height) * value_3d;
 
   return value > pos.y;
 }
