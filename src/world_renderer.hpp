@@ -33,7 +33,7 @@ private:
 
 public:
   WorldRenderer(World& _world) : world(_world) {
-    for (size_t i = 0; i < 16; i += 1) {
+    for (size_t i = 0; i < 4; i += 1) {
       chunk_mesh_workers.push_back(new ChunkMeshWorker);
     }
   }
@@ -62,40 +62,39 @@ public:
         chunk->renderer->swap_buffers();
       }
 
-      if (chunk->flags.update_geometry) {
+      if (chunk->flags.awaiting_mesh_update) {
         chunks_awaiting_mesh_update.emplace(chunk_pos);
+        chunk->flags.awaiting_mesh_update = false;
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.left) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.left) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(-1, 0, 0));
-          chunk->flags.update_geometry_of_adjacent_chunks.left = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.left = false;
         }
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.right) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.right) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(1, 0, 0));
-          chunk->flags.update_geometry_of_adjacent_chunks.right = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.right = false;
         }
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.down) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.down) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, -1, 0));
-          chunk->flags.update_geometry_of_adjacent_chunks.down = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.down = false;
         }
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.up) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.up) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 1, 0));
-          chunk->flags.update_geometry_of_adjacent_chunks.up = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.up = false;
         }
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.front) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.front) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, -1));
-          chunk->flags.update_geometry_of_adjacent_chunks.front = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.front = false;
         }
 
-        if (chunk->flags.update_geometry_of_adjacent_chunks.back) {
+        if (chunk->flags.update_mesh_of_adjacent_chunk.back) {
           chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, 1));
-          chunk->flags.update_geometry_of_adjacent_chunks.back = false;
+          chunk->flags.update_mesh_of_adjacent_chunk.back = false;
         }
-
-        chunk->flags.update_geometry = false;
       }
 
       if (chunk->flags.ready) {

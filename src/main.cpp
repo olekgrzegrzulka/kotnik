@@ -1,9 +1,9 @@
-#include <cstdlib>
-#include "common.hpp"
 #define GLM_FORCE_RADIANS
+
 #include "glad/glad.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <iomanip>
 #include <ios>
 #include <iostream>
@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
+#include "common.hpp"
 #include "cube_indicator_renderer.hpp"
 #include "input.hpp"
 #include "player.hpp"
@@ -46,8 +47,6 @@ int main() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glCullFace(GL_BACK);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   Texture atlas_texture{"atlas.png"};
 

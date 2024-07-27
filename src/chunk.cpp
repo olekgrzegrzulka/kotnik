@@ -20,30 +20,30 @@ WorldPos Chunk::get_center_pos() const {
 
 void Chunk::update_mesh_update_flags(LocalPos local_pos) {
   assert(is_local_pos_valid(local_pos));
-  flags.update_geometry = true;
+  flags.awaiting_mesh_update = true;
 
   if (local_pos.x == 0) {
-    flags.update_geometry_of_adjacent_chunks.left = true;
+    flags.update_mesh_of_adjacent_chunk.left = true;
   }
 
   if (local_pos.x == CHUNK_SIZE - 1) {
-    flags.update_geometry_of_adjacent_chunks.right = true;
+    flags.update_mesh_of_adjacent_chunk.right = true;
   }
 
   if (local_pos.y == 0) {
-    flags.update_geometry_of_adjacent_chunks.down = true;
+    flags.update_mesh_of_adjacent_chunk.down = true;
   }
 
   if (local_pos.y == CHUNK_SIZE - 1) {
-    flags.update_geometry_of_adjacent_chunks.up = true;
+    flags.update_mesh_of_adjacent_chunk.up = true;
   }
 
   if (local_pos.z == 0) {
-    flags.update_geometry_of_adjacent_chunks.front = true;
+    flags.update_mesh_of_adjacent_chunk.front = true;
   }
 
   if (local_pos.z == CHUNK_SIZE - 1) {
-    flags.update_geometry_of_adjacent_chunks.back = true;
+    flags.update_mesh_of_adjacent_chunk.back = true;
   }
 }
 
@@ -187,7 +187,7 @@ void Chunk::generate_lightmap(std::unordered_set<CubePos, Vec3Hasher>& visited_c
     }
   }
 
-  flags.update_geometry = true;
+  flags.awaiting_mesh_update = true;
 }
 
 std::optional<uint16_t> Chunk::get_heightmap(uint16_t x, uint16_t z) const {

@@ -79,13 +79,12 @@ public:
   World& world;
 
   ChunkPos position{};
-  // Every time the cubes array is modified, cube position is added to this array.
-  // The managment of this array is handled in World::update()
+
   struct {
     // When chunk is ready, it can be accessed from the World::get_chunk() method. Used when chunk is being loaded in a background thread
     bool ready = false;
 
-    bool update_geometry = false;
+    bool awaiting_mesh_update = false;
 
     struct {
       bool up = false;
@@ -94,7 +93,7 @@ public:
       bool right = false;
       bool front = false;
       bool back = false;
-    } update_geometry_of_adjacent_chunks;
+    } update_mesh_of_adjacent_chunk;
 
     // Chunk is too far from view, and may be unloaded an any time
     bool marked_for_unload = false;
