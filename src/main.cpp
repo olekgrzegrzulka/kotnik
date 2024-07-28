@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include "common.hpp"
 #include "cube_indicator_renderer.hpp"
+#include "held_cube_renderer.hpp"
 #include "input.hpp"
 #include "player.hpp"
 #include "shader.hpp"
@@ -121,6 +122,19 @@ int main() {
     cube_shader.use();
     atlas_texture.bind(0);
     world_renderer.update(camera_pos, camera_matrix);
+
+    // Draw currently held cube
+    cube_shader.use();
+    atlas_texture.bind(0);
+    if (player) {
+      static CubeId held_cube = CubeId::AIR;
+      if (held_cube != player->cube_to_place) {
+        held_cube = player->cube_to_place;
+        HeldCubeRenderer::update_mesh(held_cube);
+      }
+
+      HeldCubeRenderer::draw(aspect_ratio);
+    }
 
     // Draw cube indicator
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
