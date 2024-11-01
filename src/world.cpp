@@ -13,13 +13,11 @@
 #include "world_gen.hpp"
 
 World::World() {
-  world_gen = std::make_unique<WorldGen>(*this, 18);
+  world_gen = std::make_unique<WorldGen>(*this, 1011);
 
   for (size_t i = 0; i < 2; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker(world_gen));
   }
-
-  lightning_worker = std::make_shared<ChunkLightningWorker>();
 }
 
 World::~World() {
@@ -193,14 +191,6 @@ std::optional<uint16_t> World::get_heightmap(CubePos cube_pos) const {
   return chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z);
 }
 
-LightLevel World::get_lightmap(CubePos cube_pos) const {
-  auto [chunk_pos, local_pos] = cube_to_local(cube_pos);
-  assert(is_local_pos_valid(local_pos));
-
-  if (!chunks.contains(chunk_pos)) { return LightLevel{}; }
-  return chunks.at(chunk_pos)->get_lightmap(local_pos);
-}
-
 // Returns cube position of first cuube in raycast, or empty optional if no solid cube encountered
 std::optional<CubePos> World::raycast_get_solid_cube(glm::vec<3, float> from, glm::vec<3, float> to) const {
   const float length = glm::length((to - from));
@@ -254,83 +244,6 @@ Chunk* World::get_chunk(ChunkPos chunk_pos) const {
   }
 
   return chunk.get();
-}
-
-void World::update_light(CubePos cube_pos) {
-  return;
-  // ChunkPos chunk_pos = world_pos_to_chunk_pos(cube_pos);
-  // int world_y = get_heightmap(cube_pos).value_or(0) * chunk_pos.y;
-
-  // spread_light({cube_pos.x, world_y, cube_pos.z});
-  // spread_light({cube_pos.x, cube_pos.y, cube_pos.z});
-}
-
-void World::spread_light(const CubePos light_cube_pos, std::unordered_set<CubePos, Vec3Hasher>& _) {
-  uint8_t light = get_sunlight(light_cube_pos);
-
-  std::unordered_set<CubePos, Vec3Hasher> visited_cubes;
-  std::unordered_set<CubePos, Vec3Hasher> queued_cubes;
-
-  queued_cubes.insert(light_cube_pos + CubePos{-1, 0, 0});
-  queued_cubes.insert(light_cube_pos + CubePos{1, 0, 0});
-  queued_cubes.insert(light_cube_pos + CubePos{0, -1, 0});
-  queued_cubes.insert(light_cube_pos + CubePos{0, 1, 0});
-  queued_cubes.insert(light_cube_pos + CubePos{0, 0, -1});
-  queued_cubes.insert(light_cube_pos + CubePos{0, 0, 1});
-  int failsafe = 5000;
-
-  while (!queued_cubes.empty() && failsafe-- >= 0) {
-    CubePos cube_pos = *queued_cubes.begin();
-    queued_cubes.erase(queued_cubes.begin());
-    visited_cubes.emplace(cube_pos);
-
-    auto [chunk_pos, local_pos] = cube_to_local(cube_pos);
-    Chunk* chunk = const_cast<Chunk*>(get_chunk(chunk_pos));
-    if (!chunk) { continue; }
-    if (is_solid(cube_pos)) { continue; }
-    int distance = std::abs(cube_pos.x - light_cube_pos.x) + std::abs(cube_pos.y - light_cube_pos.y) + std::abs(cube_pos.z - light_cube_pos.z);
-    if (distance > 7) { continue; }
-
-    LightLevel current_light_level = chunk->get_lightmap(local_pos);
-    LightLevel new_light_level = {light - std::min((int)light, distance * 32), 0, 0};
-    if (current_light_level.x >= new_light_level.x) { continue; }
-    chunk->set_lightmap(local_pos, new_light_level);
-
-    if (!visited_cubes.contains(cube_pos + CubePos(-1, 0, 0))) {
-      queued_cubes.emplace(cube_pos + CubePos(-1, 0, 0));
-    }
-    if (!visited_cubes.contains(cube_pos + CubePos(1, 0, 0))) {
-      queued_cubes.emplace(cube_pos + CubePos(1, 0, 0));
-    }
-    if (!visited_cubes.contains(cube_pos + CubePos(0, -1, 0))) {
-      queued_cubes.emplace(cube_pos + CubePos(0, -1, 0));
-    }
-    if (!visited_cubes.contains(cube_pos + CubePos(0, 1, 0))) {
-      queued_cubes.emplace(cube_pos + CubePos(0, 1, 0));
-    }
-    if (!visited_cubes.contains(cube_pos + CubePos(0, 0, -1))) {
-      queued_cubes.emplace(cube_pos + CubePos(0, 0, -1));
-    }
-    if (!visited_cubes.contains(cube_pos + CubePos(0, 0, 1))) {
-      queued_cubes.emplace(cube_pos + CubePos(0, 0, 1));
-    }
-  }
-}
-
-void World::request_player_chunk_light_update() {
-  std::unordered_set<CubePos, Vec3Hasher> visited_cubes;
-  if (!get_player()) { return; }
-  auto chunk_pos = world_pos_to_chunk_pos(get_player()->world_pos);
-  auto chunk_it = chunks.find(chunk_pos);
-  if (chunk_it == chunks.end()) { return; }
-
-  request_chunk_light_update(chunk_pos);
-}
-
-void World::request_chunk_light_update(ChunkPos chunk_pos) {
-  Chunk* chunk = const_cast<Chunk*>(get_chunk(chunk_pos));
-  if (!chunk) { return; }
-  lightning_worker->add_to_queue(chunk);
 }
 
 std::unordered_map<u32, CubeId> World::get_neigbours(CubePos _cube_pos, bool edges, bool corners) const {
@@ -431,7 +344,6 @@ std::unordered_map<u32, CubeId> World::get_neigbours(const Chunk& chunk, LocalPo
 }
 
 void World::update() {
-  lightning_worker->run_job();
   // player = nullptr;
 
   // Entity update

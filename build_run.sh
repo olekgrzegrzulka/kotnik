@@ -1,0 +1,1 @@
+clear; rm ./kotnik;  cmake -DMY_FLAGS="" . && make -j && ./kotnik 

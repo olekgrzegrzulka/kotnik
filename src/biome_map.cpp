@@ -13,8 +13,8 @@ using rgb = std::tuple<u8, u8, u8>;
 using Biome = biomes::Biome;
 using BiomeId = biomes::BiomeId;
 
-static constexpr int biome_blending_sample_count = 6;
-static constexpr int biome_blending_step_size = 3;
+static constexpr int biome_blending_sample_count = 4;
+static constexpr int biome_blending_step_size = 2;
 
 struct BiomeMap {
   std::vector<Biome> data{};

@@ -65,7 +65,7 @@ const BiomeList init_biome_list() {
 
   Biome biome_ocean{
       .name = "Ocean",
-      .base_height = -24.0f,
+      .base_height = -12.0f,
       .noise_height_multiplier = 8.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,

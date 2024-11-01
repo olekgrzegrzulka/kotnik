@@ -109,7 +109,9 @@ public:
       bool ao = true;
     } draw_data;
 
-    void get_vertices(CubePos, NeigbourCubeIds, std::vector<cubes::CompactVertex>& vertices_list);
+    void get_vertices(CubePos, NeigbourCubeIds, std::vector<cubes::CompactVertex>& vertices_list) const;
+
+    void get_vertices(CubePos, std::vector<cubes::CompactVertex>& vertices_list) const;
 
     Cube& set_occlusion_mode(CubeOccludeMode mode) {
       using enum CubeOccludeMode;

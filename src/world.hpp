@@ -71,7 +71,6 @@ private:
   std::vector<std::unique_ptr<Entity>> entities;
 
   std::vector<ChunkTerrainGenWorker*> chunk_terrain_gen_workers;
-  std::shared_ptr<ChunkLightningWorker> lightning_worker;
 
   Player* player = nullptr;
 
@@ -136,8 +135,6 @@ public:
 
   // The y position is used to determine the chunk
   std::optional<uint16_t> get_heightmap(CubePos cube_pos) const;
-
-  LightLevel get_lightmap(CubePos cube_pos) const;
 
   Chunk* get_chunk(ChunkPos chunk_pos) const;
 

@@ -82,7 +82,6 @@ public:
       {"place", {Input::Mouse::MOUSE_BUTTON_RIGHT}},
       {"next_cube", {Input::Key::KEY_Q}},
       {"switch_flying", {Input::Key::KEY_F}},
-      {"reload_lightning", {Input::Key::KEY_2}},
   };
 
 public:
@@ -155,10 +154,6 @@ public:
 
     if (input_just_released("switch_flying")) {
       is_flying = !is_flying;
-    }
-
-    if (input_just_released("reload_lightning")) {
-      world.request_player_chunk_light_update();
     }
   }
 

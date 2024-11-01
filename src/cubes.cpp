@@ -187,7 +187,7 @@ constexpr cubes::Cube cubes::create_x_shape_cube(std::string name, glm::vec<2, f
   }};
 };
 
-void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, std::vector<cubes::CompactVertex>& vertices_list) {
+void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, std::vector<cubes::CompactVertex>& vertices_list) const {
 
   CubeId cube_id = neigbour_cube_ids.center.value();
 
@@ -386,5 +386,42 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
     }
+  }
+}
+
+void cubes::Cube::get_vertices(CubePos cube_pos, std::vector<cubes::CompactVertex>& vertices_list) const {
+  for (auto vertex : draw_data.vertices.vertices) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.left) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.right) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.bottom) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.top) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.front) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
+  }
+
+  for (auto vertex : draw_data.vertices.back) {
+    vertex.pos += cube_pos;
+    vertices_list.emplace_back(vertex);
   }
 }

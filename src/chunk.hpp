@@ -156,12 +156,7 @@ public:
 
   bool is_solid(LocalPos at) const;
 
-  void clear_lightmap() {
-    lightmap.data.fill({0, 0, 0});
-  }
-
   CubeId get_cube(LocalPos at) const;
-  LightLevel get_lightmap(LocalPos at) const;
 
   void set_cube(LocalPos local_pos, CubeId cube_id);
   void set_cube_no_lock(LocalPos local_pos, CubeId cube_id);
@@ -170,10 +165,6 @@ public:
 
   // Allows changing cubes of different chunks by storing them, for World to set them later.
   void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
-
-  void set_lightmap(LocalPos local_pos, LightLevel cube_id);
-
-  void generate_lightmap(std::unordered_set<CubePos, Vec3Hasher>& visited_cubes);
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
 

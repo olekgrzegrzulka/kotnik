@@ -39,7 +39,7 @@ int main() {
   glfwSetWindowSize(window, mode->width, mode->height);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // Setup GLAD
+  // // Setup GLAD
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   // Configure OpenGL

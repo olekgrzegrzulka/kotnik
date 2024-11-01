@@ -178,15 +178,16 @@ private:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
+  constexpr float scale = 0.7;
   noise_heightmap.SetSeed(seed);
-  noise_heightmap.SetFrequency(0.006064f);
+  noise_heightmap.SetFrequency(0.006064f / scale);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_heightmap.SetFractalOctaves(3);
   noise_heightmap.SetFractalGain(0.4f);
   noise_heightmap.SetFractalLacunarity(2.57f);
 
   noise_3d.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_3d.SetFrequency(0.00191f);
+  noise_3d.SetFrequency(0.00351f / scale);
   noise_3d.SetSeed(seed);
   noise_3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_3d.SetFractalOctaves(3);
@@ -197,7 +198,7 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
 
   noise_humidity.SetSeed(seed + 1);
   noise_humidity.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_humidity.SetFrequency(0.00244f);
+  noise_humidity.SetFrequency(0.00244f / scale);
   noise_humidity.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_humidity.SetFractalOctaves(4);
   noise_humidity.SetFractalLacunarity(2.2f);
@@ -206,7 +207,7 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_temperature.SetSeed(seed + 2);
   noise_temperature.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
   noise_temperature.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
-  noise_temperature.SetFrequency(0.00244f);
+  noise_temperature.SetFrequency(0.00244f / scale);
   noise_temperature.SetFractalOctaves(4);
   noise_temperature.SetFractalLacunarity(2.2f);
   noise_temperature.SetFractalGain(0.4f);
@@ -232,7 +233,7 @@ bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const
 
   float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
 
-  float value_3d = (noise_3d.GetNoise(pos.x, pos.y * 2.5f, pos.z) + 1.0f) * 0.5f * blended_biome.noise_3d_multiplier;
+  float value_3d = noise_3d.GetNoise(pos.x, pos.y * 2.0f, pos.z) * blended_biome.noise_3d_multiplier;
   value_3d = 1.0f + value_3d * 0.032f;
   float value = (blended_biome.base_height + value_height) * value_3d;
 

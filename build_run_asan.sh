@@ -1,0 +1,1 @@
+clear; rm ./kotnik;  cmake -DMY_FLAGS="-fsanitize=address -fno-omit-frame-pointer" . && make -j && ./kotnik 

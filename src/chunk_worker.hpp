@@ -42,16 +42,3 @@ private:
   std::mutex chunks_finished_mutex;
   std::atomic<bool> is_running = false;
 };
-
-struct ChunkLightningWorker {
-  void add_to_queue(Chunk* chunk);
-
-  bool run_job();
-
-  bool is_finished();
-
-private:
-  std::queue<Chunk*> queue;
-  std::mutex queue_mutex;
-  std::atomic<bool> finished = true;
-};
