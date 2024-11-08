@@ -92,6 +92,13 @@ static void print(FirstArg&& first_arg, Args&&... args) {
   print("\033[1;31m", "[ERROR] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__); \
   exit(1)
 
+#define ensure(condition)         \
+  do {                            \
+    if (!(condition)) {           \
+      error("Assertion failed!"); \
+    }                             \
+  } while (false);
+
 struct ScopeTimer {
   std::string message;
   std::chrono::time_point<std::chrono::system_clock> start_time;
