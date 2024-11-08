@@ -10,10 +10,13 @@
 #include "cubes.hpp"
 #include "entity.hpp"
 #include "player.hpp"
+#include "random.hpp"
 #include "world_gen.hpp"
 
 World::World() {
-  world_gen = std::make_unique<WorldGen>(*this, 1011);
+  i32 seed = StaticRandom::get().next<i32>();
+  debug_log("Created world with seed ", seed);
+  world_gen = std::make_unique<WorldGen>(*this, seed);
 
   for (size_t i = 0; i < 2; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker(world_gen));
