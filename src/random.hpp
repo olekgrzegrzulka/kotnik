@@ -34,10 +34,8 @@ public:
 };
 
 namespace StaticRandom {
-static Random rng = Random{};
-
 static Random& get() {
-  static Random r;
+  thread_local Random r;
   return r;
 }
 }; // namespace StaticRandom
