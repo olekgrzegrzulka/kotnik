@@ -14,9 +14,9 @@ const BiomeList init_biome_list() {
   Biome biome_flatlands{
       .name = "Flatlands",
       .base_height = 0.0f,
-      .noise_height_multiplier = 15.0f,
+      .noise_height_multiplier = 10.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 5.0f,
+      .noise_3d_multiplier = 0.0f,
   };
 
   biome_flatlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
@@ -41,9 +41,9 @@ const BiomeList init_biome_list() {
   Biome biome_desert{
       .name = "Desert",
       .base_height = 0.0f,
-      .noise_height_multiplier = 20.0f,
+      .noise_height_multiplier = 12.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 5.0f,
+      .noise_3d_multiplier = 0.0f,
   };
 
   biome_desert.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
@@ -65,7 +65,7 @@ const BiomeList init_biome_list() {
 
   Biome biome_ocean{
       .name = "Ocean",
-      .base_height = -12.0f,
+      .base_height = -8.0f,
       .noise_height_multiplier = 8.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
@@ -90,7 +90,7 @@ const BiomeList init_biome_list() {
 
   Biome biome_deep_ocean{
       .name = "Deep Ocean",
-      .base_height = -48.0f,
+      .base_height = -32.0f,
       .noise_height_multiplier = 8.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
@@ -143,7 +143,7 @@ const BiomeList init_biome_list() {
       .base_height = 25.0f,
       .noise_height_multiplier = 30.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 50.0f,
+      .noise_3d_multiplier = 48.0f,
   };
 
   biome_highlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
@@ -190,7 +190,7 @@ const BiomeList init_biome_list() {
 
   biome_list[(size_t)BiomeId::HILLYLANDS] = biome_hillylands;
 
-  log("Initialized biome list");
+  debug_log("Initialized biome list");
   return biome_list;
 }
 
@@ -202,7 +202,7 @@ const Biome& get_biome(BiomeId id) {
 
 Biome biome_lerp(const biomes::Biome& biome_a, const biomes::Biome& biome_b, float t) {
   if (t < 0.0f || t > 1.0f) {
-    error("biomes::blend_two_biomes(): t value out of range");
+    debug_error("biomes::blend_two_biomes(): t value out of range");
   }
 
   Biome blended_biome{
@@ -237,12 +237,12 @@ Biome biome_weighted_average(std::span<float> weights, std::span<BiomeId> biome_
 
 Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) {
   if (weights.size() != biomes.size()) {
-    error("biome_weighted_average(): argument array sizes mismatch");
+    debug_error("biome_weighted_average(): argument array sizes mismatch");
     return Biome{};
   }
 
   if (biomes.empty()) {
-    error("biome_weighted_average(): argument arrays are empty");
+    debug_error("biome_weighted_average(): argument arrays are empty");
     return Biome{};
   }
 

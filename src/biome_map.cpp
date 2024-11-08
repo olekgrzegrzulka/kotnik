@@ -49,11 +49,11 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   stbi_uc* data = stbi_load("./assets/biomemap.png", &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    error("biomemap: couldn't open biomemap.png");
+    debug_error("biomemap: couldn't open biomemap.png");
   }
 
   if (width != height) {
-    error("biomemap: aspect ratio must be 1:1");
+    debug_error("biomemap: aspect ratio must be 1:1");
   }
 
   auto biome_map = std::make_unique<BiomeMap>();
@@ -61,7 +61,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
 
   auto get_bitmap_color = [&](int x, int y) -> rgb {
     if (x < 0 || x >= width || y < 0 || y >= height) {
-      error("biomemap: bitmap coordinates out of bounds");
+      debug_error("biomemap: bitmap coordinates out of bounds");
       return rgb{};
     }
 
@@ -73,7 +73,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   auto color_to_biome_id = [&](rgb color) -> BiomeId {
     auto it = bitmap_color_to_biome_id.find(color);
     if (it == bitmap_color_to_biome_id.end()) {
-      warn("biomemap: unknown biome color rgb(", (int)std::get<0>(color), ", ", (int)std::get<1>(color), ", ", (int)std::get<2>(color), "), defaulting to Flatlands");
+      debug_warn("biomemap: unknown biome color rgb(", (int)std::get<0>(color), ", ", (int)std::get<1>(color), ", ", (int)std::get<2>(color), "), defaulting to Flatlands");
       return biomes::BiomeId::FLATLANDS;
     }
     return (*it).second;

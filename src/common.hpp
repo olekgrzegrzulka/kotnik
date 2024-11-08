@@ -79,16 +79,16 @@ static void print(FirstArg&& first_arg, Args&&... args) {
 
 #define __FILENAME__ strrchr("/" __FILE__, '/') + 1
 
-#define log(...) \
+#define debug_log(...) \
   print("\033[1;36m", "[LOG] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__)
 
-#define log_no_filename(...) \
+#define debug_log_no_filename(...) \
   print("\033[1;36m", "[LOG]\033[0m ", __VA_ARGS__)
 
-#define warn(...) \
+#define debug_warn(...) \
   print("\033[1;33m", "[WARN] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__)
 
-#define error(...)                                                                                     \
+#define debug_error(...)                                                                               \
   print("\033[1;31m", "[ERROR] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__); \
   exit(1)
 
@@ -105,9 +105,9 @@ struct ScopeTimer {
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
     if (message.empty()) {
-      log_no_filename("took ", milliseconds);
+      debug_log_no_filename("took ", milliseconds);
     } else {
-      log_no_filename(message, " took ", milliseconds);
+      debug_log_no_filename(message, " took ", milliseconds);
     }
   }
 };
@@ -131,7 +131,7 @@ static constexpr Dir opposite_dir(Dir dir) {
     return Dir::TOP;
   }
 
-  error("opposite_dir(): invalid input direction");
+  debug_error("opposite_dir(): invalid input direction");
   return Dir::NONE;
 }
 

@@ -24,7 +24,7 @@ private:
     stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
     if (!data) {
-      error("failed to load texture" + file_path);
+      debug_error("failed to load texture" + file_path);
     }
 
     GLuint texture_ = 0;

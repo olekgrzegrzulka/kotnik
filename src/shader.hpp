@@ -37,7 +37,7 @@ private:
     std::ifstream file{"./shaders/" + file_name};
 
     if (!file.is_open()) {
-      error("failed to open shader file " + file_name);
+      debug_error("failed to open shader file " + file_name);
     }
 
     std::stringstream file_string;
@@ -64,7 +64,7 @@ private:
       char* info_log = new char[max_log_length];
       glGetShaderInfoLog(shader, max_log_length, &max_log_length, info_log);
 
-      error("shader compilation error:\n", info_log);
+      debug_error("shader compilation error:\n", info_log);
       delete[] info_log;
     }
 
