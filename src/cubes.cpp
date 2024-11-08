@@ -1,5 +1,4 @@
 #include "cubes.hpp"
-#include <cmath>
 #include "aabb.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
@@ -171,20 +170,51 @@ constexpr cubes::Cube cubes::create_full_cube_with_per_face_uv(
 
 constexpr cubes::Cube cubes::create_x_shape_cube(std::string name, glm::vec<2, float> uv) {
   using enum Cube::CubeOccludeMode;
-  if (!std::is_constant_evaluated()) {
-    print("cubes::create_x_shape_cube(): not implemented");
-  }
-  return Cube{.draw_data{
-      .occlude_adjacent_cube{
-          .left = NEVER,
-          .right = NEVER,
-          .bottom = NEVER,
-          .top = NEVER,
-          .front = NEVER,
-          .back = NEVER,
-      },
-      .ao = false,
-  }};
+  using enum CompactVertexNormal;
+
+  cubes::Cube cube{
+      .name = name,
+      .draw_data{
+          .occlude_adjacent_cube{
+              .left = NEVER,
+              .right = NEVER,
+              .bottom = NEVER,
+              .top = NEVER,
+              .front = NEVER,
+              .back = NEVER,
+          },
+          .ao = false,
+      }};
+
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+
+  return cube;
 };
 
 void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, std::vector<cubes::CompactVertex>& vertices_list) const {
