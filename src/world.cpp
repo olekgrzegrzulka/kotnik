@@ -113,7 +113,7 @@ NeigbourCubeIds World::get_neigbour_ids(CubePos cube_pos, bool edges, bool corne
 }
 
 void World::create_new_chunk(ChunkPos chunk_pos) {
-  chunks.emplace(chunk_pos, std::make_unique<Chunk>(*this, chunk_pos));
+  chunks.emplace(chunk_pos, std::make_unique<Chunk>(chunk_pos));
   auto& chunk = chunks.at(chunk_pos);
   chunks.at(chunk_pos)->renderer = new ChunkRenderer(*chunk.get());
 }

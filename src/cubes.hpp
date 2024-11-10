@@ -137,6 +137,7 @@ public:
 
   static const Cube& get(CubeId cube_id) {
     static auto c = cubes();
+    ensure(cube_id < CubeId::CUBE_ID_SIZE);
     return c.cube_array[(size_t)cube_id];
   }
 

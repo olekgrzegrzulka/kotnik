@@ -218,7 +218,6 @@ constexpr cubes::Cube cubes::create_x_shape_cube(std::string name, glm::vec<2, f
 };
 
 void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, std::vector<cubes::CompactVertex>& vertices_list) const {
-
   CubeId cube_id = neigbour_cube_ids.center.value();
 
   bool draw_left_face = [&] -> bool {
@@ -306,13 +305,13 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }();
 
   auto reduce_vertex_brightness_for_ao = [](cubes::CompactVertex& vertex, std::optional<float> x, std::optional<float> y, std::optional<float> z, const std::optional<CubeId>& neigbour) {
-    if constexpr (WorldRenderer::ambient_occlusion_enabled) {
-      if (vertex.pos.x == x.value_or(vertex.pos.x) && vertex.pos.y == y.value_or(vertex.pos.y) && vertex.pos.z == z.value_or(vertex.pos.z) &&
-          neigbour.value_or(CubeId::AIR) != CubeId::AIR) {
-        bool ao = cubes::get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
-        if (ao) {
-          vertex.pack.brightness = 160;
-        }
+    if constexpr (!WorldRenderer::ambient_occlusion_enabled) { return; }
+
+    if (vertex.pos.x == x.value_or(vertex.pos.x) && vertex.pos.y == y.value_or(vertex.pos.y) && vertex.pos.z == z.value_or(vertex.pos.z) &&
+        neigbour.value_or(CubeId::AIR) != CubeId::AIR) {
+      bool ao = cubes::get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
+      if (ao) {
+        vertex.pack.brightness = 160;
       }
     }
   };

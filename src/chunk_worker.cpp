@@ -12,37 +12,31 @@
 // ChunkMeshWorker
 //
 
-bool ChunkMeshWorker::run_job(Chunk* chunk) {
+bool ChunkMeshWorker::run_job(ChunkPos chunk_pos, World& world) {
 
   if (!is_finished()) {
     return false;
   }
 
-  std::vector<Chunk*> _surrounding_chunks;
-  _surrounding_chunks.emplace_back((Chunk*)chunk);
+  Chunk* chunk = world.get_chunk(chunk_pos);
 
-  World& world = chunk->world;
-
-  static std::array<ChunkPos, 6> neigbour_offsets = {ChunkPos{-1, 0, 0}, ChunkPos{1, 0, 0}, ChunkPos{0, -1, 0}, ChunkPos{0, 1, 0}, ChunkPos{0, 0, -1}, ChunkPos{0, 0, 1}};
-
-  for (auto offset : neigbour_offsets) {
-    Chunk* neigb = const_cast<Chunk*>(world.get_chunk(chunk->position + offset));
-    if (!neigb) { return false; }
-    if (neigb->flags.is_read_locked()) { return false; }
-    if (!(neigb->flags.ready)) { return false; }
-
-    _surrounding_chunks.emplace_back(neigb);
+  for (i32 x = -1; x <= 1; x += 1) {
+    for (i32 y = -1; y <= 1; y += 1) {
+      for (i32 z = -1; z <= 1; z += 1) {
+        Chunk* neigbour = world.get_chunk(chunk_pos + ChunkPos{x, y, z});
+        if (!neigbour) { return false; }
+        if (neigbour->flags.is_read_locked()) { return false; }
+        if (!(neigbour->flags.ready)) { return false; }
+      }
+    }
   }
 
-  surrounding_chunks = _surrounding_chunks;
+  ChunkMeshData chunk_mesh_data{chunk_pos, world};
+
   finished = false;
 
-  for (Chunk* c : surrounding_chunks) {
-    c->flags.threads_reading += 1;
-  }
-
   std::thread thread([=, this]() {
-    chunk->renderer->rebuild_mesh(this->surrounding_chunks);
+    chunk->renderer->rebuild_mesh(std::move(chunk_mesh_data));
     this->finished = true;
   });
   thread.detach();

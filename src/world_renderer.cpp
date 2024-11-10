@@ -118,7 +118,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
 
     bool updated = false;
     for (const auto& worker : chunk_mesh_workers) {
-      if (worker->run_job(chunk)) {
+      if (worker->run_job(chunk->position, world)) {
         updated = true;
         break;
       }

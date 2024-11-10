@@ -3,7 +3,6 @@
 #include <bitset>
 #include <optional>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <stdint.h>
@@ -12,8 +11,6 @@
 
 #define CHUNK_SIZE (32)
 #define CHUNK_CUBES (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
-
-class World;
 
 // Checks if a local position is in range of chunk's array
 constexpr static bool is_local_pos_valid(LocalPos local_pos) {
@@ -62,6 +59,38 @@ constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos) {
   return {chunk_pos, local_pos};
 }
 
+// Returns a ChunkPosition at an offset from the given chunk position
+constexpr static ChunkPos neigbour_chunk_pos(ChunkPos chunk_pos, LocalPos offset) {
+  return {
+      chunk_pos.x + offset.x / CHUNK_SIZE - (i32)(offset.x < 0),
+      chunk_pos.y + offset.y / CHUNK_SIZE - (i32)(offset.y < 0),
+      chunk_pos.z + offset.z / CHUNK_SIZE - (i32)(offset.z < 0),
+  };
+}
+
+constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos) {
+  while (local_pos.x >= CHUNK_SIZE) {
+    local_pos.x -= CHUNK_SIZE;
+  }
+  while (local_pos.y >= CHUNK_SIZE) {
+    local_pos.y -= CHUNK_SIZE;
+  }
+  while (local_pos.z >= CHUNK_SIZE) {
+    local_pos.z -= CHUNK_SIZE;
+  }
+  while (local_pos.x < 0) {
+    local_pos.x += CHUNK_SIZE;
+  }
+  while (local_pos.y < 0) {
+    local_pos.y += CHUNK_SIZE;
+  }
+  while (local_pos.z < 0) {
+    local_pos.z += CHUNK_SIZE;
+  }
+
+  return local_pos;
+}
+
 enum class ChunkEventType {
   SET_CUBE,
 };
@@ -76,8 +105,6 @@ class ChunkRenderer;
 
 class Chunk {
 public:
-  World& world;
-
   ChunkPos position{};
 
   struct {
@@ -146,7 +173,7 @@ private:
   std::array<std::optional<uint16_t>, CHUNK_SIZE * CHUNK_SIZE> heightmap{};
 
 public:
-  Chunk(World& _world, ChunkPos _chunk_position);
+  Chunk(ChunkPos _chunk_position);
 
   ~Chunk();
 
@@ -167,6 +194,10 @@ public:
   void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
+
+  std::array<CubeId, CHUNK_CUBES> get_cubes() const {
+    return cubes;
+  }
 
 private:
   void update_occlusion_map(LocalPos local_pos);

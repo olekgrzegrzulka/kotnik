@@ -1,7 +1,6 @@
 #pragma once
 #include <atomic>
 #include <mutex>
-#include <queue>
 #include <vector>
 #include "world_gen.hpp"
 
@@ -13,7 +12,7 @@ struct ChunkWorker {
 };
 
 struct ChunkMeshWorker {
-  bool run_job(Chunk* chunk);
+  bool run_job(ChunkPos, World&);
 
   bool try_collecting();
 

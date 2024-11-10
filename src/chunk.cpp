@@ -3,9 +3,8 @@
 #include "chunk_renderer.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
-#include "world.hpp"
 
-Chunk::Chunk(World& _world, ChunkPos _chunk_position) : world(_world), position(_chunk_position) {
+Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
 }
 
 Chunk::~Chunk() {
