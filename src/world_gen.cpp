@@ -219,7 +219,7 @@ bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const
 
   float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
 
-  float value_3d = noise_3d.GetNoise(pos.x, pos.y * 2.0f, pos.z) * blended_biome.noise_3d_multiplier;
+  float value_3d = noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
   value_3d = 1.0f + value_3d * 0.032f;
   float value = (blended_biome.base_height + value_height) * value_3d;
 
