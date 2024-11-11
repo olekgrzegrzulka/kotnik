@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 #include "biome.hpp"
 #include "biome_map.hpp"
@@ -31,8 +33,8 @@ public:
     static_assert(biome_sample_step_size >= 1);
 
     SmoothBiomeGrid(const WorldGen& world_gen, CubePos begin) {
-      for (i32 z = 0; z < biome_sample_grid_extents; z += 1) {
-        for (i32 x = 0; x < biome_sample_grid_extents; x += 1) {
+      for (i32 z = 0; z < (i32)biome_sample_grid_extents; z += 1) {
+        for (i32 x = 0; x < (i32)biome_sample_grid_extents; x += 1) {
           data[x + z * biome_sample_grid_extents] = world_gen.get_blended_biome(begin + CubePos{x * biome_sample_step_size, 0, z * biome_sample_step_size});
         }
       }
@@ -60,7 +62,6 @@ public:
   };
 
   ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
-    using Biome = biomes::Biome;
     begin = chunk_pos * CHUNK_SIZE - CubePos{0, lip_negative_y, 0};
     end = chunk_pos * CHUNK_SIZE + CubePos{CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1} + CubePos{0, lip_positive_y, 0};
 
@@ -74,59 +75,51 @@ public:
 
     // Generate the chunk in checkerboard pattern, which will be fixed later
     // This will reduce noise function calls
-    for (i32 x_local = 0; x_local < (i32)(CHUNK_SIZE); x_local += 1) {
-      for (i32 z_local = 0; z_local < (i32)(CHUNK_SIZE); z_local += 1) {
 
-        Biome blended_biome = biome_grid.get_biome(x_local, z_local);
+    std::unordered_map<glm::vec<2, i32>, biomes::Biome, Vec2Hasher> blended_biome_cache;
 
-        for (i32 y_local = -lip_negative_y; y_local < (i32)(CHUNK_SIZE + lip_positive_y); y_local += 1) {
-          LocalPos local_pos = {x_local, y_local, z_local};
-          WorldPos world_pos = begin + local_pos;
+    for (i32 i = 0; i < (i32)array_size; i += 1) {
+      // Checkerboard
+      LocalPos local_pos = index_to_local_pos(i);
+      if ((local_pos.x + local_pos.y + local_pos.z) % 2 == 1) { continue; }
 
-          // Checkerboard
-          if ((x_local + y_local + z_local) % 2 == 1) { continue; }
-
-          world_pos.y = begin.y + local_pos.y;
-          size_t i = get_index(local_pos);
-          assert(local_pos == index_to_local_pos(i));
-          data[i] = CubeData{
-              .is_solid = world_gen.is_ground(world_pos, blended_biome),
-              .rng = world_gen.get_cube_rng(world_pos),
-          };
-        }
+      if (!blended_biome_cache.contains({local_pos.x, local_pos.z})) {
+        blended_biome_cache[{local_pos.x, local_pos.z}] = biome_grid.get_biome(local_pos.x, local_pos.z);
       }
+      auto blended_biome = blended_biome_cache[{local_pos.x, local_pos.z}];
+
+      WorldPos world_pos = begin + local_pos;
+
+      world_pos.y = begin.y + local_pos.y;
+      data[i] = CubeData{
+          .is_solid = world_gen.is_ground(world_pos, blended_biome),
+          .rng = world_gen.get_cube_rng(world_pos),
+      };
     }
 
     // Fix the skipped cubes in checkerboard generation
     auto data_uncheckered = data;
 
-    for (i32 x_local = 0; x_local < (i32)(CHUNK_SIZE); x_local += 1) {
-      for (i32 z_local = 0; z_local < (i32)(CHUNK_SIZE); z_local += 1) {
-        for (i32 y_local = -lip_negative_y; y_local < (i32)(CHUNK_SIZE + lip_positive_y); y_local += 1) {
-          LocalPos local_pos = {x_local, y_local, z_local};
+    for (i32 i = 0; i < (i32)array_size; i += 1) {
+      // Alternate checkerboard
+      LocalPos local_pos = index_to_local_pos(i);
+      if ((local_pos.x + local_pos.y + local_pos.z) % 2 == 0) { continue; }
 
-          // Alternate checkerboard
-          if ((x_local + y_local + z_local) % 2 == 0) { continue; }
+      i32 neigbour_count_any = 0;
+      i32 neigbour_count_solid = 0;
 
-          size_t i = get_index(local_pos);
+      static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
+      for (LocalPos o : offsets) {
+        auto c = get_cube_info_or_empty(local_pos + LocalPos{o.x, o.y, o.z});
+        if (!c.has_value()) { continue; }
+        neigbour_count_any += 1;
+        neigbour_count_solid += (int)c->is_solid;
+      }
 
-          i32 neigbour_count_any = 0;
-          i32 neigbour_count_solid = 0;
+      float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
 
-          static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
-          for (LocalPos o : offsets) {
-            auto c = get_cube_info_or_empty(local_pos + LocalPos{o.x, o.y, o.z});
-            if (!c.has_value()) { continue; }
-            neigbour_count_any += 1;
-            neigbour_count_solid += (int)c->is_solid;
-          }
-
-          float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
-
-          if (occlusion >= 0.5f) {
-            data_uncheckered[i].is_solid = true;
-          }
-        }
+      if (occlusion >= 0.5f) {
+        data_uncheckered[i].is_solid = true;
       }
     }
 

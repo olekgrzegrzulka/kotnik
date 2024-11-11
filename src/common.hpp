@@ -143,6 +143,14 @@ static constexpr Dir opposite_dir(Dir dir) {
 }
 
 // FIXME: better hashing function
+struct Vec2Hasher {
+  template <typename T>
+  std::size_t operator()(const glm::vec<2, T>& vec3) const {
+    return vec3.x * 1048576 + vec3.y;
+  }
+};
+
+// FIXME: better hashing function
 struct Vec3Hasher {
   template <typename T>
   std::size_t operator()(const glm::vec<3, T>& vec3) const {
