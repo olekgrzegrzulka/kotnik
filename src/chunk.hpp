@@ -69,25 +69,9 @@ constexpr static ChunkPos neigbour_chunk_pos(ChunkPos chunk_pos, LocalPos offset
 }
 
 constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos) {
-  while (local_pos.x >= CHUNK_SIZE) {
-    local_pos.x -= CHUNK_SIZE;
-  }
-  while (local_pos.y >= CHUNK_SIZE) {
-    local_pos.y -= CHUNK_SIZE;
-  }
-  while (local_pos.z >= CHUNK_SIZE) {
-    local_pos.z -= CHUNK_SIZE;
-  }
-  while (local_pos.x < 0) {
-    local_pos.x += CHUNK_SIZE;
-  }
-  while (local_pos.y < 0) {
-    local_pos.y += CHUNK_SIZE;
-  }
-  while (local_pos.z < 0) {
-    local_pos.z += CHUNK_SIZE;
-  }
-
+  local_pos.x = (local_pos.x % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+  local_pos.y = (local_pos.y % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+  local_pos.z = (local_pos.z % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
   return local_pos;
 }
 
