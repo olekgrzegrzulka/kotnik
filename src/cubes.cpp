@@ -68,156 +68,126 @@ static const std::vector<CompactVertex> top = {
 
 cubes::cubes() {
   using enum Cube::CubeOccludeMode;
-  cube_array[0] = Cube{.name = "Air"};
+  cube_array.resize((size_t)CubeId::CUBE_ID_SIZE);
+  cube_array[0] = Cube{"Air"};
   cube_array[0].set_occlusion_mode(NEVER);
 
-  cube_array[1] = create_full_cube_with_single_uv("Dirt", {1.0f, 0.0f});
+  cube_array[1] = Cube{"Dirt"}.add_model_full_cube({1.0f, 0.0f}).add_collider();
 
-  cube_array[2] = create_full_cube_with_per_face_uv("Grass",
-                                                    {2.0f, 0.0f}, {2.0f, 0.0f},
-                                                    {1.0f, 0.0f}, {3.0f, 0.0f},
-                                                    {2.0f, 0.0f}, {2.0f, 0.0f});
+  cube_array[2] = Cube{"Grass"}.add_collider().add_model_full_cube(
+      {2.0f, 0.0f}, {2.0f, 0.0f},
+      {1.0f, 0.0f}, {3.0f, 0.0f},
+      {2.0f, 0.0f}, {2.0f, 0.0f});
 
-  cube_array[3] = create_full_cube_with_single_uv("Stone", {4.0f, 0.0f});
+  cube_array[3] = Cube{"Stone"}.add_model_full_cube({4.0f, 0.0f}).add_collider();
 
-  cube_array[4] = create_full_cube_with_single_uv("Sand", {5.0f, 0.0f});
+  cube_array[4] = Cube{"Sand"}.add_model_full_cube({5.0f, 0.0f}).add_collider();
 
-  cube_array[5] = create_full_cube_with_single_uv("Gravel", {6.0f, 0.0f});
+  cube_array[5] = Cube{"Gravel"}.add_model_full_cube({6.0f, 0.0f}).add_collider();
 
-  cube_array[6] = create_full_cube_with_per_face_uv("Wood",
-                                                    {7.0f, 0.0f}, {7.0f, 0.0f},
-                                                    {8.0f, 0.0f}, {8.0f, 0.0f},
-                                                    {7.0f, 0.0f}, {7.0f, 0.0f});
+  cube_array[6] = Cube{"Wood"}.add_collider().add_model_full_cube(
+      {7.0f, 0.0f}, {7.0f, 0.0f},
+      {8.0f, 0.0f}, {8.0f, 0.0f},
+      {7.0f, 0.0f}, {7.0f, 0.0f});
 
-  cube_array[7] = create_full_cube_with_single_uv("Leaves", {9.0f, 0.0f});
+  cube_array[7] = Cube{"Leaves"}.add_model_full_cube({9.0f, 0.0f}).add_collider();
   cube_array[7].set_occlusion_mode(NEVER).set_ao(false);
 
-  cube_array[8] = create_x_shape_cube("Grass Plant", {13.0f, 0.0f});
-  cube_array[9] = create_full_cube_with_single_uv("Water", {0.0f, 1.0f});
+  cube_array[8] = Cube{"Grass Plant"}.add_model_x_shape({13.0f, 0.0f});
+  cube_array[8].set_occlusion_mode(NEVER).set_ao(false);
 
-  cube_array[9].set_occlusion_mode(IF_SAME_ID).set_is_translucent(true).set_ao(false);
+  cube_array[9] = Cube{"Flower"};
+  cube_array[9].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
+  cube_array[9].add_model_x_shape({14.0f, 1.0f}).add_model_x_shape({15.0f, 1.0f});
+  cube_array[9].set_occlusion_mode(NEVER).set_ao(false);
 
-  cube_array[10] = create_full_cube_with_single_uv("Stone Bricks", {10.0f, 0.0f});
-  cube_array[11] = create_full_cube_with_single_uv("Stone Bricks", {11.0f, 0.0f});
-  cube_array[12] = create_full_cube_with_single_uv("Stone Tiles", {12.0f, 0.0f});
+  cube_array[10] = Cube{"Water"}.add_model_full_cube({0.0f, 1.0f}).add_collider();
+  cube_array[10].set_occlusion_mode(IF_SAME_ID).set_is_translucent(true).set_ao(false);
+
+  cube_array[11] = Cube{"Stone Bricks"}.add_model_full_cube({10.0f, 0.0f}).add_collider();
+  cube_array[12] = Cube{"Stone Bricks"}.add_model_full_cube({11.0f, 0.0f}).add_collider();
+  cube_array[13] = Cube{"Stone Tiles"}.add_model_full_cube({12.0f, 0.0f}).add_collider();
 }
 
-constexpr cubes::Cube cubes::create_full_cube_with_single_uv(
-    std::string name, glm::vec<2, float> uv,
-    bool is_translucent, Cube::CubeOccludeMode occlude_mode) {
-
-  return create_full_cube_with_per_face_uv(
-      name, uv, uv, uv, uv, uv, uv,
-      is_translucent, occlude_mode);
+constexpr cubes::Cube& cubes::Cube::add_model_full_cube(glm::vec<2, float> uv) {
+  return add_model_full_cube(uv, uv, uv, uv, uv, uv);
 }
 
-constexpr cubes::Cube cubes::create_full_cube_with_per_face_uv(
-    std::string name,
+constexpr cubes::Cube& cubes::Cube::add_model_full_cube(
     glm::vec<2, float> uv_left, glm::vec<2, float> uv_right,
     glm::vec<2, float> uv_bottom, glm::vec<2, float> uv_top,
-    glm::vec<2, float> uv_front, glm::vec<2, float> uv_back,
-    bool is_translucent, Cube::CubeOccludeMode occlude_mode) {
-
-  using enum Cube::CubeOccludeMode;
-  auto cube = Cube{
-      .name = name,
-      .draw_data{
-          .is_translucent = is_translucent,
-          .occlude_adjacent_cube{
-
-              .left = occlude_mode,
-              .right = occlude_mode,
-              .bottom = occlude_mode,
-              .top = occlude_mode,
-              .front = occlude_mode,
-              .back = occlude_mode,
-          },
-          .vertices{},
-      },
-  };
+    glm::vec<2, float> uv_front, glm::vec<2, float> uv_back) {
 
   // Push vertices with proper UV coordinates
-  for (size_t i = 0; i < 6; i += 1) {
-    auto vertex_left = full_cube_vertices::left[i];
+  draw_data.vertices.emplace_back(cubes::Cube::CubeVertices{});
+  size_t i = draw_data.vertices.size() - 1;
+  for (size_t j = 0; j < 6; j += 1) {
+    auto vertex_left = full_cube_vertices::left[j];
     vertex_left.push_uv(uv_left.x, uv_left.y);
-    cube.draw_data.vertices.left.emplace_back(vertex_left);
+    draw_data.vertices[i].left.emplace_back(vertex_left);
 
-    auto vertex_right = full_cube_vertices::right[i];
+    auto vertex_right = full_cube_vertices::right[j];
     vertex_right.push_uv(uv_right.x, uv_right.y);
-    cube.draw_data.vertices.right.emplace_back(vertex_right);
+    draw_data.vertices[i].right.emplace_back(vertex_right);
 
-    auto vertex_bottom = full_cube_vertices::bottom[i];
+    auto vertex_bottom = full_cube_vertices::bottom[j];
     vertex_bottom.push_uv(uv_bottom.x, uv_bottom.y);
-    cube.draw_data.vertices.bottom.emplace_back(vertex_bottom);
+    draw_data.vertices[i].bottom.emplace_back(vertex_bottom);
 
-    auto vertex_top = full_cube_vertices::top[i];
+    auto vertex_top = full_cube_vertices::top[j];
     vertex_top.push_uv(uv_top.x, uv_top.y);
-    cube.draw_data.vertices.top.emplace_back(vertex_top);
+    draw_data.vertices[i].top.emplace_back(vertex_top);
 
-    auto vertex_front = full_cube_vertices::front[i];
+    auto vertex_front = full_cube_vertices::front[j];
     vertex_front.push_uv(uv_front.x, uv_front.y);
-    cube.draw_data.vertices.front.emplace_back(vertex_front);
+    draw_data.vertices[i].front.emplace_back(vertex_front);
 
-    auto vertex_back = full_cube_vertices::back[i];
+    auto vertex_back = full_cube_vertices::back[j];
     vertex_back.push_uv(uv_back.x, uv_back.y);
-    cube.draw_data.vertices.back.emplace_back(vertex_back);
+    draw_data.vertices[i].back.emplace_back(vertex_back);
   }
 
-  cube.collider_aabbs = {AABB{{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}}};
-
-  return cube;
+  return *this;
 }
 
-constexpr cubes::Cube cubes::create_x_shape_cube(std::string name, glm::vec<2, float> uv) {
-  using enum Cube::CubeOccludeMode;
-  using enum CompactVertexNormal;
+constexpr cubes::Cube& cubes::Cube::add_model_x_shape(glm::vec<2, float> uv) {
+  draw_data.vertices.emplace_back(cubes::Cube::CubeVertices{});
+  size_t i = draw_data.vertices.size() - 1;
 
-  cubes::Cube cube{
-      .name = name,
-      .draw_data{
-          .occlude_adjacent_cube{
-              .left = NEVER,
-              .right = NEVER,
-              .bottom = NEVER,
-              .top = NEVER,
-              .front = NEVER,
-              .back = NEVER,
-          },
-          .ao = false,
-      }};
+  using enum cubes::CompactVertexNormal;
 
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
 
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
 
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
 
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
-  cube.draw_data.vertices.vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 1.0}, 1.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 1.0}, 1.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
+  draw_data.vertices[i].vertices.emplace_back(CompactVertex({1.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
 
-  return cube;
+  return *this;
 };
 
-void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, std::vector<cubes::CompactVertex>& vertices_list) const {
+void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
   CubeId cube_id = neigbour_cube_ids.center.value();
 
   bool draw_left_face = [&] -> bool {
@@ -315,14 +285,15 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
       }
     }
   };
+  size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
 
-  for (auto vertex : draw_data.vertices.vertices) {
+  for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
   if (draw_left_face) {
-    for (auto vertex : draw_data.vertices.left) {
+    for (auto vertex : draw_data.vertices[vertices_index].left) {
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, 1.0, neigbour_cube_ids.left_top_back);
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, 0.0, neigbour_cube_ids.left_top_front);
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, 1.0, neigbour_cube_ids.left_bottom_back);
@@ -338,7 +309,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 
   if (draw_right_face) {
-    for (auto vertex : draw_data.vertices.right) {
+    for (auto vertex : draw_data.vertices[vertices_index].right) {
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, 1.0, neigbour_cube_ids.right_top_back);
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, 0.0, neigbour_cube_ids.right_top_front);
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, 1.0, neigbour_cube_ids.right_bottom_back);
@@ -354,7 +325,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 
   if (draw_bottom_face) {
-    for (auto vertex : draw_data.vertices.bottom) {
+    for (auto vertex : draw_data.vertices[vertices_index].bottom) {
       reduce_vertex_brightness_for_ao(vertex, 0.0, {}, 0.0, neigbour_cube_ids.left_bottom_front);
       reduce_vertex_brightness_for_ao(vertex, 1.0, {}, 0.0, neigbour_cube_ids.right_bottom_front);
       reduce_vertex_brightness_for_ao(vertex, 0.0, {}, 1.0, neigbour_cube_ids.left_bottom_back);
@@ -370,7 +341,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 
   if (draw_top_face) {
-    for (auto vertex : draw_data.vertices.top) {
+    for (auto vertex : draw_data.vertices[vertices_index].top) {
       reduce_vertex_brightness_for_ao(vertex, 0.0, {}, 0.0, neigbour_cube_ids.left_top_front);
       reduce_vertex_brightness_for_ao(vertex, 1.0, {}, 0.0, neigbour_cube_ids.right_top_front);
       reduce_vertex_brightness_for_ao(vertex, 0.0, {}, 1.0, neigbour_cube_ids.left_top_back);
@@ -386,7 +357,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 
   if (draw_front_face) {
-    for (auto vertex : draw_data.vertices.front) {
+    for (auto vertex : draw_data.vertices[vertices_index].front) {
       reduce_vertex_brightness_for_ao(vertex, 0.0, 1.0, {}, neigbour_cube_ids.left_top_front);
       reduce_vertex_brightness_for_ao(vertex, 1.0, 1.0, {}, neigbour_cube_ids.right_top_front);
       reduce_vertex_brightness_for_ao(vertex, 0.0, 0.0, {}, neigbour_cube_ids.left_bottom_front);
@@ -402,7 +373,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 
   if (draw_back_face) {
-    for (auto vertex : draw_data.vertices.back) {
+    for (auto vertex : draw_data.vertices[vertices_index].back) {
       reduce_vertex_brightness_for_ao(vertex, 0.0, 1.0, {}, neigbour_cube_ids.left_top_back);
       reduce_vertex_brightness_for_ao(vertex, 1.0, 1.0, {}, neigbour_cube_ids.right_top_back);
       reduce_vertex_brightness_for_ao(vertex, 0.0, 0.0, {}, neigbour_cube_ids.left_bottom_back);
@@ -418,38 +389,40 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_i
   }
 }
 
-void cubes::Cube::get_vertices(CubePos cube_pos, std::vector<cubes::CompactVertex>& vertices_list) const {
-  for (auto vertex : draw_data.vertices.vertices) {
+void cubes::Cube::get_vertices(CubePos cube_pos, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
+  if (draw_data.vertices.size() == 0) { return; }
+  size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
+  for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.left) {
+  for (auto vertex : draw_data.vertices[vertices_index].left) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.right) {
+  for (auto vertex : draw_data.vertices[vertices_index].right) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.bottom) {
+  for (auto vertex : draw_data.vertices[vertices_index].bottom) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.top) {
+  for (auto vertex : draw_data.vertices[vertices_index].top) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.front) {
+  for (auto vertex : draw_data.vertices[vertices_index].front) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }
 
-  for (auto vertex : draw_data.vertices.back) {
+  for (auto vertex : draw_data.vertices[vertices_index].back) {
     vertex.pos += cube_pos;
     vertices_list.emplace_back(vertex);
   }

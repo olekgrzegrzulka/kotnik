@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include <vector>
 #include <glm/fwd.hpp>
 #include "aabb.hpp"
@@ -17,6 +16,7 @@ enum class CubeId : u16 {
   WOOD,
   LEAVES,
   GRASS_PLANT,
+  FLOWER,
   WATER,
   STONE_BRICKS,
   STONE_BRICKS2,
@@ -74,10 +74,24 @@ public:
     std::string name = "";
     std::vector<AABB> collider_aabbs;
 
+    constexpr Cube() {}
+    constexpr Cube(std::string name_) : name{name_} {}
+
     enum class CubeOccludeMode {
       NEVER,
       ALWAYS,
       IF_SAME_ID,
+    };
+
+    struct CubeVertices {
+      std::vector<CompactVertex> vertices{};
+
+      std::vector<CompactVertex> left{};
+      std::vector<CompactVertex> right{};
+      std::vector<CompactVertex> bottom{};
+      std::vector<CompactVertex> top{};
+      std::vector<CompactVertex> front{};
+      std::vector<CompactVertex> back{};
     };
 
     struct { // draw
@@ -95,23 +109,14 @@ public:
       } occlude_adjacent_cube;
 
       // List of vertices for each direction is used for occlusion in the given direction
-      struct {
-        std::vector<CompactVertex> vertices{};
-
-        std::vector<CompactVertex> left{};
-        std::vector<CompactVertex> right{};
-        std::vector<CompactVertex> bottom{};
-        std::vector<CompactVertex> top{};
-        std::vector<CompactVertex> front{};
-        std::vector<CompactVertex> back{};
-      } vertices;
+      std::vector<CubeVertices> vertices;
 
       bool ao = true;
     } draw_data;
 
-    void get_vertices(CubePos, NeigbourCubeIds, std::vector<cubes::CompactVertex>& vertices_list) const;
+    void get_vertices(CubePos, NeigbourCubeIds, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 
-    void get_vertices(CubePos, std::vector<cubes::CompactVertex>& vertices_list) const;
+    void get_vertices(CubePos, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 
     Cube& set_occlusion_mode(CubeOccludeMode mode) {
       using enum CubeOccludeMode;
@@ -133,6 +138,17 @@ public:
       draw_data.is_translucent = state;
       return *this;
     }
+
+    constexpr Cube& add_model_full_cube(glm::vec<2, float> uv);
+    constexpr Cube& add_model_full_cube(glm::vec<2, float> uv_left, glm::vec<2, float> uv_right,
+                                        glm::vec<2, float> uv_bottom, glm::vec<2, float> uv_top,
+                                        glm::vec<2, float> uv_front, glm::vec<2, float> uv_back);
+    constexpr Cube& add_model_x_shape(glm::vec<2, float> uv);
+
+    constexpr Cube& add_collider(AABB aabb = AABB{{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}}) {
+      collider_aabbs.emplace_back(aabb);
+      return *this;
+    }
   };
 
   static const Cube& get(CubeId cube_id) {
@@ -142,20 +158,7 @@ public:
   }
 
 private:
-  std::array<Cube, (size_t)CubeId::CUBE_ID_SIZE> cube_array;
+  std::vector<Cube> cube_array;
 
   cubes();
-
-  constexpr Cube create_full_cube_with_single_uv(
-      std::string name, glm::vec<2, float> uv,
-      bool is_translucent = false, Cube::CubeOccludeMode occlude_mode = cubes::Cube::CubeOccludeMode::ALWAYS);
-
-  constexpr Cube create_full_cube_with_per_face_uv(
-      std::string name,
-      glm::vec<2, float> uv_left, glm::vec<2, float> uv_right,
-      glm::vec<2, float> uv_bottom, glm::vec<2, float> uv_top,
-      glm::vec<2, float> uv_front, glm::vec<2, float> uv_back,
-      bool is_translucent = false, Cube::CubeOccludeMode occlude_mode = cubes::Cube::CubeOccludeMode::ALWAYS);
-
-  constexpr Cube create_x_shape_cube(std::string name, glm::vec<2, float> uv);
 };

@@ -26,7 +26,8 @@ const BiomeList init_biome_list() {
   };
 
   biome_flatlands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
-    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
+    if (rng > 0.98f) { return CubeId::FLOWER; }
+    if (rng > 0.87f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 
@@ -153,7 +154,8 @@ const BiomeList init_biome_list() {
   };
 
   biome_highlands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
-    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
+    if (rng > 0.994f) { return CubeId::FLOWER; }
+    if (rng > 0.87f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 
@@ -180,7 +182,8 @@ const BiomeList init_biome_list() {
   };
 
   biome_hillylands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
-    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
+    if (rng > 0.988f) { return CubeId::FLOWER; }
+    if (rng > 0.87f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 

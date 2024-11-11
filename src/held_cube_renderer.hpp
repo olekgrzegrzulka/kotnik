@@ -15,6 +15,7 @@
 #include "common.hpp"
 #include "cubes.hpp"
 #include "glad/glad.h"
+#include "random.hpp"
 #include "world.hpp" // For NeigbourCubeIds
 
 namespace HeldCubeRenderer {
@@ -25,7 +26,7 @@ GLuint vbo = 0;
 
 static void update_mesh(CubeId cube) {
   vertices.clear();
-  cubes::get(cube).get_vertices(CubePos{}, vertices);
+  cubes::get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), vertices);
   // Create and bind VAO
   glGenVertexArrays(1, (GLuint*)&vao);
 

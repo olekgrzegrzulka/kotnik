@@ -83,10 +83,11 @@ void ChunkRenderer::rebuild_mesh(ChunkMeshData chunk_mesh_data) {
         neigbour_cube_ids.right_top_front = chunk_mesh_data.get_cube_id({x + 1, y + 1, z - 1});
         neigbour_cube_ids.right_top_back = chunk_mesh_data.get_cube_id({x + 1, y + 1, z + 1});
 
+        i32 rng = (chunk.position + local_pos).x * 11 - (chunk.position + local_pos).y * 2 + (chunk.position + local_pos).z * 3;
         if (cube.draw_data.is_translucent) {
-          cube.get_vertices(chunk.position * CHUNK_SIZE + local_pos, neigbour_cube_ids, vertices_translucent[building_index]);
+          cube.get_vertices(chunk.position * CHUNK_SIZE + local_pos, neigbour_cube_ids, rng, vertices_translucent[building_index]);
         } else {
-          cube.get_vertices(chunk.position * CHUNK_SIZE + local_pos, neigbour_cube_ids, vertices[building_index]);
+          cube.get_vertices(chunk.position * CHUNK_SIZE + local_pos, neigbour_cube_ids, rng, vertices[building_index]);
         }
       }
     }
