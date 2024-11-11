@@ -29,8 +29,6 @@ void ChunkRenderer::rebuild_mesh(ChunkMeshData chunk_mesh_data) {
   if (is_running) { return; }
   is_running = true;
 
-  ensure(chunk.flags.ready);
-
   std::vector<const Chunk*> chunks = {};
 
   vertices[building_index].clear();

@@ -20,7 +20,7 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 }
 
 WorldRenderer::WorldRenderer(World& _world) : world(_world) {
-  for (size_t i = 0; i < 8; i += 1) {
+  for (size_t i = 0; i < 4; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 }
@@ -84,9 +84,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
       }
     }
 
-    if (chunk->flags.ready) {
-      chunk->renderer->draw();
-    }
+    chunk->renderer->draw();
   }
 
   std::vector<Chunk*> chunks_sorted_by_distance_to_player;
@@ -99,9 +97,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   /* alpha      */ glUniform1f(3, 0.8);
   for (auto it = chunks_sorted_by_distance_to_player.rbegin(); it != chunks_sorted_by_distance_to_player.rend(); ++it) {
     Chunk* chunk = *it;
-    if (chunk->flags.ready) {
-      chunk->renderer->draw_translucent();
-    }
+    chunk->renderer->draw_translucent();
   }
 
   std::unordered_set<ChunkPos, Vec3Hasher> new_chunks_awaiting_mesh_update;
@@ -114,7 +110,6 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   for (const ChunkPos chunk_pos : chunks_awaiting_mesh_update_sorted_by_distance) {
     Chunk* chunk = world.get_chunk(chunk_pos);
     if (chunk == nullptr) { continue; }
-    if (!chunk->flags.ready) { continue; }
 
     bool updated = false;
     for (const auto& worker : chunk_mesh_workers) {

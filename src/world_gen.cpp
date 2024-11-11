@@ -292,6 +292,4 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
       }
     }
   }
-
-  print(chunk->position);
 }

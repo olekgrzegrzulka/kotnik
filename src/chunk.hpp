@@ -75,16 +75,6 @@ constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos) {
   return local_pos;
 }
 
-enum class ChunkEventType {
-  SET_CUBE,
-};
-
-struct ChunkEvent {
-  ChunkEventType type;
-  LocalPos local_pos;
-  CubeId cube_id;
-};
-
 class ChunkRenderer;
 
 class Chunk {
@@ -92,9 +82,6 @@ public:
   ChunkPos position{};
 
   struct {
-    // When chunk is ready, it can be accessed from the World::get_chunk() method. Used when chunk is being loaded in a background thread
-    bool ready = false;
-
     bool awaiting_mesh_update = false;
 
     struct {
@@ -108,30 +95,13 @@ public:
 
     // Chunk is too far from view, and may be unloaded an any time
     bool marked_for_unload = false;
-
-    // When > 0 prevents chunk data from being modified, instead all chunk modifications are sent to event_queue
-    size_t threads_reading = 0;
-
-    // Prevents chunk data from being modified, instead all chunk modifications are sent to event_queue
-    bool thread_writing = false;
-
-    bool is_read_locked() const {
-      return thread_writing;
-    }
-
-    bool is_write_locked() const {
-      return thread_writing || threads_reading > 0;
-    }
-
-    bool is_being_generated = false;
-
   } flags;
 
   WorldPos get_center_pos() const;
 
   void update_mesh_update_flags(LocalPos local_pos);
 
-  std::unordered_map<CubePos, CubeId, Vec3Hasher> neigbour_chunks_cubes_to_set;
+  std::vector<std::pair<CubePos, CubeId>> neigbour_chunks_cubes_to_set;
 
   ChunkRenderer* renderer{};
 
@@ -139,8 +109,6 @@ public:
   // std::atomic<bool> upload_vao = false;
   bool upload_vao = false;
   // std::atomic<bool> test;
-
-  std::vector<ChunkEvent> event_queue;
 
   struct {
     // bool locked = false;

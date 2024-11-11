@@ -57,7 +57,7 @@ class World {
   friend class WorldRenderer;
 
 public:
-  static const i32 chunk_load_distance = 4;
+  static const i32 chunk_load_distance = 5;
 
   struct {
     double gravity = -0.012;
@@ -68,6 +68,7 @@ public:
 private:
   std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, Vec3Hasher> chunks;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
+  std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_generation;
   std::vector<std::unique_ptr<Entity>> entities;
 
   std::vector<ChunkTerrainGenWorker*> chunk_terrain_gen_workers;
@@ -94,7 +95,7 @@ public:
 
   void set_cube(CubePos cube_pos, CubeId to);
 
-  void create_new_chunk(ChunkPos chunk_pos);
+  bool create_new_chunk(ChunkPos chunk_pos);
 
   CubeId get_cube(CubePos cube_pos) const;
 
@@ -149,8 +150,6 @@ public:
   std::unordered_map<u32, CubeId> get_neigbours(CubePos _cube_pos, bool edges = false, bool corners = false) const;
 
   std::unordered_map<u32, CubeId> get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges = false, bool corners = false) const;
-
-  bool is_chunk_ready(ChunkPos chunk_pos);
 
   void update();
 };

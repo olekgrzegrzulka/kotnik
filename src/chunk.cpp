@@ -5,6 +5,7 @@
 #include "cubes.hpp"
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
+  renderer = new ChunkRenderer(*this);
 }
 
 Chunk::~Chunk() {
@@ -47,15 +48,6 @@ void Chunk::update_mesh_update_flags(LocalPos local_pos) {
 }
 
 void Chunk::update() {
-  // Event queue
-  if (!(flags.is_write_locked())) {
-    for (auto& event : event_queue) {
-      if (event.type == ChunkEventType::SET_CUBE) {
-        set_cube(event.local_pos, event.cube_id);
-      }
-    }
-    event_queue.clear();
-  }
 }
 
 bool Chunk::is_solid(LocalPos local_pos) const {
@@ -67,11 +59,8 @@ CubeId Chunk::get_cube(LocalPos local_pos) const {
 }
 
 void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
-  assert(is_local_pos_valid(local_pos));
-  if (flags.is_write_locked()) {
-    event_queue.emplace_back(ChunkEvent{.type = ChunkEventType::SET_CUBE, .local_pos = local_pos, .cube_id = cube_id});
-    return;
-  }
+  ensure(is_local_pos_valid(local_pos));
+
   cubes[local_pos_to_index(local_pos)] = cube_id;
 
   update_mesh_update_flags(local_pos);
@@ -110,7 +99,7 @@ void Chunk::set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cub
 
   CubePos cube_pos = local_pos_to_cube_pos(chunk_pos, local_pos);
 
-  neigbour_chunks_cubes_to_set.insert({cube_pos, cube_id});
+  neigbour_chunks_cubes_to_set.push_back({cube_pos, cube_id});
 }
 
 void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
