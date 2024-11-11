@@ -19,18 +19,18 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_flatlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_flatlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth == 0) { return CubeId::GRASS; }
     if (depth <= 3) { return CubeId::DIRT; }
     return CubeId::STONE;
   };
 
-  biome_flatlands.get_foliage_cube = []([[maybe_unused]] i32 y, float noise_rng) -> CubeId {
-    if (noise_rng > 0.75f) { return CubeId::GRASS_PLANT; }
+  biome_flatlands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
+    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 
-  biome_flatlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_flatlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -46,16 +46,16 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_desert.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_desert.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth <= 4) { return CubeId::SAND; }
     return CubeId::STONE;
   };
 
-  biome_desert.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_desert.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
-  biome_desert.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_desert.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -71,16 +71,16 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_ocean.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_ocean.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth <= 3) { return CubeId::SAND; }
     return CubeId::STONE;
   };
 
-  biome_ocean.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_ocean.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
-  biome_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -96,16 +96,16 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_deep_ocean.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_deep_ocean.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth <= 3) { return CubeId::SAND; }
     return CubeId::STONE;
   };
 
-  biome_deep_ocean.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_deep_ocean.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
-  biome_deep_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_deep_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -121,16 +121,16 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_beach.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_beach.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth <= 3) { return CubeId::SAND; }
     return CubeId::STONE;
   };
 
-  biome_beach.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_beach.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
-  biome_beach.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_beach.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -146,18 +146,18 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 48.0f,
   };
 
-  biome_highlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_highlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth == 0) { return CubeId::GRASS; }
     if (depth <= 3) { return CubeId::DIRT; }
     return CubeId::STONE;
   };
 
-  biome_highlands.get_foliage_cube = []([[maybe_unused]] i32 y, float noise_rng) -> CubeId {
-    if (noise_rng > 0.75f) { return CubeId::GRASS_PLANT; }
+  biome_highlands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
+    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 
-  biome_highlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_highlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -173,18 +173,18 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 15.0f,
   };
 
-  biome_hillylands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_hillylands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
     if (depth == 0) { return CubeId::GRASS; }
     if (depth <= 3) { return CubeId::DIRT; }
     return CubeId::STONE;
   };
 
-  biome_hillylands.get_foliage_cube = []([[maybe_unused]] i32 y, float noise_rng) -> CubeId {
-    if (noise_rng > 0.75f) { return CubeId::GRASS_PLANT; }
+  biome_hillylands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
+    if (rng > 0.9f) { return CubeId::GRASS_PLANT; }
     return CubeId::AIR;
   };
 
-  biome_hillylands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float noise_rng) -> CubeId {
+  biome_hillylands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 

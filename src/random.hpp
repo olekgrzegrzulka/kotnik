@@ -2,6 +2,7 @@
 #include <limits>
 #include <random>
 #include <span>
+#include <type_traits>
 #include "common.hpp"
 
 class Random {
@@ -19,8 +20,16 @@ public:
   }
 
   template <typename T>
-  T next(i32 from = std::numeric_limits<i32>::min(), i32 to = std::numeric_limits<i32>::max()) {
-    std::uniform_int_distribution<i32> distribution(from, to);
+    requires std::is_integral_v<T>
+  T next(T from = std::numeric_limits<T>::min(), T to = std::numeric_limits<T>::max()) {
+    std::uniform_int_distribution<T> distribution(from, to);
+    return distribution(rng);
+  }
+
+  template <typename T>
+    requires std::is_floating_point_v<T>
+  T next(T from = 0.0, T to = 1.0) {
+    std::uniform_real_distribution<T> distribution(from, to);
     return distribution(rng);
   }
 

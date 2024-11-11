@@ -19,7 +19,6 @@ public:
   biomes::Biome get_blended_biome(WorldPos world_pos) const;
   bool is_ground(WorldPos pos, const biomes::Biome& blended_biome) const;
   bool is_ground(WorldPos pos) const;
-  float get_cube_rng(WorldPos pos) const;
 
 private:
   World& world;
@@ -28,5 +27,4 @@ private:
   FastNoiseLite noise_3d;
   FastNoiseLite noise_humidity;
   FastNoiseLite noise_temperature;
-  FastNoiseLite noise_rng;
 };

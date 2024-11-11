@@ -32,9 +32,9 @@ struct Biome final {
   float noise_spiky_multiplier = 0;
   float noise_3d_multiplier = 0;
 
-  std::function<CubeId(i32 /* y */, i32 /* depth */, float /* noise_rng */)> get_ground_cube;
-  std::function<CubeId(i32 /* y */, float /* noise_rng */)> get_foliage_cube;
-  std::function<CubeId(i32 /* y */, float /* noise_rng */)> get_air_cube;
+  std::function<CubeId(i32 y, i32 depth, float rng)> get_ground_cube;
+  std::function<CubeId(i32 y, float rng)> get_foliage_cube;
+  std::function<CubeId(i32 y, float rng)> get_air_cube;
 };
 
 const Biome& get_biome(BiomeId id);

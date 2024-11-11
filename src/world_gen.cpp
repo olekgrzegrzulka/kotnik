@@ -11,6 +11,7 @@
 #include "chunk.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
+#include "random.hpp"
 #include "world.hpp"
 
 struct ChunkGenArray {
@@ -20,7 +21,6 @@ public:
 
   struct CubeData {
     bool is_solid;
-    float rng;
   };
 
   // Used for lerping biome samples across chunk to reduce jagginess
@@ -93,7 +93,6 @@ public:
       world_pos.y = begin.y + local_pos.y;
       data[i] = CubeData{
           .is_solid = world_gen.is_ground(world_pos, blended_biome),
-          .rng = world_gen.get_cube_rng(world_pos),
       };
     }
 
@@ -204,12 +203,6 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_temperature.SetFractalOctaves(4);
   noise_temperature.SetFractalLacunarity(2.2f);
   noise_temperature.SetFractalGain(0.4f);
-
-  noise_rng.SetSeed(seed + 3);
-  noise_rng.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_rng.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
-  noise_rng.SetFrequency(0.54117f);
-  noise_rng.SetFractalOctaves(3);
 }
 
 biomes::Biome WorldGen::get_blended_biome(WorldPos world_pos) const {
@@ -231,10 +224,6 @@ bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const
   float value = (blended_biome.base_height + value_height) * value_3d;
 
   return value > pos.y;
-}
-
-float WorldGen::get_cube_rng(WorldPos pos) const {
-  return noise_rng.GetNoise(pos.x, pos.y, pos.z) * 0.5f + 0.5f;
 }
 
 bool WorldGen::is_ground(WorldPos pos) const {
@@ -263,11 +252,12 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
             chunk->set_cube_no_lock({x_local, y_local, z_local}, CubeId::WATER);
             continue;
           }
+          float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
           if (chunk_solid_cubes_array.get_cube_info({x_local, y_local - 1, z_local}).is_solid) {
-            auto cube = blended_biome.get_foliage_cube((i32)y, cube_info.rng);
+            auto cube = blended_biome.get_foliage_cube((i32)y, rng);
             chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
           } else {
-            auto cube = blended_biome.get_air_cube((i32)y, cube_info.rng);
+            auto cube = blended_biome.get_air_cube((i32)y, rng);
             chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
           }
           continue;
@@ -280,7 +270,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
           }
         }
 
-        auto cube = blended_biome.get_ground_cube((i32)y, depth, cube_info.rng);
+        auto cube = blended_biome.get_ground_cube((i32)y, depth, 0.0);
         chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
       }
     }
