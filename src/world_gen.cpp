@@ -170,7 +170,7 @@ private:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
-  constexpr float scale = 0.7;
+  constexpr float scale = 0.82;
   noise_heightmap.SetSeed(seed);
   noise_heightmap.SetFrequency(0.006064f / scale);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
