@@ -69,6 +69,7 @@ private:
   std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, Vec3Hasher> chunks;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_generation;
+  std::unordered_set<ChunkPos, Vec3Hasher> chunks_being_generated;
   std::vector<std::unique_ptr<Entity>> entities;
 
   std::vector<ChunkTerrainGenWorker*> chunk_terrain_gen_workers;
