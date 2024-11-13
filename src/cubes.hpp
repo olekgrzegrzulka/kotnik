@@ -114,7 +114,7 @@ public:
       bool ao = true;
     } draw_data;
 
-    void get_vertices(CubePos, NeigbourCubeIds, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
+    void get_vertices(CubePos, NeigbourCubeIds&, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 
     void get_vertices(CubePos, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 

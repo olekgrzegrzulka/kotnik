@@ -1,17 +1,15 @@
 #include "chunk.hpp"
 #include <cassert>
-#include "chunk_renderer.hpp"
+#include <memory>
+#include "chunk_mesh.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
-  renderer = new ChunkRenderer(*this);
+  mesh = std::make_unique<ChunkMesh>();
 }
 
 Chunk::~Chunk() {
-  if (renderer) {
-    delete renderer;
-  }
 }
 
 WorldPos Chunk::get_center_pos() const {

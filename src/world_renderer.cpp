@@ -1,10 +1,11 @@
 #include "world_renderer.hpp"
+#include <memory>
 #include <unordered_set>
 #include <vector>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/norm.hpp>
 #include "chunk.hpp"
-#include "chunk_renderer.hpp"
+#include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "glad/glad.h"
@@ -20,7 +21,7 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 }
 
 WorldRenderer::WorldRenderer(World& _world) : world(_world) {
-  for (size_t i = 0; i < 4; i += 1) {
+  for (size_t i = 0; i < 2; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 }
@@ -31,10 +32,33 @@ WorldRenderer::~WorldRenderer() {
   }
 }
 
+void WorldRenderer::add_chunk_for_mesh_update(ChunkPos chunk_pos) {
+  Chunk* chunk = world.get_chunk(chunk_pos);
+  if (!chunk) { return; }
+  if (!(chunk->flags.awaiting_mesh_update)) { return; }
+  if (chunks_awaiting_mesh_update.contains(chunk_pos)) { return; }
+  // chunk->flags.awaiting_mesh_update = true;
+  // if (chunks_awaiting_mesh_update.contains(chunk_pos)) { return; }
+  chunk->flags.awaiting_mesh_update = false;
+  chunks_awaiting_mesh_update.emplace(chunk_pos);
+}
+
 void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) {
-  // Unlock chunks locked by mesh worker threads
+  for (auto& worker : chunk_mesh_workers) {
+    worker->update();
+  }
+
+  // Retrieve new meshes for chunks
   for (const auto& worker : chunk_mesh_workers) {
-    if (worker->try_collecting()) {
+    for (auto& [chunk_pos, chunk_mesh] : worker->collect_finished_chunks()) {
+      Chunk* chunk = world.get_chunk(chunk_pos);
+      if (!chunk) { continue; }
+      auto prev_mesh = std::move(chunk->mesh);
+      chunk->mesh = std::move(chunk_mesh);
+      chunk->mesh->inherit_buffers_from_previous_mesh(prev_mesh.get());
+      chunk->flags.awaiting_mesh_update = false;
+      // ensure(chunks_being_meshed.contains(chunk_pos));
+      chunks_being_meshed.erase(chunk_pos);
     }
   }
 
@@ -45,84 +69,115 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   /* alpha      */ glUniform1f(3, 1.0);
 
   for (auto& [chunk_pos, chunk] : world.chunks) {
-    if (chunk->renderer->can_swap_buffers) {
-      chunk->renderer->swap_buffers();
-    }
-
+    // Propagate chunk mesh update request to adjacent chunks and update meshes
     if (chunk->flags.awaiting_mesh_update) {
-      chunks_awaiting_mesh_update.emplace(chunk_pos);
-      chunk->flags.awaiting_mesh_update = false;
+      add_chunk_for_mesh_update(chunk_pos);
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.left) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(-1, 0, 0));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(-1, 0, 0));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(-1, 0, 0));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.left = false;
       }
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.right) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(1, 0, 0));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(1, 0, 0));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(1, 0, 0));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.right = false;
       }
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.down) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, -1, 0));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(0, -1, 0));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(0, -1, 0));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.down = false;
       }
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.up) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 1, 0));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(0, 1, 0));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(0, 1, 0));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.up = false;
       }
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.front) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, -1));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(0, 0, -1));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(0, 0, -1));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.front = false;
       }
 
       if (chunk->flags.update_mesh_of_adjacent_chunk.back) {
-        chunks_awaiting_mesh_update.emplace(chunk_pos + ChunkPos(0, 0, 1));
+        Chunk* adjacent_chunk = world.get_chunk(chunk_pos + ChunkPos(0, 0, 1));
+        if (adjacent_chunk) {
+          adjacent_chunk->flags.awaiting_mesh_update = true;
+          add_chunk_for_mesh_update(chunk_pos + ChunkPos(0, 0, 1));
+        }
         chunk->flags.update_mesh_of_adjacent_chunk.back = false;
       }
     }
-
-    chunk->renderer->draw();
+    chunk->mesh->draw();
   }
 
   std::vector<Chunk*> chunks_sorted_by_distance_to_player;
   for (auto& [chunk_pos, chunk] : world.chunks) {
     chunks_sorted_by_distance_to_player.emplace_back(chunk.get());
   }
-  ChunkPos player_chunk_pos = world.player->world_pos / static_cast<double>(CHUNK_SIZE);
+  ChunkPos player_chunk_pos = (world.player) ? world_pos_to_chunk_pos(world.player->world_pos) : ChunkPos{0, 0, 0};
   sort_chunk_vector_by_manhattan_distance(chunks_sorted_by_distance_to_player, player_chunk_pos);
 
   /* alpha      */ glUniform1f(3, 0.8);
   for (auto it = chunks_sorted_by_distance_to_player.rbegin(); it != chunks_sorted_by_distance_to_player.rend(); ++it) {
     Chunk* chunk = *it;
-    chunk->renderer->draw_translucent();
+    chunk->mesh->draw_translucent();
   }
-
-  std::unordered_set<ChunkPos, Vec3Hasher> new_chunks_awaiting_mesh_update;
 
   std::vector<ChunkPos> chunks_awaiting_mesh_update_sorted_by_distance;
   for (auto x : chunks_awaiting_mesh_update) {
     chunks_awaiting_mesh_update_sorted_by_distance.emplace_back(x);
   }
 
-  for (const ChunkPos chunk_pos : chunks_awaiting_mesh_update_sorted_by_distance) {
-    Chunk* chunk = world.get_chunk(chunk_pos);
-    if (chunk == nullptr) { continue; }
+  for (auto& worker : chunk_mesh_workers) {
+    worker->lock_queue();
+  }
 
-    bool updated = false;
-    for (const auto& worker : chunk_mesh_workers) {
-      if (worker->run_job(chunk->position, world)) {
-        updated = true;
-        break;
+  // Skip the edge chunks as they don't have all neigbours and can't be meshed
+  size_t i = 0;
+  for (int x = -world.chunk_load_distance + 1; x <= world.chunk_load_distance - 1; x += 1) {
+    for (int z = -world.chunk_load_distance + 1; z <= world.chunk_load_distance - 1; z += 1) {
+      for (int y = -world.chunk_load_distance + 1; y <= world.chunk_load_distance - 1; y += 1) {
+        ChunkPos chunk_pos = player_chunk_pos + ChunkPos{x, y, z};
+        if (!chunks_awaiting_mesh_update.contains(chunk_pos)) {
+          continue;
+        }
+        Chunk* chunk = world.get_chunk(chunk_pos);
+        if (!chunk) {
+          chunks_awaiting_mesh_update.erase(chunk_pos);
+          continue;
+        }
+        size_t worker_index = i % chunk_mesh_workers.size();
+        bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
+        if (success) {
+          chunks_being_meshed.emplace(chunk_pos);
+          chunks_awaiting_mesh_update.erase(chunk_pos);
+        }
+        i += 1;
       }
-    }
-
-    if (!updated) {
-      new_chunks_awaiting_mesh_update.emplace(chunk->position);
     }
   }
 
-  chunks_awaiting_mesh_update = new_chunks_awaiting_mesh_update;
+  for (auto& worker : chunk_mesh_workers) {
+    worker->unlock_queue();
+  }
 }

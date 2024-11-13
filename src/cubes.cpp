@@ -93,8 +93,8 @@ cubes::cubes() {
   cube_array[7] = Cube{"Leaves"}.add_model_full_cube({9.0f, 0.0f}).add_collider();
   cube_array[7].set_occlusion_mode(NEVER).set_ao(false);
 
-  cube_array[8] = Cube{"Grass Plant"}.add_model_x_shape({13.0f, 0.0f});
-  cube_array[8].set_occlusion_mode(NEVER).set_ao(false);
+  cube_array[8] = Cube{"Grass Plant"}.set_occlusion_mode(NEVER).set_ao(false);
+  cube_array[8].add_model_x_shape({13.0f, 0.0f}).add_model_x_shape({13.0f, 1.0f});
 
   cube_array[9] = Cube{"Flower"};
   cube_array[9].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
@@ -187,7 +187,7 @@ constexpr cubes::Cube& cubes::Cube::add_model_x_shape(glm::vec<2, float> uv) {
   return *this;
 };
 
-void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds neigbour_cube_ids, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
+void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
   CubeId cube_id = neigbour_cube_ids.center.value();
 
   bool draw_left_face = [&] -> bool {

@@ -4,7 +4,6 @@
 #include <memory>
 #include <unordered_set>
 #include "chunk.hpp"
-#include "chunk_renderer.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
@@ -18,7 +17,7 @@ World::World() {
   debug_log("Created world with seed ", seed);
   world_gen = std::make_unique<WorldGen>(*this, seed);
 
-  for (size_t i = 0; i < 4; i += 1) {
+  for (size_t i = 0; i < 3; i += 1) {
     chunk_terrain_gen_workers.push_back(new ChunkTerrainGenWorker(world_gen));
   }
 }

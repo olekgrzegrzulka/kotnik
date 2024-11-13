@@ -18,7 +18,7 @@ set(SOURCES
     ./src/chunk.cpp
     ./src/glad.c
     ./src/input.cpp
-    ./src/chunk_renderer.cpp
+    ./src/chunk_mesh.cpp
     ./src/chunk_worker.cpp
     ./src/world_gen.cpp
     ./src/biome.cpp

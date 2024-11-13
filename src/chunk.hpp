@@ -2,7 +2,6 @@
 #include <array>
 #include <bitset>
 #include <optional>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <stdint.h>
@@ -11,6 +10,8 @@
 
 #define CHUNK_SIZE (32)
 #define CHUNK_CUBES (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
+
+class ChunkMesh;
 
 // Checks if a local position is in range of chunk's array
 constexpr static bool is_local_pos_valid(LocalPos local_pos) {
@@ -75,8 +76,6 @@ constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos) {
   return local_pos;
 }
 
-class ChunkRenderer;
-
 class Chunk {
 public:
   ChunkPos position{};
@@ -103,7 +102,7 @@ public:
 
   std::vector<std::pair<CubePos, CubeId>> neigbour_chunks_cubes_to_set;
 
-  ChunkRenderer* renderer{};
+  std::unique_ptr<ChunkMesh> mesh;
 
   // This flag is set when a background thread finishes generating draw_data, allowing binding VAO on next World::update()
   // std::atomic<bool> upload_vao = false;
