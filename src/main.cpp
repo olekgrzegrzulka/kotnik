@@ -24,6 +24,15 @@
 #include "world.hpp"
 #include "world_renderer.hpp"
 
+void check_opengl_errors() {
+  GLenum error;
+  while ((error = glGetError()) != GL_NO_ERROR) {
+    std::stringstream error_hex;
+    error_hex << std::hex << error;
+    debug_warn("GL error 0x", error_hex.str());
+  }
+}
+
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
   // Setup GLFW
@@ -96,6 +105,8 @@ int main() {
 
   while (!glfwWindowShouldClose(window)) {
     auto start_time = std::chrono::high_resolution_clock::now();
+
+    check_opengl_errors();
 
     Input::update();
     world.update();
