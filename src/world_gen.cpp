@@ -20,10 +20,6 @@ public:
   static constexpr i32 lip_negative_y = 1;
   static constexpr i32 lip_positive_y = 4;
 
-  struct CubeData {
-    bool is_solid;
-  };
-
   // Used for lerping biome samples across chunk to reduce jagginess
   struct SmoothBiomeGrid {
     // (1 + biome_samples_subdivisions) ^ 2 samples will be used
@@ -94,9 +90,7 @@ public:
       world_pos.y = begin.y + local_pos.y;
       bool is_solid = world_gen.is_ground(world_pos, blended_biome);
       if (is_solid) { empty = false; }
-      data[i] = CubeData{
-          .is_solid = is_solid,
-      };
+      data[i] = is_solid;
     }
 
     // Fix the skipped cubes in checkerboard generation
@@ -112,28 +106,28 @@ public:
 
       static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
       for (LocalPos o : offsets) {
-        auto c = get_cube_info_or_empty(local_pos + LocalPos{o.x, o.y, o.z});
+        auto c = is_solid(local_pos + LocalPos{o.x, o.y, o.z});
         if (!c.has_value()) { continue; }
         neigbour_count_any += 1;
-        neigbour_count_solid += (int)c->is_solid;
+        neigbour_count_solid += (int)c.value();
       }
 
       float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
 
       if (occlusion >= 0.5f) {
-        data_uncheckered[i].is_solid = true;
+        data_uncheckered[i] = true;
       }
     }
 
     data = data_uncheckered;
   }
-  CubeData get_cube_info(LocalPos local_pos) {
+  bool is_solid_unsafe(LocalPos local_pos) {
     size_t index = get_index(local_pos);
     assert(index < data.size());
     return data.at(index);
   }
 
-  std::optional<CubeData> get_cube_info_or_empty(LocalPos local_pos) {
+  std::optional<bool> is_solid(LocalPos local_pos) {
     size_t index = get_index(local_pos);
     if (index >= data.size()) {
       return std::nullopt;
@@ -172,7 +166,7 @@ private:
   const WorldGen& world_gen;
   bool empty = false;
 
-  std::vector<CubeData> data;
+  std::vector<bool> data;
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
@@ -275,16 +269,15 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
         float y = chunk->position.y * CHUNK_SIZE + (int)y_local;
         LocalPos local_pos = {x_local, y_local, z_local};
 
-        auto cube_info = chunk_solid_cubes_array.get_cube_info({x_local, y_local, z_local});
-        bool solid = cube_info.is_solid;
+        auto is_solid = chunk_solid_cubes_array.is_solid_unsafe({x_local, y_local, z_local});
 
-        if (!solid) {
+        if (!is_solid) {
           if (y <= 0) {
             chunk->set_cube_no_lock({x_local, y_local, z_local}, CubeId::WATER);
             continue;
           }
           float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
-          if (chunk_solid_cubes_array.get_cube_info({x_local, y_local - 1, z_local}).is_solid) {
+          if (chunk_solid_cubes_array.is_solid_unsafe({x_local, y_local - 1, z_local})) {
             auto cube = blended_biome.get_foliage_cube((i32)y, rng);
             chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
 
@@ -319,7 +312,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
 
         int depth = 0;
         for (; depth < 4; depth += 1) {
-          if (!chunk_solid_cubes_array.get_cube_info({x_local, y_local + depth + 1, z_local}).is_solid) {
+          if (!chunk_solid_cubes_array.is_solid_unsafe({x_local, y_local + depth + 1, z_local})) {
             break;
           }
         }
