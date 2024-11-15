@@ -1,6 +1,7 @@
 #include "world_gen.hpp"
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cstdlib>
 #include <map>
 #include <optional>
@@ -235,6 +236,29 @@ bool WorldGen::is_ground(WorldPos pos) const {
 void WorldGen::generate_chunk(Chunk* chunk) const {
   auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
 
+  std::vector<bool> tree_map{};
+  tree_map.resize(CHUNK_SIZE * CHUNK_SIZE, false);
+
+  auto tree_map_get_or_false = [&tree_map](i32 at_x, i32 at_y) -> bool {
+    if (at_x < 0 || at_y < 0 || at_x >= CHUNK_SIZE || at_y >= CHUNK_SIZE) {
+      return false;
+    }
+    return tree_map[at_x + at_y * CHUNK_SIZE];
+  };
+
+  for (size_t i = 0; i < 10; i++) {
+    // Starting from (1, 1) to prevent two trees sticking on chunk boundaries
+    i32 ox = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
+    i32 oy = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
+
+    if (tree_map_get_or_false(ox - 1, oy + 1) || tree_map_get_or_false(ox + 0, oy + 1) || tree_map_get_or_false(ox + 1, oy + 1) ||
+        tree_map_get_or_false(ox - 1, oy + 0) /*check 9 neigbours if there is a tree*/ || tree_map_get_or_false(ox + 1, oy + 0) ||
+        tree_map_get_or_false(ox - 1, oy - 1) || tree_map_get_or_false(ox + 0, oy - 1) || tree_map_get_or_false(ox + 1, oy - 1)) {
+      continue;
+    }
+    tree_map[ox + oy * CHUNK_SIZE] = true;
+  }
+
   for (size_t x_local = 0; x_local < CHUNK_SIZE; x_local += 1) {
     for (size_t z_local = 0; z_local < CHUNK_SIZE; z_local += 1) {
       float x = chunk->position.x * CHUNK_SIZE + (int)x_local;
@@ -243,6 +267,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
 
       for (size_t y_local = 0; y_local < CHUNK_SIZE; y_local += 1) {
         float y = chunk->position.y * CHUNK_SIZE + (int)y_local;
+        LocalPos local_pos = {x_local, y_local, z_local};
 
         auto cube_info = chunk_solid_cubes_array.get_cube_info({x_local, y_local, z_local});
         bool solid = cube_info.is_solid;
@@ -256,9 +281,32 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
           if (chunk_solid_cubes_array.get_cube_info({x_local, y_local - 1, z_local}).is_solid) {
             auto cube = blended_biome.get_foliage_cube((i32)y, rng);
             chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
-          } else {
-            auto cube = blended_biome.get_air_cube((i32)y, rng);
-            chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
+
+            bool is_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS);
+
+            if (is_tree) {
+              i32 tree_height = StaticRandom::get().next<i32>(4, 7);
+
+              for (i32 ox = -2; ox <= 2; ox += 1) {
+                for (i32 oy = tree_height - 2; oy <= tree_height + 1; oy += 1) {
+                  for (i32 oz = -2; oz <= 2; oz += 1) {
+                    bool ox_edge = ox == -2 || ox == 2;
+                    bool oy_edge = oy == tree_height - 2 || oy == tree_height + 1;
+                    bool oz_edge = oz == -2 || oz == 2;
+                    LocalPos local_pos_leaves = {x_local + ox, y_local + oy, z_local + oz};
+                    if ((int)ox_edge + (int)oy_edge + (int)oz_edge >= 2) { continue; }
+                    if (is_local_pos_valid(local_pos_leaves) && chunk->get_cube(local_pos_leaves) != CubeId::AIR) {
+                      continue;
+                    }
+                    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::LEAVES);
+                  }
+                }
+              }
+
+              for (i32 i = 0; i <= tree_height; i += 1) {
+                chunk->set_cube_maybe_neigbour({x_local, y_local + i, z_local}, CubeId::WOOD);
+              }
+            }
           }
           continue;
         }

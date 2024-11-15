@@ -21,7 +21,7 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 }
 
 WorldRenderer::WorldRenderer(World& _world) : world(_world) {
-  for (size_t i = 0; i < 2; i += 1) {
+  for (size_t i = 0; i < 1; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 }

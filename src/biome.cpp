@@ -31,10 +31,6 @@ const BiomeList init_biome_list() {
     return CubeId::AIR;
   };
 
-  biome_flatlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
   biome_list[(size_t)BiomeId::FLATLANDS] = biome_flatlands;
 
   // Desert
@@ -53,10 +49,6 @@ const BiomeList init_biome_list() {
   };
 
   biome_desert.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
-  biome_desert.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -81,10 +73,6 @@ const BiomeList init_biome_list() {
     return CubeId::AIR;
   };
 
-  biome_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
   biome_list[(size_t)BiomeId::OCEAN] = biome_ocean;
 
   // Deep Ocean
@@ -106,10 +94,6 @@ const BiomeList init_biome_list() {
     return CubeId::AIR;
   };
 
-  biome_deep_ocean.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
   biome_list[(size_t)BiomeId::DEEP_OCEAN] = biome_deep_ocean;
 
   // Beach
@@ -128,10 +112,6 @@ const BiomeList init_biome_list() {
   };
 
   biome_beach.get_foliage_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
-  biome_beach.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -159,10 +139,6 @@ const BiomeList init_biome_list() {
     return CubeId::AIR;
   };
 
-  biome_highlands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
-    return CubeId::AIR;
-  };
-
   biome_list[(size_t)BiomeId::HIGHLANDS] = biome_highlands;
 
   // Hillylands
@@ -184,10 +160,6 @@ const BiomeList init_biome_list() {
   biome_hillylands.get_foliage_cube = []([[maybe_unused]] i32 y, float rng) -> CubeId {
     if (rng > 0.988f) { return CubeId::FLOWER; }
     if (rng > 0.87f) { return CubeId::GRASS_PLANT; }
-    return CubeId::AIR;
-  };
-
-  biome_hillylands.get_air_cube = []([[maybe_unused]] i32 y, [[maybe_unused]] float rng) -> CubeId {
     return CubeId::AIR;
   };
 
@@ -219,7 +191,6 @@ Biome biome_lerp(const biomes::Biome& biome_a, const biomes::Biome& biome_b, flo
   blended_biome.name = stronger_biome.name;
   blended_biome.get_ground_cube = stronger_biome.get_ground_cube;
   blended_biome.get_foliage_cube = stronger_biome.get_foliage_cube;
-  blended_biome.get_air_cube = stronger_biome.get_air_cube;
 
   return blended_biome;
 }
@@ -278,7 +249,6 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
   blended_biome.name = strongest_biome.name;
   blended_biome.get_ground_cube = strongest_biome.get_ground_cube;
   blended_biome.get_foliage_cube = strongest_biome.get_foliage_cube;
-  blended_biome.get_air_cube = strongest_biome.get_air_cube;
 
   return blended_biome;
 }

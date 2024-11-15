@@ -34,7 +34,6 @@ struct Biome final {
 
   std::function<CubeId(i32 y, i32 depth, float rng)> get_ground_cube;
   std::function<CubeId(i32 y, float rng)> get_foliage_cube;
-  std::function<CubeId(i32 y, float rng)> get_air_cube;
 };
 
 const Biome& get_biome(BiomeId id);

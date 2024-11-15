@@ -144,6 +144,14 @@ public:
   // Allows changing cubes of different chunks by storing them, for World to set them later.
   void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
 
+  void set_cube_maybe_neigbour(LocalPos local_pos, CubeId cube_id) {
+    if (is_local_pos_valid(local_pos)) {
+      set_cube(local_pos, cube_id);
+    } else {
+      set_cube_neigbour(neigbour_chunk_pos(position, local_pos), wrap_around_local_pos(local_pos), cube_id);
+    }
+  }
+
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
 
   std::array<CubeId, CHUNK_CUBES> get_cubes() const {
