@@ -116,6 +116,7 @@ public:
 
 private:
   std::vector<CubeId> cubes{};
+  bool no_cubes = true;
 
   // A true value means that the cube at index is occluded. All cubes with neigbours outside chunk bounds always have value of false
   std::bitset<CHUNK_CUBES> occlusion_map;
@@ -135,6 +136,7 @@ public:
   bool is_solid(LocalPos at) const;
 
   CubeId get_cube(LocalPos at) const;
+  bool has_no_cubes() const { return no_cubes; }
 
   void set_cube(LocalPos local_pos, CubeId cube_id);
   void set_cube_no_lock(LocalPos local_pos, CubeId cube_id);

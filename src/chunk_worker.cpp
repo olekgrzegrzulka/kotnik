@@ -17,6 +17,13 @@
 //
 
 bool ChunkMeshWorker::add_to_queue(ChunkPos chunk_pos, World& world) {
+  Chunk* c = world.get_chunk(chunk_pos);
+  if (c && c->has_no_cubes()) {
+    std::scoped_lock lock(chunks_finished_mutex);
+    chunks_finished.emplace_back(chunk_pos, std::make_unique<ChunkMesh>());
+    return true;
+  }
+
   for (i32 x = -1; x <= 1; x += 1) {
     for (i32 y = -1; y <= 1; y += 1) {
       for (i32 z = -1; z <= 1; z += 1) {
@@ -30,7 +37,7 @@ bool ChunkMeshWorker::add_to_queue(ChunkPos chunk_pos, World& world) {
 
   auto data = std::make_unique<ChunkMeshData>(chunk_pos, world);
   if (!data->is_valid()) { return false; }
-  if (is_running) { std::scoped_lock lock(chunk_queue_mutex); }
+  std::scoped_lock lock(chunk_queue_mutex);
   chunk_queue.emplace_back(chunk_pos, std::move(data));
   return true;
 }

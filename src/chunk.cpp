@@ -64,6 +64,10 @@ void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
 
   update_mesh_update_flags(local_pos);
 
+  if (cube_id != CubeId::AIR) {
+    no_cubes = false;
+  }
+
   // Compute heightmap
   const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];
   // Cube which was the highest cube in chunk was set to air. Compute new heighmap
@@ -107,6 +111,10 @@ void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
   cubes[local_pos_to_index(local_pos)] = cube_id;
 
   update_mesh_update_flags(local_pos);
+
+  if (cube_id != CubeId::AIR) {
+    no_cubes = false;
+  }
 
   // Compute heightmap
   const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];

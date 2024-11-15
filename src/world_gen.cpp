@@ -92,8 +92,10 @@ public:
       WorldPos world_pos = begin + local_pos;
 
       world_pos.y = begin.y + local_pos.y;
+      bool is_solid = world_gen.is_ground(world_pos, blended_biome);
+      if (is_solid) { empty = false; }
       data[i] = CubeData{
-          .is_solid = world_gen.is_ground(world_pos, blended_biome),
+          .is_solid = is_solid,
       };
     }
 
@@ -162,10 +164,13 @@ public:
     return local_pos;
   }
 
+  bool is_empty() const { return empty; }
+
 private:
   CubePos begin;
   CubePos end;
   const WorldGen& world_gen;
+  bool empty;
 
   std::vector<CubeData> data;
 };
@@ -235,6 +240,7 @@ bool WorldGen::is_ground(WorldPos pos) const {
 
 void WorldGen::generate_chunk(Chunk* chunk) const {
   auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
+  if (chunk_solid_cubes_array.is_empty()) { return; }
 
   std::vector<bool> tree_map{};
   tree_map.resize(CHUNK_SIZE * CHUNK_SIZE, false);
