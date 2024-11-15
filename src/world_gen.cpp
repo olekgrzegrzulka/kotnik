@@ -170,7 +170,7 @@ private:
   CubePos begin;
   CubePos end;
   const WorldGen& world_gen;
-  bool empty;
+  bool empty = false;
 
   std::vector<CubeData> data;
 };
