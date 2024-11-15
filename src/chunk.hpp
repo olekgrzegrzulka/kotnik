@@ -115,7 +115,7 @@ public:
   } lightmap;
 
 private:
-  std::array<CubeId, CHUNK_CUBES> cubes{};
+  std::vector<CubeId> cubes{};
 
   // A true value means that the cube at index is occluded. All cubes with neigbours outside chunk bounds always have value of false
   std::bitset<CHUNK_CUBES> occlusion_map;
@@ -154,7 +154,7 @@ public:
 
   std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
 
-  std::array<CubeId, CHUNK_CUBES> get_cubes() const {
+  std::vector<CubeId> get_cubes() const {
     return cubes;
   }
 

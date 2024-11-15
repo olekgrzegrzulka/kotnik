@@ -6,6 +6,7 @@
 #include "cubes.hpp"
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
+  cubes.resize(CHUNK_CUBES);
   mesh = std::make_unique<ChunkMesh>();
 }
 

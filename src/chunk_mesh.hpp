@@ -18,7 +18,7 @@ public:
   ChunkPos get_chunk_pos() const { return chunk_pos; }
 
 private:
-  std::vector<std::array<CubeId, CHUNK_CUBES>> data;
+  std::vector<std::vector<CubeId>> data;
   bool valid = false;
   ChunkPos chunk_pos;
 
