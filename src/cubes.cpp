@@ -187,8 +187,18 @@ constexpr cubes::Cube& cubes::Cube::add_model_x_shape(glm::vec<2, float> uv) {
   return *this;
 };
 
-void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
+void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, std::optional<i32> rng_opt, std::vector<cubes::CompactVertex>& vertices_list) const {
   CubeId cube_id = neigbour_cube_ids.center.value();
+
+  static FastNoiseLite noise_rng;
+  i32 rng = 0;
+  if (rng_opt.has_value()) {
+    rng = rng_opt.value();
+  } else if (draw_data.uses_rng()) {
+    rng = noise_rng.GetNoise((float)cube_pos.x, (float)cube_pos.y, (float)cube_pos.z) * 100000.0;
+  }
+
+  size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
 
   bool draw_left_face = [&] -> bool {
     CubeId left_cube_id = neigbour_cube_ids.left.value();
@@ -285,7 +295,6 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
       }
     }
   };
-  size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
 
   for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;

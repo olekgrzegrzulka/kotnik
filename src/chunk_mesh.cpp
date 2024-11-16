@@ -90,14 +90,10 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> chunk_mesh_data) {
     neigbour_cube_ids.right_top_front = chunk_mesh_data->get_cube_id({l.x + 1, l.y + 1, l.z - 1});
     neigbour_cube_ids.right_top_back = chunk_mesh_data->get_cube_id({l.x + 1, l.y + 1, l.z + 1});
 
-    CubePos cube_pos = local_pos_to_cube_pos(chunk_pos, l);
-
-    static FastNoiseLite noise_rng;
-    i32 rng = noise_rng.GetNoise((float)cube_pos.x, (float)cube_pos.y, (float)cube_pos.z) * 100000.0;
     if (cube.draw_data.is_translucent) {
-      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, rng, vertices_translucent);
+      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, std::nullopt, vertices_translucent);
     } else {
-      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, rng, vertices);
+      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, std::nullopt, vertices);
     }
   }
 }

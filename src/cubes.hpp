@@ -98,6 +98,8 @@ public:
       // Translucent cubes will be drawn after non-translucent cubes, sorted by their distance to camera
       bool is_translucent = false;
 
+      bool uses_rng() const { return vertices.size() > 1; }
+
       struct {
         using enum CubeOccludeMode;
         CubeOccludeMode left = ALWAYS;
@@ -114,7 +116,7 @@ public:
       bool ao = true;
     } draw_data;
 
-    void get_vertices(CubePos, NeigbourCubeIds&, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
+    void get_vertices(CubePos, NeigbourCubeIds&, std::optional<i32> rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 
     void get_vertices(CubePos, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const;
 
