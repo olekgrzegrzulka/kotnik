@@ -30,10 +30,13 @@ void main() {
     brightness = 0.5 + dot * 0.5;
     brightness = min(brightness, float(brightness_vertex) / 255.0);
 
-    fog_factor = clamp(
-        (distance(vertex, camera_position) - 150) * 0.005,
-        0.0, 1.0
-    );
+    float fog_start = 78.0;
+    float fog_end = 80.0;
+    float dist = distance(vertex, camera_position);
+    dist = abs(vertex.x - camera_position.x) + abs(vertex.y - camera_position.y) + abs(vertex.z - camera_position.z);
+    dist = max(max(abs(vertex.x - camera_position.x), abs(vertex.y - camera_position.y)), abs(vertex.z - camera_position.z));
+
+    fog_factor = min(1.0, max(0.0, dist - fog_start) / fog_end);
 
     alpha = _alpha;
 
