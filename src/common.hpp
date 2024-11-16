@@ -180,6 +180,16 @@ static CubePos floor_position(WorldPos pos) {
       glm::floor(pos.z)};
 }
 
+template <class T>
+static constexpr T manhattan_distance(glm::vec<2, T> first, glm::vec<2, T> second) {
+  return std::abs(first.x - second.x) + std::abs(first.y - second.y);
+}
+
+template <class T>
+static constexpr T manhattan_distance(glm::vec<3, T> first, glm::vec<3, T> second) {
+  return std::abs(first.x - second.x) + std::abs(first.y - second.y) + std::abs(first.z - second.z);
+}
+
 template <typename T>
 static void sort_vector_by_manhattan_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T> to) {
   using Vec3T = glm::vec<3, T>;

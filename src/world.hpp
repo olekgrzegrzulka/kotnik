@@ -57,7 +57,7 @@ class World {
   friend class WorldRenderer;
 
 public:
-  static const i32 chunk_load_distance = 5;
+  static const i32 chunk_load_distance = 6;
 
   struct {
     double gravity = -0.012;

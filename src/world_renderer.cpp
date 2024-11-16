@@ -1,5 +1,7 @@
 #include "world_renderer.hpp"
+#include <map>
 #include <memory>
+#include <queue>
 #include <unordered_set>
 #include <vector>
 #include <glm/gtc/type_ptr.hpp>
@@ -152,8 +154,9 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
     worker->lock_queue();
   }
 
+  std::multimap<i32, Chunk*, std::greater<i32>> chunks_for_remeshing;
   // Skip the edge chunks as they don't have all neigbours and can't be meshed
-  size_t i = 0;
+
   for (int x = -world.chunk_load_distance + 1; x <= world.chunk_load_distance - 1; x += 1) {
     for (int z = -world.chunk_load_distance + 1; z <= world.chunk_load_distance - 1; z += 1) {
       for (int y = -world.chunk_load_distance + 1; y <= world.chunk_load_distance - 1; y += 1) {
@@ -166,15 +169,22 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
           chunks_awaiting_mesh_update.erase(chunk_pos);
           continue;
         }
-        size_t worker_index = i % chunk_mesh_workers.size();
-        bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
-        if (success) {
-          chunks_being_meshed.emplace(chunk_pos);
-          chunks_awaiting_mesh_update.erase(chunk_pos);
-        }
-        i += 1;
+        i32 distance_to_chunk = manhattan_distance(chunk->position, player_chunk_pos);
+        chunks_for_remeshing.emplace(distance_to_chunk, chunk);
       }
     }
+  }
+
+  size_t i = 0;
+  for (auto& [_, chunk] : chunks_for_remeshing) {
+    size_t worker_index = i % chunk_mesh_workers.size();
+    bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
+    if (success) {
+      chunks_being_meshed.emplace(chunk->position);
+      chunks_awaiting_mesh_update.erase(chunk->position);
+    }
+
+    i += 1;
   }
 
   for (auto& worker : chunk_mesh_workers) {
