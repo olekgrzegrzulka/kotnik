@@ -11,11 +11,12 @@ in float alpha;
 
 void main() {
     vec4 color = texture(atlas, uv).rgba;
-    if (color.a < 0.6) {discard;}
-    FragColor.rgb = color.rgb * brightness;
+    if (color.a  < 0.5) {discard;}
+    color.rgb *= brightness;
+    color.a = alpha;
 
     vec4 fog_color = vec4(0.68, 0.88, 0.97, 1.0);
-    FragColor.rgb = mix(FragColor, fog_color, fog_factor).rgb;
+    color.rgb = mix(color.rgb, fog_color.rgb, fog_factor).rgb;
 
-    FragColor.a = alpha;
+    FragColor = color;
 }
