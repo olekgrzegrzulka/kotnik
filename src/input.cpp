@@ -1,7 +1,5 @@
 #include "input.hpp"
 #include <GLFW/glfw3.h>
-#include "common.hpp"
-#include "glm/glm.hpp"
 
 namespace Input {
 
@@ -13,17 +11,17 @@ static int last_mouse_x;
 static int last_mouse_y;
 } // namespace detail
 
-void glfw_cursor_position_callback(GLFWwindow* window, double x, double y) {
+void glfw_cursor_position_callback(GLFWwindow*, double, double) {
   // detail::last_mouse_x = detail::mouse_x;
   // detail::last_mouse_y = detail::mouse_y;
   // detail::mouse_x = x;
   // detail::mouse_y = y;
 }
 
-void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+void glfw_mouse_button_callback(GLFWwindow*, int, int, int) {
 }
 
-void glfw_scroll_button_callback(GLFWwindow* window, double xoffset, double yoffset) {
+void glfw_scroll_button_callback(GLFWwindow*, double, double) {
 }
 
 void init(GLFWwindow* window) {

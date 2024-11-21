@@ -5,7 +5,6 @@
 #include <vector>
 #include "chunk.hpp"
 #include "chunk_mesh.hpp"
-#include "cubes.hpp"
 #include "world_gen.hpp"
 
 class Chunk;

@@ -1,6 +1,4 @@
-#include <atomic>
 #include <chrono>
-#include <ratio>
 #include <vector>
 #include <glm/detail/type_quat.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -16,15 +14,14 @@
 #include "cubes.hpp"
 #include "glad/glad.h"
 #include "random.hpp"
-#include "world.hpp" // For NeigbourCubeIds
 
 namespace HeldCubeRenderer {
 
-std::vector<cubes::CompactVertex> vertices;
-GLuint vao = 0;
-GLuint vbo = 0;
+inline std::vector<cubes::CompactVertex> vertices;
+inline GLuint vao = 0;
+inline GLuint vbo = 0;
 
-static void update_mesh(CubeId cube) {
+inline void update_mesh(CubeId cube) {
   vertices.clear();
   cubes::get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), vertices);
   // Create and bind VAO
@@ -51,7 +48,7 @@ static void update_mesh(CubeId cube) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-static void draw(float aspect_ratio) {
+inline void draw(float aspect_ratio) {
   static constexpr glm::vec3 light = {0.41f, 0.82f, 0.41f};
 
   glm::mat4 projection = glm::ortho(-0.5f * aspect_ratio, 0.5f * aspect_ratio, -0.5f, 0.5f, 0.01f, 10.0f);

@@ -4,7 +4,6 @@
 #include "chunk.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
-#include "fast_noise_lite.h"
 #include "glad/glad.h"
 #include "world.hpp"
 #include "world_renderer.hpp"

@@ -1,7 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include "common.hpp"
-#include "glm/glm.hpp"
+#include <glm/vec2.hpp>
 
 namespace Input {
 

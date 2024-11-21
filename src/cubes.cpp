@@ -1,5 +1,4 @@
 #include "cubes.hpp"
-#include "aabb.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
 
@@ -200,7 +199,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
 
-  bool draw_left_face = [&] -> bool {
+  bool draw_left_face = [&]() -> bool {
     CubeId left_cube_id = neigbour_cube_ids.left.value();
     auto& left_cube = cubes::get(left_cube_id);
     if (left_cube.draw_data.occlude_adjacent_cube.right == cubes::Cube::CubeOccludeMode::ALWAYS) {
@@ -214,7 +213,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  bool draw_right_face = [&] -> bool {
+  bool draw_right_face = [&]() -> bool {
     CubeId right_cube_id = neigbour_cube_ids.right.value();
     auto& right_cube = cubes::get(right_cube_id);
     if (right_cube.draw_data.occlude_adjacent_cube.left == cubes::Cube::CubeOccludeMode::ALWAYS) {
@@ -228,7 +227,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  bool draw_bottom_face = [&] -> bool {
+  bool draw_bottom_face = [&]() -> bool {
     CubeId bottom_cube_id = neigbour_cube_ids.bottom.value();
     auto& bottom_cube = cubes::get(bottom_cube_id);
     if (bottom_cube.draw_data.occlude_adjacent_cube.top == cubes::Cube::CubeOccludeMode::ALWAYS) {
@@ -242,7 +241,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  bool draw_top_face = [&] -> bool {
+  bool draw_top_face = [&]() -> bool {
     CubeId top_cube_id = neigbour_cube_ids.top.value();
     auto& top_cube = cubes::get(top_cube_id);
     if (top_cube.draw_data.occlude_adjacent_cube.bottom == cubes::Cube::CubeOccludeMode::ALWAYS) {
@@ -256,7 +255,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  bool draw_front_face = [&] -> bool {
+  bool draw_front_face = [&]() -> bool {
     CubeId front_cube_id = neigbour_cube_ids.front.value();
     auto& front_cube = cubes::get(front_cube_id);
     if (front_cube.draw_data.occlude_adjacent_cube.back == cubes::Cube::CubeOccludeMode::ALWAYS) {
@@ -270,7 +269,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  bool draw_back_face = [&] -> bool {
+  bool draw_back_face = [&]() -> bool {
     CubeId back_cube_id = neigbour_cube_ids.back.value();
     auto& back_cube = cubes::get(back_cube_id);
     if (back_cube.draw_data.occlude_adjacent_cube.front == cubes::Cube::CubeOccludeMode::ALWAYS) {

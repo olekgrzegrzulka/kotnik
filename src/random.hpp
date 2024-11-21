@@ -43,7 +43,7 @@ public:
 };
 
 namespace StaticRandom {
-static Random& get() {
+inline Random& get() {
   thread_local Random r;
   return r;
 }

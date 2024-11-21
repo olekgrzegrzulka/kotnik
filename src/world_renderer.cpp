@@ -1,7 +1,6 @@
 #include "world_renderer.hpp"
 #include <map>
 #include <memory>
-#include <queue>
 #include <unordered_set>
 #include <vector>
 #include <glm/gtc/type_ptr.hpp>

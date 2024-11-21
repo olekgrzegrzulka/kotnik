@@ -1,5 +1,4 @@
 #pragma once
-#include "chunk.hpp"
 #include "common.hpp"
 
 class World;
