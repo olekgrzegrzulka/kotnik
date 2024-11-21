@@ -52,28 +52,44 @@ constexpr glm::vec<3, T> Vec3Forward = {0, 0, -1};
 template <typename T>
 constexpr glm::vec<3, T> Vec3Back = {0, 0, 1};
 
-// Debugging
-
-template <typename T>
-static void print(glm::vec<3, T> vec3) {
-  std::cout << "[" << vec3.x << ", " << vec3.y << ", " << vec3.z << "]" << std::endl;
+static CubePos floor_position(WorldPos pos) {
+  return CubePos{
+      glm::floor(pos.x),
+      glm::floor(pos.y),
+      glm::floor(pos.z)};
 }
 
 template <typename T>
-static void print(std::vector<T> vec) {
-  for (T elem : vec) {
-    print(elem);
+static void print_(T&& arg) {
+  std::cout << arg;
+}
+
+template <typename T>
+static void print_(glm::vec<3, T> vec3) {
+  std::cout << "[" << vec3.x << ", " << vec3.y << ", " << vec3.z << "]";
+}
+
+template <typename T>
+static void print_(std::vector<T> vec) {
+  std::cout << "{";
+  for (size_t i = 0; i < vec.size(); i += 1) {
+    print_(vec[i]);
+    if (i != vec.size() - 1) {
+      std::cout << ", ";
+    }
   }
+  std::cout << "}";
 }
 
-template <typename Arg>
-static void print(Arg&& arg) {
-  std::cout << arg << std::endl;
+template <typename T>
+static void print(T arg) {
+  print_(arg);
+  std::cout << std::endl;
 }
 
-template <typename... Args, typename FirstArg>
-static void print(FirstArg&& first_arg, Args&&... args) {
-  std::cout << first_arg;
+template <typename T, typename... R>
+static void print(T&& first_arg, R&&... args) {
+  print_(first_arg);
   print(args...);
 }
 
@@ -171,13 +187,6 @@ static glm::vec<3, T> lerp_vec3(glm::vec<3, T> from, glm::vec<3, T> to, float a)
       std::lerp(from.x, to.x, a),
       std::lerp(from.y, to.y, a),
       std::lerp(from.z, to.z, a)};
-}
-
-static CubePos floor_position(WorldPos pos) {
-  return CubePos{
-      glm::floor(pos.x),
-      glm::floor(pos.y),
-      glm::floor(pos.z)};
 }
 
 template <class T>
