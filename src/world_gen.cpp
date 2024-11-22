@@ -1,12 +1,11 @@
 #include "world_gen.hpp"
 #include <algorithm>
 #include <array>
-#include <bitset>
 #include <cstdlib>
-#include <map>
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include "array3d.hpp"
 #include "biome.hpp"
 #include "biome_map.hpp"
 #include "chunk.hpp"
@@ -59,103 +58,74 @@ public:
   };
 
   ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
-    begin = chunk_pos * CHUNK_SIZE - CubePos{0, lip_negative_y, 0};
-    end = chunk_pos * CHUNK_SIZE + CubePos{CHUNK_SIZE - 1, CHUNK_SIZE - 1, CHUNK_SIZE - 1} + CubePos{0, lip_positive_y, 0};
+    begin = CubePos{0, -lip_negative_y, 0};
+    end = CubePos{CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE} + CubePos{0, lip_positive_y, 0};
 
-    static constexpr size_t array_size = ((CHUNK_SIZE) *
-                                          (CHUNK_SIZE + lip_negative_y + lip_positive_y) *
-                                          (CHUNK_SIZE));
+    data = Array3D<bool>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
 
-    data.resize(array_size);
-
-    SmoothBiomeGrid biome_grid(wg, begin);
-
-    // Generate the chunk in checkerboard pattern, which will be fixed later
-    // This will reduce noise function calls
+    SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * CHUNK_SIZE);
 
     std::unordered_map<glm::vec<2, i32>, biomes::Biome, Vec2Hasher> blended_biome_cache;
 
-    for (i32 i = 0; i < (i32)array_size; i += 1) {
-      // Checkerboard
-      LocalPos local_pos = index_to_local_pos(i);
-      if ((local_pos.x + local_pos.y + local_pos.z) % 2 == 1) { continue; }
+    for (i32 z = begin.z; z < end.z; z += 1) {
+      for (i32 y = begin.y; y < end.y; y += 1) {
+        for (i32 x = begin.x; x < end.x; x += 1) {
+          // Checkerboard
+          if ((x + y + z) % 2 == 1) { continue; }
 
-      if (!blended_biome_cache.contains({local_pos.x, local_pos.z})) {
-        blended_biome_cache[{local_pos.x, local_pos.z}] = biome_grid.get_biome(local_pos.x, local_pos.z);
+          if (!blended_biome_cache.contains({x, z})) {
+            blended_biome_cache[{x, z}] = biome_grid.get_biome(x, z);
+          }
+          auto blended_biome = blended_biome_cache[{x, z}];
+
+          WorldPos world_pos = chunk_pos * CHUNK_SIZE + LocalPos{x, y, z};
+
+          bool is_solid = world_gen.is_ground(world_pos, blended_biome);
+          if (is_solid) { empty = false; }
+          data.set({x, y, z}, is_solid);
+        }
       }
-      auto blended_biome = blended_biome_cache[{local_pos.x, local_pos.z}];
-
-      WorldPos world_pos = begin + local_pos;
-
-      world_pos.y = begin.y + local_pos.y;
-      bool is_solid = world_gen.is_ground(world_pos, blended_biome);
-      if (is_solid) { empty = false; }
-      data[i] = is_solid;
     }
 
     // Fix the skipped cubes in checkerboard generation
     auto data_uncheckered = data;
 
-    for (i32 i = 0; i < (i32)array_size; i += 1) {
-      // Alternate checkerboard
-      LocalPos local_pos = index_to_local_pos(i);
-      if ((local_pos.x + local_pos.y + local_pos.z) % 2 == 0) { continue; }
+    for (i32 z = begin.z; z < end.z; z += 1) {
+      for (i32 y = begin.y; y < end.y; y += 1) {
+        for (i32 x = begin.x; x < end.x; x += 1) {
+          // Alternate checkerboard
+          if ((x + y + z) % 2 == 0) { continue; }
 
-      i32 neigbour_count_any = 0;
-      i32 neigbour_count_solid = 0;
+          i32 neigbour_count_any = 0;
+          i32 neigbour_count_solid = 0;
 
-      static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
-      for (LocalPos o : offsets) {
-        auto c = is_solid(local_pos + LocalPos{o.x, o.y, o.z});
-        if (!c.has_value()) { continue; }
-        neigbour_count_any += 1;
-        neigbour_count_solid += (int)c.value();
-      }
+          static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
+          for (LocalPos o : offsets) {
+            auto c = is_solid(LocalPos{x, y, z} + LocalPos{o.x, o.y, o.z});
+            if (!c.has_value()) { continue; }
+            neigbour_count_any += 1;
+            neigbour_count_solid += (int)c.value();
+          }
 
-      float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
+          float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
 
-      if (occlusion >= 0.5f) {
-        data_uncheckered[i] = true;
+          if (occlusion >= 0.5f) {
+            data_uncheckered.set({x, y, z}, true);
+          }
+        }
+
+        data = data_uncheckered;
       }
     }
-
-    data = data_uncheckered;
   }
+
   bool is_solid_unsafe(LocalPos local_pos) {
-    size_t index = get_index(local_pos);
-    assert(index < data.size());
-    return data.at(index);
+    return data.at(local_pos);
   }
 
   std::optional<bool> is_solid(LocalPos local_pos) {
-    size_t index = get_index(local_pos);
-    if (index >= data.size()) {
-      return std::nullopt;
-    }
-    return data.at(index);
-  }
-
-  size_t get_index(LocalPos local_pos) {
-    size_t index = 0;
-    index += local_pos.x + 0;
-    index += (CHUNK_SIZE + 0 + 0) * (local_pos.y + lip_negative_y);
-    index += (CHUNK_SIZE + 0 + 0) * (CHUNK_SIZE + lip_negative_y + lip_positive_y) * (local_pos.z + 0);
-
-    return index;
-  }
-
-  LocalPos index_to_local_pos(size_t index) {
-    LocalPos local_pos;
-    local_pos.z = (index / ((CHUNK_SIZE + 0 + 0) * (CHUNK_SIZE + lip_negative_y + lip_positive_y))) % (CHUNK_SIZE + 0 + 0);
-    local_pos.z -= 0;
-
-    local_pos.y = (index / ((CHUNK_SIZE + 0 + 0))) % (CHUNK_SIZE + lip_negative_y + lip_positive_y);
-    local_pos.y -= lip_negative_y;
-
-    local_pos.x = (index) % (CHUNK_SIZE + 0 + 0);
-    local_pos.x -= 0;
-
-    return local_pos;
+    if (!data.has_index(local_pos)) { return std::nullopt; }
+    return data.at(local_pos);
   }
 
   bool is_empty() const { return empty; }
@@ -166,7 +136,7 @@ private:
   const WorldGen& world_gen;
   bool empty = false;
 
-  std::vector<bool> data;
+  Array3D<bool> data;
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
