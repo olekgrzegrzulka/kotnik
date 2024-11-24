@@ -60,6 +60,19 @@ bool ChunkMeshWorker::add_to_queue_no_mutex(ChunkPos chunk_pos, World& world) {
   return true;
 }
 
+void ChunkMeshWorker::sort_queue_by_distance(ChunkPos to) {
+  std::scoped_lock lock(chunk_queue_mutex);
+
+  sort_queue_by_distance_no_mutex(to);
+}
+
+void ChunkMeshWorker::sort_queue_by_distance_no_mutex(ChunkPos to) {
+  using comp_t = const ChunkMeshWorker::chunk_queue_t&;
+  std::sort(chunk_queue.begin(), chunk_queue.end(), [&to](comp_t a, comp_t b) -> bool {
+    return manhattan_distance(a.first, to) > manhattan_distance(b.first, to);
+  });
+}
+
 void ChunkMeshWorker::lock_queue() {
   chunk_queue_mutex.lock();
 }
@@ -73,7 +86,7 @@ size_t ChunkMeshWorker::get_queue_size() {
   return chunk_queue.size();
 }
 
-std::optional<std::pair<ChunkPos, std::unique_ptr<ChunkMeshData>>> ChunkMeshWorker::pop_from_queue() {
+std::optional<ChunkMeshWorker::chunk_queue_t> ChunkMeshWorker::pop_from_queue() {
   std::scoped_lock lock(chunk_queue_mutex);
 
   if (chunk_queue.empty()) { return std::nullopt; }
@@ -96,20 +109,15 @@ void ChunkMeshWorker::update() {
 
   std::thread thread([=, this]() {
     while (true) {
-      decltype(chunk_queue) chunk_queue_;
-      chunk_queue_mutex.lock();
-      std::swap(chunk_queue, chunk_queue_);
-      chunk_queue_mutex.unlock();
+      auto elem = pop_from_queue();
+      if (!elem.has_value()) { break; }
+      auto [chunk_pos, data] = std::move(elem.value());
 
-      if (chunk_queue_.size() == 0) { break; }
-      for (auto& elem : chunk_queue_) {
-        auto [chunk_pos, data] = std::move(elem);
-        ensure(data->is_valid());
-        auto mesh = std::make_unique<ChunkMesh>(std::move(data));
-        {
-          std::scoped_lock lock(chunks_finished_mutex);
-          chunks_finished.emplace_back(chunk_pos, std::move(mesh));
-        }
+      ensure(data->is_valid());
+      auto mesh = std::make_unique<ChunkMesh>(std::move(data));
+      {
+        std::scoped_lock lock(chunks_finished_mutex);
+        chunks_finished.emplace_back(chunk_pos, std::move(mesh));
       }
     }
     is_running = false;

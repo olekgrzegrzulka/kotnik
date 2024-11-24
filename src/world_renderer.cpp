@@ -1,4 +1,5 @@
 #include "world_renderer.hpp"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <unordered_set>
@@ -22,7 +23,7 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 }
 
 WorldRenderer::WorldRenderer(World& _world) : world(_world) {
-  for (size_t i = 0; i < 3; i += 1) {
+  for (size_t i = 0; i < 2; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
 }
@@ -149,10 +150,6 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
     chunks_awaiting_mesh_update_sorted_by_distance.emplace_back(x);
   }
 
-  for (auto& worker : chunk_mesh_workers) {
-    worker->lock_queue();
-  }
-
   std::multimap<i32, Chunk*, std::greater<i32>> chunks_for_remeshing;
   // Skip the edge chunks as they don't have all neigbours and can't be meshed
 
@@ -174,19 +171,28 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
     }
   }
 
-  size_t i = 0;
-  for (auto& [_, chunk] : chunks_for_remeshing) {
-    size_t worker_index = i % chunk_mesh_workers.size();
-    bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
-    if (success) {
-      chunks_being_meshed.emplace(chunk->position);
-      chunks_awaiting_mesh_update.erase(chunk->position);
+  if (!chunks_for_remeshing.empty()) {
+    for (auto& worker : chunk_mesh_workers) {
+      // worker->lock_queue();
     }
 
-    i += 1;
-  }
+    size_t i = 0;
+    for (auto& [_, chunk] : chunks_for_remeshing) {
+      size_t worker_index = i % chunk_mesh_workers.size();
+      // bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
+      bool success = chunk_mesh_workers[worker_index]->add_to_queue(chunk->position, world);
+      if (success) {
+        chunks_being_meshed.emplace(chunk->position);
+        chunks_awaiting_mesh_update.erase(chunk->position);
+      }
 
-  for (auto& worker : chunk_mesh_workers) {
-    worker->unlock_queue();
+      i += 1;
+    }
+
+    for (auto& worker : chunk_mesh_workers) {
+      worker->sort_queue_by_distance(player_chunk_pos);
+      // worker->sort_queue_by_distance_no_mutex(player_chunk_pos);
+      // worker->unlock_queue();
+    }
   }
 }

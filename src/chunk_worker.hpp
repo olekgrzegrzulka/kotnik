@@ -11,11 +11,15 @@ class Chunk;
 class ChunkRenderer;
 
 struct ChunkMeshWorker {
+  using chunk_queue_t = std::pair<ChunkPos, std::unique_ptr<ChunkMeshData>>;
+
   ChunkMeshWorker() = default;
 
-  bool add_to_queue(ChunkPos chunk_pos, World& world);
+  bool add_to_queue(ChunkPos, World&);
+  bool add_to_queue_no_mutex(ChunkPos, World&);
 
-  bool add_to_queue_no_mutex(ChunkPos chunk_pos, World& world);
+  void sort_queue_by_distance(ChunkPos);
+  void sort_queue_by_distance_no_mutex(ChunkPos);
 
   void lock_queue();
   void unlock_queue();
@@ -27,11 +31,11 @@ struct ChunkMeshWorker {
   std::vector<std::pair<ChunkPos, std::unique_ptr<ChunkMesh>>> collect_finished_chunks();
 
 private:
-  std::optional<std::pair<ChunkPos, std::unique_ptr<ChunkMeshData>>> pop_from_queue();
+  std::optional<chunk_queue_t> pop_from_queue();
 
   std::atomic<bool> is_running = false;
 
-  std::vector<std::pair<ChunkPos, std::unique_ptr<ChunkMeshData>>> chunk_queue;
+  std::vector<chunk_queue_t> chunk_queue;
   std::mutex chunk_queue_mutex;
 
   std::vector<std::pair<ChunkPos, std::unique_ptr<ChunkMesh>>> chunks_finished;
