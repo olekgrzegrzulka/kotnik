@@ -1,7 +1,10 @@
 #pragma once
+#include <cstddef>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include "chunk.hpp"
+#include "common.hpp"
 #include "cubes.hpp"
 
 class World;
@@ -17,6 +20,7 @@ public:
   ChunkPos get_chunk_pos() const { return chunk_pos; }
 
 private:
+  std::unordered_map<ChunkPos, size_t, Vec3Hasher> chunk_indices;
   std::vector<std::vector<CubeId>> data;
   bool valid = false;
   ChunkPos chunk_pos;

@@ -21,12 +21,13 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
     }
   }
 
-  data.resize(27);
   for (i32 x = -1; x <= 1; x += 1) {
     for (i32 y = -1; y <= 1; y += 1) {
       for (i32 z = -1; z <= 1; z += 1) {
         Chunk* chunk = world.get_chunk(chunk_pos_ + ChunkPos{x, y, z});
-        data[neigbour_chunk_offset_to_data_index({x, y, z})] = chunk->get_cubes();
+        if (chunk->has_no_cubes()) { continue; }
+        chunk_indices[{x, y, z}] = data.size();
+        data.emplace_back(chunk->get_cubes());
       }
     }
   }
@@ -36,7 +37,11 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
 
 CubeId ChunkMeshData::get_cube_id(LocalPos at) {
   auto chunk_pos_ = neigbour_chunk_pos({0, 0, 0}, at);
-  return data[neigbour_chunk_offset_to_data_index(chunk_pos_)][local_pos_to_index(wrap_around_local_pos(at))];
+  auto i = chunk_indices.find(chunk_pos_);
+  if (i == chunk_indices.end()) {
+    return CubeId::AIR;
+  }
+  return data[i->second][local_pos_to_index(wrap_around_local_pos(at))];
 }
 
 ChunkMesh::ChunkMesh() {
