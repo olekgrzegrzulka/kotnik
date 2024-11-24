@@ -202,6 +202,154 @@ bool WorldGen::is_ground(WorldPos pos) const {
   return is_ground(pos, blended_biome);
 }
 
+void gen_tree_poplar(Chunk* chunk, LocalPos at) {
+  i32 tree_height = StaticRandom::get().next<i32>(4, 6);
+
+  for (i32 ox = -2; ox <= 2; ox += 1) {
+    for (i32 oy = tree_height - 2; oy <= tree_height + 1; oy += 1) {
+      for (i32 oz = -2; oz <= 2; oz += 1) {
+        bool ox_edge = ox == -2 || ox == 2;
+        bool oy_edge = oy == tree_height - 2 || oy == tree_height + 1;
+        bool oz_edge = oz == -2 || oz == 2;
+        LocalPos local_pos_leaves = {at.x + ox, at.y + oy, at.z + oz};
+        if ((int)ox_edge + (int)oy_edge + (int)oz_edge >= 2) { continue; }
+        if (is_local_pos_valid(local_pos_leaves) && chunk->get_cube(local_pos_leaves) != CubeId::AIR) {
+          continue;
+        }
+        chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::LEAVES);
+      }
+    }
+  }
+
+  for (i32 i = 0; i <= tree_height; i += 1) {
+    chunk->set_cube_maybe_neigbour({at.x, at.y + i, at.z}, CubeId::WOOD);
+  }
+}
+
+void gen_tree_spruce(Chunk* chunk, LocalPos at) {
+  bool spiky = StaticRandom::get().next<int>(0, 1) == 1;
+  i32 tree_height = StaticRandom::get().next<i32>(6, 12);
+
+  i32 prev_radius = 0;
+  const i32 unique_radius_tries = 4;
+  const i32 leaves_dist_from_ground = StaticRandom::get().next<i32>(1, 2);
+  const i32 leaves_height_over_trunk = StaticRandom::get().next<i32>(1, 2);
+
+  const i32 start = leaves_dist_from_ground;
+  const i32 end = tree_height + leaves_height_over_trunk;
+  for (i32 oy = start; oy <= end; oy += 1) {
+    i32 min_radius = 0;
+    i32 max_radius = 0;
+    if ((oy < start + 2)) {
+      min_radius = 2;
+      max_radius = 3;
+    } else if (oy > tree_height - 2 && oy <= tree_height) {
+      min_radius = 1;
+      max_radius = 2;
+    } else if (oy > tree_height) {
+      min_radius = 0;
+      max_radius = 0;
+    } else {
+      min_radius = 1;
+      max_radius = 3;
+    }
+    i32 radius = prev_radius;
+    for (i32 i_ = 0; i_ < unique_radius_tries; i_ += 1) {
+      radius = StaticRandom::get().next<i32>(min_radius, max_radius);
+      if (radius != prev_radius) { break; }
+    }
+
+    if (prev_radius != 0 && StaticRandom::get().next<int>(0, 10) == 0) {
+      radius = 0;
+    }
+
+    for (i32 ox = -radius; ox <= radius; ox += 1) {
+      for (i32 oz = -radius; oz <= radius; oz += 1) {
+        if (std::abs(ox) + std::abs(oz) > radius) { continue; }
+        if (!spiky && radius > 1 && (std::abs(ox) == radius || std::abs(oz) == radius)) { continue; }
+
+        chunk->set_cube_maybe_neigbour({at.x + ox, at.y + oy, at.z + oz}, CubeId::LEAVES);
+      }
+    }
+
+    prev_radius = radius;
+  }
+
+  for (i32 i = 0; i <= tree_height; i += 1) {
+    chunk->set_cube_maybe_neigbour({at.x, at.y + i, at.z}, CubeId::WOOD);
+  }
+}
+
+void gen_tree_pine(Chunk* chunk, LocalPos at) {
+  i32 tree_height = StaticRandom::get().next<i32>(7, 10);
+
+  auto gen_branch = [&](LocalPos center) {
+    for (i32 ox = center.x - 1; ox <= center.x + 1; ox += 1) {
+      for (i32 oy = center.y - 1; oy <= center.y + 1; oy += 1) {
+        for (i32 oz = center.z - 1; oz <= center.z + 1; oz += 1) {
+          bool x_edge = std::abs(ox - center.x) == 1;
+          bool y_edge = std::abs(oy - center.y) == 1;
+          bool z_edge = std::abs(oz - center.z) == 1;
+          if ((i32)x_edge + (i32)y_edge + (i32)z_edge >= 3) { continue; }
+          chunk->set_cube_maybe_neigbour({at.x + ox, at.y + oy, at.z + oz}, CubeId::LEAVES);
+        }
+      }
+    }
+  };
+
+  // Top crown
+  for (i32 i = 0; i < 10; i += 1) {
+    LocalPos center = {
+        StaticRandom::get().next<i32>(-2, 2),
+        StaticRandom::get().next<i32>(tree_height, tree_height),
+        StaticRandom::get().next<i32>(-2, 2),
+    };
+
+    gen_branch(center);
+  }
+
+  // Lower crown
+  i32 crown_detail_count = StaticRandom::get().next<i32>(1, 3);
+  for (i32 i = 0; i < crown_detail_count; i += 1) {
+
+    LocalPos center = {
+        StaticRandom::get().next<i32>(-1, 1),
+        StaticRandom::get().next<i32>(tree_height - 2, tree_height - 1),
+        StaticRandom::get().next<i32>(-1, 1),
+    };
+
+    gen_branch(center);
+  }
+
+  for (i32 i = 0; i < crown_detail_count; i += 1) {
+
+    LocalPos center = {
+        StaticRandom::get().next<i32>(-2, 2),
+        tree_height + 1,
+        StaticRandom::get().next<i32>(-2, 2),
+    };
+
+    gen_branch(center);
+  }
+
+  // Branches
+  i32 branch_count = StaticRandom::get().next<i32>(0, 2);
+  for (i32 i = 0; i < branch_count; i += 1) {
+
+    LocalPos center = {
+        StaticRandom::get().rand_sign<i32>(),
+        StaticRandom::get().next<i32>(3, tree_height - 2),
+        StaticRandom::get().rand_sign<i32>(),
+    };
+
+    gen_branch(center);
+  }
+
+  for (i32 i = 0; i <= tree_height; i += 1) {
+    chunk->set_cube_maybe_neigbour({at.x, at.y + i, at.z}, CubeId::WOOD);
+  }
+}
+
 void WorldGen::generate_chunk(Chunk* chunk) const {
   auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
   if (chunk_solid_cubes_array.is_empty()) { return; }
@@ -216,13 +364,13 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
     return tree_map[at_x + at_y * CHUNK_SIZE];
   };
 
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < 8; i++) {
     // Starting from (1, 1) to prevent two trees sticking on chunk boundaries
     i32 ox = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
     i32 oy = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
 
     if (tree_map_get_or_false(ox - 1, oy + 1) || tree_map_get_or_false(ox + 0, oy + 1) || tree_map_get_or_false(ox + 1, oy + 1) ||
-        tree_map_get_or_false(ox - 1, oy + 0) /*check 9 neigbours if there is a tree*/ || tree_map_get_or_false(ox + 1, oy + 0) ||
+        tree_map_get_or_false(ox - 1, oy + 0) /*check 8 neigbours if there is a tree*/ || tree_map_get_or_false(ox + 1, oy + 0) ||
         tree_map_get_or_false(ox - 1, oy - 1) || tree_map_get_or_false(ox + 0, oy - 1) || tree_map_get_or_false(ox + 1, oy - 1)) {
       continue;
     }
@@ -246,34 +394,33 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
             chunk->set_cube_no_lock({x_local, y_local, z_local}, CubeId::WATER);
             continue;
           }
-          float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
+
           if (chunk_solid_cubes_array.is_solid_unsafe({x_local, y_local - 1, z_local})) {
+            float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
+
             auto cube = blended_biome.get_foliage_cube((i32)y, rng);
-            chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
+            if (chunk->get_cube(local_pos) == CubeId::AIR) {
+              chunk->set_cube_no_lock(local_pos, cube);
+            }
 
-            bool is_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS);
+            bool gen_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS);
 
-            if (is_tree) {
-              i32 tree_height = StaticRandom::get().next<i32>(4, 7);
+            // Don't spawn trees on steep terrain
+            if (chunk_solid_cubes_array.is_solid(local_pos + LocalPos{-1, 1, 0}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{+1, 1, 0}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, -1}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, +1}).value_or(false)) {
+              gen_tree = false;
+            }
 
-              for (i32 ox = -2; ox <= 2; ox += 1) {
-                for (i32 oy = tree_height - 2; oy <= tree_height + 1; oy += 1) {
-                  for (i32 oz = -2; oz <= 2; oz += 1) {
-                    bool ox_edge = ox == -2 || ox == 2;
-                    bool oy_edge = oy == tree_height - 2 || oy == tree_height + 1;
-                    bool oz_edge = oz == -2 || oz == 2;
-                    LocalPos local_pos_leaves = {x_local + ox, y_local + oy, z_local + oz};
-                    if ((int)ox_edge + (int)oy_edge + (int)oz_edge >= 2) { continue; }
-                    if (is_local_pos_valid(local_pos_leaves) && chunk->get_cube(local_pos_leaves) != CubeId::AIR) {
-                      continue;
-                    }
-                    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::LEAVES);
-                  }
-                }
-              }
-
-              for (i32 i = 0; i <= tree_height; i += 1) {
-                chunk->set_cube_maybe_neigbour({x_local, y_local + i, z_local}, CubeId::WOOD);
+            if (gen_tree) {
+              i32 tree_type = StaticRandom::get().next<i32>(0, 2);
+              if (tree_type == 0) {
+                gen_tree_poplar(chunk, {x_local, y_local, z_local});
+              } else if (tree_type == 1) {
+                gen_tree_spruce(chunk, {x_local, y_local, z_local});
+              } else if (tree_type == 2) {
+                gen_tree_pine(chunk, {x_local, y_local, z_local});
               }
             }
           }

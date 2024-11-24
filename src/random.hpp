@@ -33,6 +33,13 @@ public:
     return distribution(rng);
   }
 
+  template <typename T>
+    requires std::is_integral_v<T>
+  T rand_sign() {
+    std::uniform_int_distribution<T> distribution(static_cast<T>(0), static_cast<T>(1));
+    return distribution(rng) * static_cast<T>(2) - static_cast<T>(1);
+  }
+
   template <class T>
   T pick(std::span<T> values, std::span<int> weights) {
     ensure(values.size() == weights.size());
