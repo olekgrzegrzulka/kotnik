@@ -170,6 +170,8 @@ int main() {
     usleep(std::max(delta - 16666, 0));
   }
 
-  glfwTerminate();
+  Benchmark::print_all();
+
+  // glfwTerminate();
   return 0;
 }
