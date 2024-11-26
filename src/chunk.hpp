@@ -8,6 +8,15 @@
 #include "common.hpp"
 #include "cubes.hpp"
 
+constexpr static bool is_local_pos_valid(LocalPos local_pos);
+constexpr static LocalPos index_to_local_pos(size_t index);
+constexpr static size_t local_pos_to_index(LocalPos pos);
+constexpr static CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos local_pos);
+constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos);
+constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos);
+constexpr static ChunkPos neigbour_chunk_pos(ChunkPos chunk_pos, LocalPos offset);
+constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos);
+
 class ChunkMesh;
 
 class Chunk {
@@ -33,23 +42,11 @@ public:
     bool marked_for_unload = false;
   } flags;
 
-  WorldPos get_center_pos() const;
-
   void update_mesh_update_flags(LocalPos local_pos);
 
   std::vector<std::pair<CubePos, CubeId>> neigbour_chunks_cubes_to_set;
 
   std::unique_ptr<ChunkMesh> mesh;
-
-  // This flag is set when a background thread finishes generating draw_data, allowing binding VAO on next World::update()
-  // std::atomic<bool> upload_vao = false;
-  bool upload_vao = false;
-  // std::atomic<bool> test;
-
-  struct {
-    // bool locked = false;
-    std::array<LightLevel, chunk_cube_count> data{};
-  } lightmap;
 
 private:
   std::vector<CubeId> cubes{};
@@ -62,30 +59,35 @@ private:
   std::array<std::optional<uint16_t>, chunk_size * chunk_size> heightmap{};
 
 public:
-  Chunk(ChunkPos _chunk_position);
-
+  Chunk(ChunkPos);
   ~Chunk();
-
-  bool is_cube_occluded(LocalPos local_pos) const;
 
   void update();
 
-  bool is_solid(LocalPos at) const;
+  // Setters
+  void set_cube(LocalPos, CubeId);
+  void set_cube_maybe_neigbour(LocalPos, CubeId);
+  void set_cube_index(u32 index, CubeId);
 
-  CubeId get_cube(LocalPos at) const;
+  // Getters
+  bool is_cube_occluded(LocalPos local_pos) const {
+    ensure(is_local_pos_valid(local_pos));
+    return occlusion_map[local_pos_to_index(local_pos)];
+  }
+
+  bool is_solid(LocalPos local_pos) const {
+    return get_cube(local_pos) != CubeId::AIR;
+  }
+
+  CubeId get_cube(LocalPos local_pos) const {
+    return cubes[local_pos_to_index(local_pos)];
+  }
+
   bool has_no_cubes() const { return no_cubes; }
 
-  void set_cube(LocalPos local_pos, CubeId cube_id);
-  void set_cube_no_lock(LocalPos local_pos, CubeId cube_id);
-  void set_cube_index(u32 index, CubeId cube_id);
-  void set_cube_index_no_lock(u32 index, CubeId cube_id);
-
-  // Allows changing cubes of different chunks by storing them, for World to set them later.
-  void set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cube_id);
-
-  void set_cube_maybe_neigbour(LocalPos local_pos, CubeId cube_id);
-
-  std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const;
+  std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const {
+    return heightmap[x + z * chunk_size];
+  }
 
   std::vector<CubeId> get_cubes() const {
     return cubes;
@@ -111,7 +113,6 @@ constexpr static LocalPos index_to_local_pos(size_t index) {
 
 // Returns chunk's array index to the cube located at the given local position
 constexpr static size_t local_pos_to_index(LocalPos pos) {
-  // assert(is_local_pos_valid(pos));
   size_t index = pos.x + pos.y * Chunk::chunk_size + pos.z * Chunk::chunk_size * Chunk::chunk_size;
   return index;
 }

@@ -391,7 +391,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
 
         if (!is_solid) {
           if (y <= 0) {
-            chunk->set_cube_no_lock({x_local, y_local, z_local}, CubeId::WATER);
+            chunk->set_cube({x_local, y_local, z_local}, CubeId::WATER);
             continue;
           }
 
@@ -400,7 +400,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
 
             auto cube = blended_biome.get_foliage_cube((i32)y, rng);
             if (chunk->get_cube(local_pos) == CubeId::AIR) {
-              chunk->set_cube_no_lock(local_pos, cube);
+              chunk->set_cube(local_pos, cube);
             }
 
             bool gen_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS);
@@ -435,7 +435,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
         }
 
         auto cube = blended_biome.get_ground_cube((i32)y, depth, 0.0);
-        chunk->set_cube_no_lock({x_local, y_local, z_local}, cube);
+        chunk->set_cube({x_local, y_local, z_local}, cube);
       }
     }
   }
