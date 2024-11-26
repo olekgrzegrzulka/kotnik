@@ -93,6 +93,10 @@ public:
     return cubes;
   }
 
+  decltype(occlusion_map) get_occlusion_map() const {
+    return occlusion_map;
+  }
+
 private:
   void update_occlusion_map(LocalPos local_pos);
 };
