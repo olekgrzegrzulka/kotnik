@@ -9,6 +9,7 @@ struct ChunkMeshWorker;
 class WorldRenderer final {
 public:
   static constexpr bool ambient_occlusion_enabled = true;
+  static constexpr u8 ambient_occlusion_intensity = 105;
 
 private:
   World& world;

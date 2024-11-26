@@ -90,18 +90,18 @@ cubes::cubes() {
       {7.0f, 0.0f}, {7.0f, 0.0f});
 
   cube_array[7] = Cube{"Leaves"}.add_model_full_cube({9.0f, 0.0f}).add_collider();
-  cube_array[7].set_occlusion_mode(NEVER).set_ao(false);
+  cube_array[7].set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::IF_SAME_ID);
 
-  cube_array[8] = Cube{"Grass Plant"}.set_occlusion_mode(NEVER).set_ao(false);
+  cube_array[8] = Cube{"Grass Plant"}.set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::NEVER);
   cube_array[8].add_model_x_shape({13.0f, 0.0f}).add_model_x_shape({13.0f, 1.0f});
 
   cube_array[9] = Cube{"Flower"};
   cube_array[9].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
   cube_array[9].add_model_x_shape({14.0f, 1.0f}).add_model_x_shape({15.0f, 1.0f});
-  cube_array[9].set_occlusion_mode(NEVER).set_ao(false);
+  cube_array[9].set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::NEVER);
 
   cube_array[10] = Cube{"Water"}.add_model_full_cube({0.0f, 1.0f}).add_collider();
-  cube_array[10].set_occlusion_mode(IF_SAME_ID).set_is_translucent(true).set_ao(false);
+  cube_array[10].set_occlusion_mode(IF_SAME_ID).set_is_translucent(true).set_ao(Cube::CubeAOMode::NEVER);
 
   cube_array[11] = Cube{"Stone Bricks"}.add_model_full_cube({10.0f, 0.0f}).add_collider();
   cube_array[12] = Cube{"Stone Bricks"}.add_model_full_cube({11.0f, 0.0f}).add_collider();
@@ -283,14 +283,16 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
     return true;
   }();
 
-  auto reduce_vertex_brightness_for_ao = [](cubes::CompactVertex& vertex, std::optional<float> x, std::optional<float> y, std::optional<float> z, const std::optional<CubeId>& neigbour) {
+  auto reduce_vertex_brightness_for_ao = [&neigbour_cube_ids](cubes::CompactVertex& vertex, std::optional<float> x, std::optional<float> y, std::optional<float> z, const std::optional<CubeId>& neigbour) {
     if constexpr (!WorldRenderer::ambient_occlusion_enabled) { return; }
 
     if (vertex.pos.x == x.value_or(vertex.pos.x) && vertex.pos.y == y.value_or(vertex.pos.y) && vertex.pos.z == z.value_or(vertex.pos.z) &&
         neigbour.value_or(CubeId::AIR) != CubeId::AIR) {
-      bool ao = cubes::get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
-      if (ao) {
-        vertex.pack.brightness = 160;
+      auto ao = cubes::get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
+      if (ao == Cube::CubeAOMode::ALWAYS) {
+        vertex.pack.brightness = 255 - WorldRenderer::ambient_occlusion_intensity;
+      } else if ((ao == Cube::CubeAOMode::IF_SAME_ID && neigbour_cube_ids.center.value() == neigbour.value())) {
+        vertex.pack.brightness = 255 - WorldRenderer::ambient_occlusion_intensity;
       }
     }
   };

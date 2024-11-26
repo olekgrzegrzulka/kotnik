@@ -83,6 +83,12 @@ public:
       IF_SAME_ID,
     };
 
+    enum class CubeAOMode {
+      NEVER,
+      ALWAYS,
+      IF_SAME_ID,
+    };
+
     struct CubeVertices {
       std::vector<CompactVertex> vertices{};
 
@@ -113,7 +119,7 @@ public:
       // List of vertices for each direction is used for occlusion in the given direction
       std::vector<CubeVertices> vertices;
 
-      bool ao = true;
+      CubeAOMode ao = CubeAOMode::ALWAYS;
     } draw_data;
 
     void get_vertices(CubePos, NeigbourCubeIds&, std::optional<i32> rng, std::vector<cubes::CompactVertex>& vertices_list) const;
@@ -131,8 +137,8 @@ public:
       return *this;
     };
 
-    Cube& set_ao(bool state) {
-      draw_data.ao = state;
+    Cube& set_ao(CubeAOMode mode) {
+      draw_data.ao = mode;
       return *this;
     }
 
