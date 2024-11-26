@@ -50,7 +50,7 @@ ChunkMesh::ChunkMesh() {
 ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> chunk_mesh_data) {
   const ChunkPos chunk_pos = chunk_mesh_data->get_chunk_pos();
 
-  for (size_t i = 0; i < (size_t)CHUNK_CUBES; i += 1) {
+  for (size_t i = 0; i < (size_t)Chunk::chunk_cube_count; i += 1) {
     LocalPos l = index_to_local_pos(i);
     if (chunk_mesh_data->get_cube_id(l) == CubeId::AIR) { continue; }
 
@@ -95,9 +95,9 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> chunk_mesh_data) {
     neigbour_cube_ids.right_top_back = chunk_mesh_data->get_cube_id({l.x + 1, l.y + 1, l.z + 1});
 
     if (cube.draw_data.is_translucent) {
-      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, std::nullopt, vertices_translucent);
+      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices_translucent);
     } else {
-      cube.get_vertices(chunk_pos * CHUNK_SIZE + l, neigbour_cube_ids, std::nullopt, vertices);
+      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices);
     }
   }
 }

@@ -164,7 +164,7 @@ uint8_t World::get_sunlight(CubePos cube_pos) const {
   if (!chunks.contains(chunk_pos)) { return 0; }
   // if (!chunks.at(chunk_pos).get_heightmap(local_pos.x, local_pos.z).has_value()) { return 0; }
   if (chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z).value_or(0) > local_pos.y) { return chunks.at(chunk_pos)->get_heightmap(local_pos.x, local_pos.z).value() - local_pos.y - 1; }
-  int16_t value = CHUNK_SIZE - 1 - local_pos.y;
+  int16_t value = Chunk::chunk_size - 1 - local_pos.y;
 
   for (size_t i = 1; i < 10; i += 1) {
     // The chunk is empty, can't block light

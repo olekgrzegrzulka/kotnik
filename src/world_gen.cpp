@@ -24,8 +24,8 @@ public:
     // (1 + biome_samples_subdivisions) ^ 2 samples will be used
     static constexpr size_t biome_samples_subdivisions = 2;
 
-    static constexpr size_t biome_sample_step_size = CHUNK_SIZE >> biome_samples_subdivisions;
-    static constexpr size_t biome_sample_grid_extents = (CHUNK_SIZE / biome_sample_step_size) + 1;
+    static constexpr size_t biome_sample_step_size = Chunk::chunk_size >> biome_samples_subdivisions;
+    static constexpr size_t biome_sample_grid_extents = (Chunk::chunk_size / biome_sample_step_size) + 1;
     static_assert(biome_sample_step_size >= 1);
 
     SmoothBiomeGrid(const WorldGen& world_gen, CubePos begin) {
@@ -59,11 +59,11 @@ public:
 
   ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
     begin = CubePos{0, -lip_negative_y, 0};
-    end = CubePos{CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE} + CubePos{0, lip_positive_y, 0};
+    end = CubePos{Chunk::chunk_size, Chunk::chunk_size, Chunk::chunk_size} + CubePos{0, lip_positive_y, 0};
 
     data = Array3D<bool>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
 
-    SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * CHUNK_SIZE);
+    SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * Chunk::chunk_size);
 
     std::unordered_map<glm::vec<2, i32>, biomes::Biome, Vec2Hasher> blended_biome_cache;
 
@@ -78,7 +78,7 @@ public:
           }
           auto blended_biome = blended_biome_cache[{x, z}];
 
-          WorldPos world_pos = chunk_pos * CHUNK_SIZE + LocalPos{x, y, z};
+          WorldPos world_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
 
           bool is_solid = world_gen.is_ground(world_pos, blended_biome);
           if (is_solid) { empty = false; }
@@ -355,36 +355,36 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
   if (chunk_solid_cubes_array.is_empty()) { return; }
 
   std::vector<bool> tree_map{};
-  tree_map.resize(CHUNK_SIZE * CHUNK_SIZE, false);
+  tree_map.resize(Chunk::chunk_size * Chunk::chunk_size, false);
 
   auto tree_map_get_or_false = [&tree_map](i32 at_x, i32 at_y) -> bool {
-    if (at_x < 0 || at_y < 0 || at_x >= CHUNK_SIZE || at_y >= CHUNK_SIZE) {
+    if (at_x < 0 || at_y < 0 || at_x >= Chunk::chunk_size || at_y >= Chunk::chunk_size) {
       return false;
     }
-    return tree_map[at_x + at_y * CHUNK_SIZE];
+    return tree_map[at_x + at_y * Chunk::chunk_size];
   };
 
   for (size_t i = 0; i < 8; i++) {
     // Starting from (1, 1) to prevent two trees sticking on chunk boundaries
-    i32 ox = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
-    i32 oy = StaticRandom::get().next<i32>(1, CHUNK_SIZE - 1);
+    i32 ox = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
+    i32 oy = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
 
     if (tree_map_get_or_false(ox - 1, oy + 1) || tree_map_get_or_false(ox + 0, oy + 1) || tree_map_get_or_false(ox + 1, oy + 1) ||
         tree_map_get_or_false(ox - 1, oy + 0) /*check 8 neigbours if there is a tree*/ || tree_map_get_or_false(ox + 1, oy + 0) ||
         tree_map_get_or_false(ox - 1, oy - 1) || tree_map_get_or_false(ox + 0, oy - 1) || tree_map_get_or_false(ox + 1, oy - 1)) {
       continue;
     }
-    tree_map[ox + oy * CHUNK_SIZE] = true;
+    tree_map[ox + oy * Chunk::chunk_size] = true;
   }
 
-  for (size_t x_local = 0; x_local < CHUNK_SIZE; x_local += 1) {
-    for (size_t z_local = 0; z_local < CHUNK_SIZE; z_local += 1) {
-      float x = chunk->position.x * CHUNK_SIZE + (int)x_local;
-      float z = chunk->position.z * CHUNK_SIZE + (int)z_local;
+  for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
+    for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
+      float x = chunk->position.x * Chunk::chunk_size + (int)x_local;
+      float z = chunk->position.z * Chunk::chunk_size + (int)z_local;
       auto blended_biome = get_blended_biome({x, 0, z});
 
-      for (size_t y_local = 0; y_local < CHUNK_SIZE; y_local += 1) {
-        float y = chunk->position.y * CHUNK_SIZE + (int)y_local;
+      for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
+        float y = chunk->position.y * Chunk::chunk_size + (int)y_local;
         LocalPos local_pos = {x_local, y_local, z_local};
 
         auto is_solid = chunk_solid_cubes_array.is_solid_unsafe({x_local, y_local, z_local});

@@ -6,7 +6,7 @@
 #include "cubes.hpp"
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
-  cubes.resize(CHUNK_CUBES);
+  cubes.resize(Chunk::chunk_cube_count);
   mesh = std::make_unique<ChunkMesh>();
 }
 
@@ -14,7 +14,7 @@ Chunk::~Chunk() {
 }
 
 WorldPos Chunk::get_center_pos() const {
-  return WorldPos{position * CHUNK_SIZE} + WorldPos{CHUNK_SIZE >> 1, CHUNK_SIZE >> 1, CHUNK_SIZE >> 1};
+  return WorldPos{position * chunk_size} + WorldPos{chunk_size >> 1, chunk_size >> 1, chunk_size >> 1};
 }
 
 void Chunk::update_mesh_update_flags(LocalPos local_pos) {
@@ -25,7 +25,7 @@ void Chunk::update_mesh_update_flags(LocalPos local_pos) {
     flags.update_mesh_of_adjacent_chunk.left = true;
   }
 
-  if (local_pos.x == CHUNK_SIZE - 1) {
+  if (local_pos.x == chunk_size - 1) {
     flags.update_mesh_of_adjacent_chunk.right = true;
   }
 
@@ -33,7 +33,7 @@ void Chunk::update_mesh_update_flags(LocalPos local_pos) {
     flags.update_mesh_of_adjacent_chunk.down = true;
   }
 
-  if (local_pos.y == CHUNK_SIZE - 1) {
+  if (local_pos.y == chunk_size - 1) {
     flags.update_mesh_of_adjacent_chunk.up = true;
   }
 
@@ -41,7 +41,7 @@ void Chunk::update_mesh_update_flags(LocalPos local_pos) {
     flags.update_mesh_of_adjacent_chunk.front = true;
   }
 
-  if (local_pos.z == CHUNK_SIZE - 1) {
+  if (local_pos.z == chunk_size - 1) {
     flags.update_mesh_of_adjacent_chunk.back = true;
   }
 }
@@ -69,23 +69,23 @@ void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   }
 
   // Compute heightmap
-  const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];
+  const auto heightmap_at = heightmap[local_pos.x + local_pos.z * chunk_size];
   // Cube which was the highest cube in chunk was set to air. Compute new heighmap
   if (cube_id == CubeId::AIR && heightmap_at.has_value() && heightmap_at.value() == local_pos.y) {
     for (int16_t new_y = local_pos.y - 1; new_y >= 0; new_y -= 1) {
       if (is_solid(LocalPos{local_pos.x, new_y, local_pos.z})) {
-        heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = new_y;
+        heightmap[local_pos.x + local_pos.z * chunk_size] = new_y;
         break;
       }
     }
     // If heightmap wasn't updated, then there are'nt any cubes in this column
-    if (heightmap[local_pos.x + local_pos.z * CHUNK_SIZE].value() == local_pos.y) {
-      heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = {};
+    if (heightmap[local_pos.x + local_pos.z * chunk_size].value() == local_pos.y) {
+      heightmap[local_pos.x + local_pos.z * chunk_size] = {};
     }
   }
 
-  if (cube_id != CubeId::AIR && local_pos.y >= heightmap[local_pos.x + local_pos.z * CHUNK_SIZE].value_or(0)) {
-    heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = local_pos.y;
+  if (cube_id != CubeId::AIR && local_pos.y >= heightmap[local_pos.x + local_pos.z * chunk_size].value_or(0)) {
+    heightmap[local_pos.x + local_pos.z * chunk_size] = local_pos.y;
   }
 
   update_occlusion_map(local_pos);
@@ -105,6 +105,14 @@ void Chunk::set_cube_neigbour(ChunkPos chunk_pos, LocalPos local_pos, CubeId cub
   neigbour_chunks_cubes_to_set.push_back({cube_pos, cube_id});
 }
 
+void Chunk::set_cube_maybe_neigbour(LocalPos local_pos, CubeId cube_id) {
+  if (is_local_pos_valid(local_pos)) {
+    set_cube(local_pos, cube_id);
+  } else {
+    set_cube_neigbour(neigbour_chunk_pos(position, local_pos), wrap_around_local_pos(local_pos), cube_id);
+  }
+}
+
 void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
   assert(is_local_pos_valid(local_pos));
 
@@ -117,23 +125,23 @@ void Chunk::set_cube_no_lock(LocalPos local_pos, CubeId cube_id) {
   }
 
   // Compute heightmap
-  const auto heightmap_at = heightmap[local_pos.x + local_pos.z * CHUNK_SIZE];
+  const auto heightmap_at = heightmap[local_pos.x + local_pos.z * chunk_size];
   // Cube which was the highest cube in chunk was set to air. Compute new heighmap
   if (cube_id == CubeId::AIR && heightmap_at.has_value() && heightmap_at.value() == local_pos.y) {
     for (int16_t new_y = local_pos.y - 1; new_y >= 0; new_y -= 1) {
       if (is_solid(LocalPos{local_pos.x, new_y, local_pos.z})) {
-        heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = new_y;
+        heightmap[local_pos.x + local_pos.z * chunk_size] = new_y;
         break;
       }
     }
     // If heightmap wasn't updated, then there are'nt any cubes in this column
-    if (heightmap[local_pos.x + local_pos.z * CHUNK_SIZE].value() == local_pos.y) {
-      heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = {};
+    if (heightmap[local_pos.x + local_pos.z * chunk_size].value() == local_pos.y) {
+      heightmap[local_pos.x + local_pos.z * chunk_size] = {};
     }
   }
 
-  if (cube_id != CubeId::AIR && local_pos.y >= heightmap[local_pos.x + local_pos.z * CHUNK_SIZE].value_or(0)) {
-    heightmap[local_pos.x + local_pos.z * CHUNK_SIZE] = local_pos.y;
+  if (cube_id != CubeId::AIR && local_pos.y >= heightmap[local_pos.x + local_pos.z * chunk_size].value_or(0)) {
+    heightmap[local_pos.x + local_pos.z * chunk_size] = local_pos.y;
   }
 
   // FIXME this could be done more effeciently
@@ -157,7 +165,7 @@ void Chunk::set_cube_index_no_lock(u32 index, CubeId to) {
 }
 
 std::optional<uint16_t> Chunk::get_heightmap(uint16_t x, uint16_t z) const {
-  return heightmap[x + z * CHUNK_SIZE];
+  return heightmap[x + z * chunk_size];
 }
 
 bool Chunk::is_cube_occluded(LocalPos local_pos) const {
