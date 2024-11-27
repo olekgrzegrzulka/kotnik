@@ -65,18 +65,12 @@ public:
 
     SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * Chunk::chunk_size);
 
-    std::unordered_map<glm::vec<2, i32>, biomes::Biome, Vec2Hasher> blended_biome_cache;
-
     for (i32 z = begin.z; z < end.z; z += 1) {
-      for (i32 y = begin.y; y < end.y; y += 1) {
-        for (i32 x = begin.x; x < end.x; x += 1) {
+      for (i32 x = begin.x; x < end.x; x += 1) {
+        auto blended_biome = biome_grid.get_biome(x, z);
+        for (i32 y = begin.y; y < end.y; y += 1) {
           // Checkerboard
           if ((x + y + z) % 2 == 1) { continue; }
-
-          if (!blended_biome_cache.contains({x, z})) {
-            blended_biome_cache[{x, z}] = biome_grid.get_biome(x, z);
-          }
-          auto blended_biome = blended_biome_cache[{x, z}];
 
           WorldPos world_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
 
@@ -186,10 +180,13 @@ biomes::Biome WorldGen::get_blended_biome(WorldPos world_pos) const {
 }
 
 bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const {
-
   float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
 
-  float value_3d = noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
+  float value_3d = 0.0f;
+  if (blended_biome.noise_3d_multiplier > 0.01f) {
+    value_3d = noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
+  }
+
   value_3d = 1.0f + value_3d * 0.032f;
   float value = (blended_biome.base_height + value_height) * value_3d;
 
