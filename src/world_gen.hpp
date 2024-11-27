@@ -16,6 +16,7 @@ public:
   WorldGen(World& w, i32 seed);
 
   void generate_chunk(Chunk* chunk) const;
+  void generate_chunk_only_water(Chunk* chunk) const;
   biomes::Biome get_blended_biome(WorldPos world_pos) const;
   bool is_ground(WorldPos pos, const biomes::Biome& blended_biome) const;
   bool is_ground(WorldPos pos) const;

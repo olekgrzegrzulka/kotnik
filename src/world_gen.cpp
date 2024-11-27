@@ -58,6 +58,8 @@ public:
   };
 
   ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
+    BENCHMARK("chunkgen");
+
     begin = CubePos{0, -lip_negative_y, 0};
     end = CubePos{Chunk::chunk_size, Chunk::chunk_size, Chunk::chunk_size} + CubePos{0, lip_positive_y, 0};
 
@@ -80,6 +82,8 @@ public:
         }
       }
     }
+
+    if (empty) { return; }
 
     // Fix the skipped cubes in checkerboard generation
     auto data_uncheckered = data;
@@ -128,7 +132,7 @@ private:
   CubePos begin;
   CubePos end;
   const WorldGen& world_gen;
-  bool empty = false;
+  bool empty = true;
 
   Array3D<bool> data;
 };
@@ -347,9 +351,25 @@ void gen_tree_pine(Chunk* chunk, LocalPos at) {
   }
 }
 
+void WorldGen::generate_chunk_only_water(Chunk* chunk) const {
+  for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
+    for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
+      for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
+        i64 y = chunk->position.y * Chunk::chunk_size + (int)y_local;
+        if (y <= 0) {
+          chunk->set_cube({x_local, y_local, z_local}, CubeId::WATER);
+        }
+      }
+    }
+  }
+}
+
 void WorldGen::generate_chunk(Chunk* chunk) const {
   auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
-  if (chunk_solid_cubes_array.is_empty()) { return; }
+  if (chunk_solid_cubes_array.is_empty()) {
+    generate_chunk_only_water(chunk);
+    return;
+  }
 
   std::vector<bool> tree_map{};
   tree_map.resize(Chunk::chunk_size * Chunk::chunk_size, false);
