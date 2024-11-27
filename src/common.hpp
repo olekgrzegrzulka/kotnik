@@ -152,7 +152,7 @@ public:
   static void print_all() {
     std::scoped_lock lock{times_mutex};
     for (auto& [tag, vec] : times) {
-      debug_log_no_filename(tag, ": ", vec.size(), " times");
+      debug_log_no_filename(tag);
 
       long sum = 0;
 
@@ -203,8 +203,9 @@ public:
     chrono_time_point start;
   };
 };
-
-// Utility
+#define CONCAT2__(a, b) a##b
+#define CONCAT1__(a, b) CONCAT2__(a, b)
+#define BENCHMARK(tag) auto CONCAT1__(siema, __LINE__) = Benchmark::measure(tag);
 
 static constexpr Dir opposite_dir(Dir dir) {
   if (dir == Dir::NONE) {
