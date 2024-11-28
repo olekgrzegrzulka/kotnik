@@ -17,6 +17,7 @@ struct ChunkGenArray {
 public:
   static constexpr i32 lip_negative_y = 1;
   static constexpr i32 lip_positive_y = 4;
+  static constexpr i32 noise_step_size = 5;
 
   // Used for lerping biome samples across chunk to reduce jagginess
   struct SmoothBiomeGrid {
@@ -64,20 +65,32 @@ public:
 
     data = Array3D<bool>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
     auto noise_heightmap_array = Array3D<float>{begin.x, 0, begin.z, end.x, 1, end.z};
+    auto noise_3d_array = Array3D<float>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
+    auto biome_array = Array3D<biomes::Biome>{begin.x, 0, begin.z, end.x, 1, end.z};
     SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * Chunk::chunk_size);
 
     for (i32 z = begin.z; z < end.z; z += 1) {
       for (i32 x = begin.x; x < end.x; x += 1) {
         auto blended_biome = biome_grid.get_biome(x, z);
+        biome_array.set({x, 0, z}, blended_biome);
         float noise_heightmap = wg.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, blended_biome);
         noise_heightmap_array.set({x, 0, z}, noise_heightmap);
-        for (i32 y = begin.y; y < end.y; y += 1) {
-          // Checkerboard
-          if ((x + y + z) % 2 == 1) { continue; }
+      }
+    }
 
-          WorldPos world_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+    for (i32 x = begin.x; x < end.x; x += 1) {
+      if (!(x == begin.x || x == end.x - 1 || wrapi(x, 0, noise_step_size) == 0)) { continue; }
+      for (i32 y = begin.y; y < end.y; y += 1) {
+        if (!(y == begin.y || y == end.y - 1 || wrapi(y, 0, noise_step_size) == 0)) { continue; }
+        for (i32 z = begin.z; z < end.z; z += 1) {
+          if (!(z == begin.z || z == end.z - 1 || wrapi(z, 0, noise_step_size) == 0)) { continue; }
 
-          bool is_solid = world_gen.is_ground(world_pos, blended_biome, noise_heightmap, {});
+          CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+
+          float noise_3d = wg.get_3d_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, y, z}, biome_array.at({x, 0, z}));
+          noise_3d_array.set({x, y, z}, noise_3d);
+
+          bool is_solid = world_gen.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_array.at({x, 0, z}), noise_3d);
           if (is_solid) { empty = false; }
           data.set({x, y, z}, is_solid);
         }
@@ -85,30 +98,45 @@ public:
     }
 
     if (empty) { return; }
+    // return;
 
     // Fix the skipped cubes in checkerboard generation
-    for (i32 z = begin.z; z < end.z; z += 1) {
+    for (i32 x = begin.x; x < end.x; x += 1) {
       for (i32 y = begin.y; y < end.y; y += 1) {
-        for (i32 x = begin.x; x < end.x; x += 1) {
-          // Alternate checkerboard
-          if ((x + y + z) % 2 == 0) { continue; }
+        for (i32 z = begin.z; z < end.z; z += 1) {
+          i32 x_wrapped = wrapi(x, 0, noise_step_size);
+          i32 y_wrapped = wrapi(y, 0, noise_step_size);
+          i32 z_wrapped = wrapi(z, 0, noise_step_size);
 
-          i32 neigbour_count_any = 0;
-          i32 neigbour_count_solid = 0;
+          bool x_has_value = x == begin.x || x == end.x - 1 || x_wrapped == 0;
+          bool y_has_value = y == begin.y || y == end.y - 1 || y_wrapped == 0;
+          bool z_has_value = z == begin.z || z == end.z - 1 || z_wrapped == 0;
+          if (x_has_value && y_has_value && z_has_value) { continue; }
 
-          static constexpr std::array<LocalPos, 6> offsets = {LocalPos{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
-          for (LocalPos o : offsets) {
-            auto c = is_solid(LocalPos{x, y, z} + LocalPos{o.x, o.y, o.z});
-            if (!c.has_value()) { continue; }
-            neigbour_count_any += 1;
-            neigbour_count_solid += (i32)c.value();
-          }
+          i32 x_low = std::max(x - x_wrapped, begin.x);
+          i32 x_high = std::min(x + noise_step_size - x_wrapped, end.x - 1);
+          i32 y_low = std::max(y - y_wrapped, begin.y);
+          i32 y_high = std::min(y + noise_step_size - y_wrapped, end.y - 1);
+          i32 z_low = std::max(z - z_wrapped, begin.z);
+          i32 z_high = std::min(z + noise_step_size - z_wrapped, end.z - 1);
 
-          float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
+          float noise_3d_x_low_z_low = std::lerp(noise_3d_array.at({x_low, y_low, z_low}), noise_3d_array.at({x_low, y_high, z_low}), y_wrapped / (float)(noise_step_size - 1));
+          float noise_3d_x_low_z_high = std::lerp(noise_3d_array.at({x_low, y_low, z_high}), noise_3d_array.at({x_low, y_high, z_high}), y_wrapped / (float)(noise_step_size - 1));
+          float noise_3d_x_high_z_low = std::lerp(noise_3d_array.at({x_high, y_low, z_low}), noise_3d_array.at({x_high, y_high, z_low}), y_wrapped / (float)(noise_step_size - 1));
+          float noise_3d_x_high_z_high = std::lerp(noise_3d_array.at({x_high, y_low, z_high}), noise_3d_array.at({x_high, y_high, z_high}), y_wrapped / (float)(noise_step_size - 1));
 
-          if (occlusion >= 0.5f) {
-            data.set({x, y, z}, true);
-          }
+          float noise_3d_x_low = std::lerp(noise_3d_x_low_z_low, noise_3d_x_low_z_high, z_wrapped / (float)(noise_step_size - 1));
+          float noise_3d_x_high = std::lerp(noise_3d_x_high_z_low, noise_3d_x_high_z_high, z_wrapped / (float)(noise_step_size - 1));
+
+          float noise_3d_value = std::lerp(noise_3d_x_low, noise_3d_x_high, x_wrapped / (float)(noise_step_size - 1));
+
+          float noise_heightmap_x_low = std::lerp(noise_heightmap_array.at({x_low, 0, z_low}), noise_heightmap_array.at({x_low, 0, z_high}), z_wrapped / (float)(noise_step_size - 1));
+          float noise_heightmap_x_high = std::lerp(noise_heightmap_array.at({x_high, 0, z_low}), noise_heightmap_array.at({x_high, 0, z_high}), z_wrapped / (float)(noise_step_size - 1));
+
+          float noise_heightmap_value = std::lerp(noise_heightmap_x_low, noise_heightmap_x_high, x_wrapped / (float)(noise_step_size - 1));
+
+          CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+          data.set({x, y, z}, wg.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_value, noise_3d_value));
         }
       }
     }

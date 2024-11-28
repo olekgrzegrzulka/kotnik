@@ -1,8 +1,8 @@
 #pragma once
 #include <cstddef>
 #include <vector>
+#include <glm/vec3.hpp>
 #include "common.hpp"
-#include "glm/vec3.hpp"
 
 template <class T>
 class Array3D {

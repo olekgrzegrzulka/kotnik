@@ -205,7 +205,7 @@ public:
 };
 #define CONCAT2__(a, b) a##b
 #define CONCAT1__(a, b) CONCAT2__(a, b)
-#define BENCHMARK(tag) auto CONCAT1__(siema, __LINE__) = Benchmark::measure(tag);
+#define BENCHMARK(tag) auto CONCAT1__(benchmark_measure, __LINE__) = Benchmark::measure(tag);
 
 static constexpr Dir opposite_dir(Dir dir) {
   if (dir == Dir::NONE) {
@@ -277,4 +277,11 @@ static void sort_vector_by_manhattan_distance(std::vector<glm::vec<3, T>>& vecto
     ChunkPos second = glm::abs(to - b);
     return first.x + first.y + first.z < second.x + second.y + second.z;
   });
+}
+
+// Adapted from https://github.com/godotengine/godot/blob/0eadbdb5d0709e4e557e52377fa075d3e2f0ad1f/core/math/math_funcs.h#L511
+template <class T>
+constexpr T wrapi(T value, T min, T max) {
+  T range = max - min;
+  return range == 0 ? min : min + ((((value - min) % range) + range) % range);
 }
