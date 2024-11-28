@@ -25,9 +25,8 @@ public:
   }
 
 private:
-  std::unordered_map<ChunkPos, size_t, Vec3Hasher> chunk_indices;
   std::bitset<Chunk::chunk_cube_count> occlusion_map;
-  std::vector<std::vector<CubeId>> data;
+  std::vector<std::vector<CubeId>> chunks_data;
   bool valid = false;
   ChunkPos chunk_pos;
 

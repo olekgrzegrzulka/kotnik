@@ -3,7 +3,6 @@
 #include <array>
 #include <cstdlib>
 #include <optional>
-#include <unordered_map>
 #include <vector>
 #include "array3d.hpp"
 #include "biome.hpp"
