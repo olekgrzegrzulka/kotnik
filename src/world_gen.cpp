@@ -63,19 +63,21 @@ public:
     end = CubePos{Chunk::chunk_size, Chunk::chunk_size, Chunk::chunk_size} + CubePos{0, lip_positive_y, 0};
 
     data = Array3D<bool>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
-
+    auto noise_heightmap_array = Array3D<float>{begin.x, 0, begin.z, end.x, 1, end.z};
     SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * Chunk::chunk_size);
 
     for (i32 z = begin.z; z < end.z; z += 1) {
       for (i32 x = begin.x; x < end.x; x += 1) {
         auto blended_biome = biome_grid.get_biome(x, z);
+        float noise_heightmap = wg.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, blended_biome);
+        noise_heightmap_array.set({x, 0, z}, noise_heightmap);
         for (i32 y = begin.y; y < end.y; y += 1) {
           // Checkerboard
           if ((x + y + z) % 2 == 1) { continue; }
 
           WorldPos world_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
 
-          bool is_solid = world_gen.is_ground(world_pos, blended_biome);
+          bool is_solid = world_gen.is_ground(world_pos, blended_biome, noise_heightmap, {});
           if (is_solid) { empty = false; }
           data.set({x, y, z}, is_solid);
         }
@@ -85,8 +87,6 @@ public:
     if (empty) { return; }
 
     // Fix the skipped cubes in checkerboard generation
-    auto data_uncheckered = data;
-
     for (i32 z = begin.z; z < end.z; z += 1) {
       for (i32 y = begin.y; y < end.y; y += 1) {
         for (i32 x = begin.x; x < end.x; x += 1) {
@@ -101,17 +101,15 @@ public:
             auto c = is_solid(LocalPos{x, y, z} + LocalPos{o.x, o.y, o.z});
             if (!c.has_value()) { continue; }
             neigbour_count_any += 1;
-            neigbour_count_solid += (int)c.value();
+            neigbour_count_solid += (i32)c.value();
           }
 
           float occlusion = (float)neigbour_count_solid / (float)neigbour_count_any;
 
           if (occlusion >= 0.5f) {
-            data_uncheckered.set({x, y, z}, true);
+            data.set({x, y, z}, true);
           }
         }
-
-        data = data_uncheckered;
       }
     }
   }
@@ -182,24 +180,46 @@ biomes::Biome WorldGen::get_blended_biome(WorldPos world_pos) const {
   return biomemap::get_biome(humidity, temperature);
 }
 
-bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const {
-  float value_height = (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
+float WorldGen::get_heightmap_noise(WorldPos pos, const biomes::Biome& blended_biome) const {
+  return (noise_heightmap.GetNoise(pos.x, pos.z) + 1.0f) * 0.5f * blended_biome.noise_height_multiplier;
+}
 
-  float value_3d = 0.0f;
+float WorldGen::get_3d_noise(WorldPos pos, const biomes::Biome& blended_biome) const {
+  return noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
+}
+
+bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome,
+                         std::optional<float> noise_heightmap_value_opt, std::optional<float> noise_3d_value_opt) const {
+
+  float noise_3d_value = 0.0f;
   if (blended_biome.noise_3d_multiplier > 0.01f) {
-    value_3d = noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
+    if (noise_3d_value_opt.has_value()) {
+      noise_3d_value = noise_3d_value_opt.value();
+    } else {
+      noise_3d_value = get_3d_noise(pos, blended_biome);
+    }
   }
 
-  value_3d = 1.0f + value_3d * 0.032f;
-  float value = (blended_biome.base_height + value_height) * value_3d;
+  float noise_heightmap_value = 0.0f;
+  if (noise_heightmap_value_opt.has_value()) {
+    noise_heightmap_value = noise_heightmap_value_opt.value();
+  } else {
+    noise_heightmap_value = get_heightmap_noise(pos, blended_biome);
+  }
+
+  noise_3d_value = 1.0f + noise_3d_value * 0.032f;
+  float value = (blended_biome.base_height + noise_heightmap_value) * noise_3d_value;
 
   return value > pos.y;
 }
 
+bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const {
+  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome));
+}
+
 bool WorldGen::is_ground(WorldPos pos) const {
   auto blended_biome = get_blended_biome(pos);
-
-  return is_ground(pos, blended_biome);
+  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome));
 }
 
 void gen_tree_poplar(Chunk* chunk, LocalPos at) {

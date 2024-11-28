@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "common.hpp"
 #include "fast_noise_lite.h"
 
@@ -18,6 +19,13 @@ public:
   void generate_chunk(Chunk* chunk) const;
   void generate_chunk_only_water(Chunk* chunk) const;
   biomes::Biome get_blended_biome(WorldPos world_pos) const;
+
+  float get_heightmap_noise(WorldPos pos, const biomes::Biome& blended_biome) const;
+  float get_3d_noise(WorldPos pos, const biomes::Biome& blended_biome) const;
+
+  bool is_ground(WorldPos pos, const biomes::Biome& blended_biome,
+                 std::optional<float> noise_heightmap_value = std::nullopt, std::optional<float> noise_3d_value = std::nullopt) const;
+
   bool is_ground(WorldPos pos, const biomes::Biome& blended_biome) const;
   bool is_ground(WorldPos pos) const;
 
