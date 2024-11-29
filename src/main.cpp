@@ -35,8 +35,9 @@ void check_opengl_errors() {
 
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
-  // Setup GLFW
-  glfwInit();
+  if (!glfwInit()) {
+    debug_error("Failed to initialize glfw");
+  }
 
   glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
