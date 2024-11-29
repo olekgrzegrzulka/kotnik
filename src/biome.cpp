@@ -121,10 +121,10 @@ const BiomeList init_biome_list() {
 
   Biome biome_highlands{
       .name = "Highlands",
-      .base_height = 25.0f,
-      .noise_height_multiplier = 40.0f,
+      .base_height = 20.0f,
+      .noise_height_multiplier = 60.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 55.0f,
+      .noise_3d_multiplier = 40.0f,
   };
 
   biome_highlands.get_ground_cube = []([[maybe_unused]] i32 y, i32 depth, [[maybe_unused]] float rng) -> CubeId {
