@@ -126,7 +126,7 @@ int main() {
     auto camera_pos = player->world_pos;
 
     // Clear
-    glClearColor(0.65f, 0.9f, 1.0f, 1.0f);
+    glClearColor(0.59f, 0.83f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw cubes

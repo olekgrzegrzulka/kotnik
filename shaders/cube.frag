@@ -15,7 +15,8 @@ void main() {
     color.rgb *= brightness;
     color.a = alpha;
 
-    vec4 fog_color = vec4(0.68, 0.88, 0.97, 1.0);
+    vec4 fog_color = vec4(0.59, 0.83, 1.0, 1.0);
+    fog_color.rgb *= 1.02;
     color.rgb = mix(color.rgb, fog_color.rgb, fog_factor).rgb;
 
     FragColor = color;
