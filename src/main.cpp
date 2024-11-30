@@ -1,6 +1,11 @@
 #define GLM_FORCE_RADIANS
-
+#include "common.hpp"
 #include "glad/glad.h"
+
+#define STBI_ASSERT(x) ensure(x);
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#undef STB_IMAGE_IMPLEMENTATION
 
 #include <chrono>
 #include <cstdlib>
@@ -14,7 +19,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
-#include "common.hpp"
 #include "cube_indicator_renderer.hpp"
 #include "held_cube_renderer.hpp"
 #include "input.hpp"
@@ -63,7 +67,9 @@ int main() {
 
   Shader cube_shader{"cube"};
 
-  CubeIndicatorRenderer::init();
+  CubeIndicatorRenderer cube_indicator_renderer;
+
+  auto held_cube_renderer = HeldCubeRenderer(cube_shader, atlas_texture);
 
   Shader crosshair_shader{"crosshair"};
 
@@ -99,7 +105,7 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   World world;
-  WorldRenderer world_renderer(world);
+  WorldRenderer world_renderer(world, cube_shader, atlas_texture);
   world.add_entity<Player>({0, 20, 0});
 
   Input::init(window);
@@ -131,34 +137,22 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw cubes
-    cube_shader.use();
-    atlas_texture.bind(0);
     world_renderer.update(camera_pos, camera_matrix);
 
-    // Draw currently held cube
-    cube_shader.use();
-    atlas_texture.bind(0);
-    if (player) {
-      static CubeId held_cube = CubeId::AIR;
-      if (held_cube != player->cube_to_place) {
-        held_cube = player->cube_to_place;
-        HeldCubeRenderer::update_mesh(held_cube);
-      }
-
-      HeldCubeRenderer::draw(aspect_ratio);
-    }
+    CubeId players_held_cube = player ? player->cube_to_place : CubeId::AIR;
+    held_cube_renderer.draw(aspect_ratio, players_held_cube);
 
     // Draw cube indicator
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
-      CubeIndicatorRenderer::draw(camera_pos, camera_matrix, cube_indicator_pos.value());
+      cube_indicator_renderer.draw(camera_pos, camera_matrix, cube_indicator_pos.value());
     }
 
     // Draw crosshair
     crosshair_shader.use();
+    crosshair_shader.set_uniform_float("aspect_ratio", aspect_ratio);
     glBindVertexArray(crosshair_vao);
     crosshair_texture.bind(0);
-    glUniform1f(0, aspect_ratio);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     // Swap the front and back buffers

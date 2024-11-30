@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include "biome.hpp"
 #include "common.hpp"
-
 #include "stb_image.h"
 
 using rgb = std::tuple<u8, u8, u8>;

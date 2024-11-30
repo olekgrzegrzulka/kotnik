@@ -12,6 +12,8 @@
 #include "common.hpp"
 #include "glad/glad.h"
 #include "player.hpp"
+#include "shader.hpp"
+#include "texture.hpp"
 #include "world.hpp"
 
 static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector, ChunkPos to) {
@@ -22,7 +24,8 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
   });
 }
 
-WorldRenderer::WorldRenderer(World& _world) : world(_world) {
+WorldRenderer::WorldRenderer(World& world_, Shader& cube_shader_, Texture& atlas_texture_)
+    : world{world_}, cube_shader{cube_shader_}, atlas_texture{atlas_texture_} {
   for (size_t i = 0; i < 1; i += 1) {
     chunk_mesh_workers.push_back(new ChunkMeshWorker);
   }
@@ -65,13 +68,16 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   }
 
   static constexpr glm::vec3 light = {0.41f, 0.82f, 0.41f};
-  /* matrix     */ glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(camera_matrix));
-  /* light dir  */ glUniform3f(1, light.x, light.y, light.z);
-  /* camera pos */ glUniform3f(2, camera_pos.x, camera_pos.y, camera_pos.z);
-  /* alpha      */ glUniform1f(3, 1.0);
+  cube_shader.use();
+  atlas_texture.bind(0);
+  cube_shader.set_uniform_mat4("camera_matrix", camera_matrix);
+  cube_shader.set_uniform_float("light_dir", light.x, light.y, light.z);
+  cube_shader.set_uniform_float("camera_pos", camera_pos.x, camera_pos.y, camera_pos.z);
+  cube_shader.set_uniform_float("alpha", 1.0);
 
+  // Update chunk meshes and propagate mesh updates from adjacent chunks
+  // and draw chunks
   for (auto& [chunk_pos, chunk] : world.chunks) {
-    // Propagate chunk mesh update request to adjacent chunks and update meshes
     if (chunk->flags.awaiting_mesh_update) {
       add_chunk_for_mesh_update(chunk_pos);
 
@@ -139,7 +145,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   ChunkPos player_chunk_pos = (world.player) ? world_pos_to_chunk_pos(world.player->world_pos) : ChunkPos{0, 0, 0};
   sort_chunk_vector_by_manhattan_distance(chunks_sorted_by_distance_to_player, player_chunk_pos);
 
-  /* alpha      */ glUniform1f(3, 0.8);
+  cube_shader.set_uniform_float("alpha", 0.8);
   for (auto it = chunks_sorted_by_distance_to_player.rbegin(); it != chunks_sorted_by_distance_to_player.rend(); ++it) {
     Chunk* chunk = *it;
     chunk->mesh->draw_translucent();

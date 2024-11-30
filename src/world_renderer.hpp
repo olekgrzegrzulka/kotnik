@@ -3,8 +3,10 @@
 #include <vector>
 #include "common.hpp"
 
-class World;
 struct ChunkMeshWorker;
+class Shader;
+class Texture;
+class World;
 
 class WorldRenderer final {
 public:
@@ -13,6 +15,8 @@ public:
 
 private:
   World& world;
+  Shader& cube_shader;
+  Texture& atlas_texture;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_being_meshed;
   std::vector<ChunkMeshWorker*> chunk_mesh_workers;
@@ -20,7 +24,7 @@ private:
   void add_chunk_for_mesh_update(ChunkPos);
 
 public:
-  WorldRenderer(World& _world);
+  WorldRenderer(World&, Shader& cube_shader_, Texture& atlas_texture_);
 
   ~WorldRenderer();
 

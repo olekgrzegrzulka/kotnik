@@ -4,14 +4,14 @@ layout (location = 0) in vec3 vertex;
 layout (location = 1) in uint pack;
 
 uniform mat4 camera_matrix;
-uniform vec3 light;
-uniform vec3 camera_position;
-uniform float _alpha;
+uniform vec3 light_dir;
+uniform vec3 camera_pos;
+uniform float alpha;
 
 out vec2 uv;
 out float brightness;
 out float fog_factor;
-out float alpha;
+out float alpha_frag;
 
 void main() {
     uv.x = float((pack & 0xFF)) / 16.0 / 2.0;
@@ -26,20 +26,20 @@ void main() {
     // brightness_vertex = 255;
 
 
-    float dot = (dot(normal, light) + 1.0) * 0.5;
+    float dot = (dot(normal, light_dir) + 1.0) * 0.5;
     brightness = 0.5 + dot * 0.5;
     brightness = min(brightness, float(brightness_vertex) / 255.0);
 
     float fog_start = 78.0;
     float fog_end = 80.0;
-    float dist = distance(vertex, camera_position);
-    dist = abs(vertex.x - camera_position.x) + abs(vertex.y - camera_position.y) + abs(vertex.z - camera_position.z);
-    dist = max(max(abs(vertex.x - camera_position.x), abs(vertex.y - camera_position.y)), abs(vertex.z - camera_position.z));
+    float dist = distance(vertex, camera_pos);
+    dist = abs(vertex.x - camera_pos.x) + abs(vertex.y - camera_pos.y) + abs(vertex.z - camera_pos.z);
+    dist = max(max(abs(vertex.x - camera_pos.x), abs(vertex.y - camera_pos.y)), abs(vertex.z - camera_pos.z));
 
     fog_factor = min(1.0, max(0.0, dist - fog_start) / fog_end);
 
-    alpha = _alpha;
+    alpha_frag = alpha;
 
-    gl_Position = camera_matrix * (vec4(vertex - camera_position, 1.0));
+    gl_Position = camera_matrix * (vec4(vertex - camera_pos, 1.0));
     
 }
