@@ -80,6 +80,7 @@ public:
   }
 
   CubeId get_cube(LocalPos local_pos) const {
+    if (no_cubes) { return CubeId::AIR; }
     return cubes[local_pos_to_index(local_pos)];
   }
 

@@ -5,7 +5,6 @@
 #include "cubes.hpp"
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
-  cubes.resize(Chunk::chunk_cube_count);
   mesh = std::make_unique<ChunkMesh>();
 }
 
@@ -47,13 +46,16 @@ void Chunk::update() {
 void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   ensure(is_local_pos_valid(local_pos));
 
+  if (no_cubes && cube_id == CubeId::AIR) { return; }
+
+  if (no_cubes) {
+    no_cubes = false;
+    cubes.resize(Chunk::chunk_cube_count);
+  }
+
   cubes[local_pos_to_index(local_pos)] = cube_id;
 
   update_mesh_update_flags(local_pos);
-
-  if (cube_id != CubeId::AIR) {
-    no_cubes = false;
-  }
 
   // Compute heightmap
   const auto heightmap_at = heightmap[local_pos.x + local_pos.z * chunk_size];
