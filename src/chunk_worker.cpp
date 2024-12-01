@@ -9,6 +9,7 @@
 #include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
+#include "random.hpp"
 #include "world.hpp"
 #include "world_gen.hpp"
 
@@ -16,10 +17,41 @@
 // ChunkMeshWorker
 //
 
+ChunkMeshWorker::ChunkMeshWorker() {
+  thread = std::thread([=, this]() -> void {
+    while (true) {
+      chunk_queue_t queue_elem;
+      {
+        std::unique_lock lock(chunk_queue_mutex);
+        cond_var.wait(lock, [&]() -> bool { return kill_thread || chunk_queue.size() > 0; });
+
+        if (kill_thread) { break; }
+
+        queue_elem = std::move(chunk_queue.back());
+        chunk_queue.pop_back();
+      }
+      auto [chunk_pos, data] = std::move(queue_elem);
+
+      ensure(data->is_valid());
+      auto mesh = std::make_unique<ChunkMesh>(std::move(data));
+      {
+        std::unique_lock lock(chunks_finished_mutex);
+        chunks_finished.emplace_back(chunk_pos, std::move(mesh));
+      }
+    }
+  });
+}
+
+ChunkMeshWorker::~ChunkMeshWorker() {
+  kill_thread = true;
+  cond_var.notify_all();
+  thread.join();
+}
+
 bool ChunkMeshWorker::add_to_queue(ChunkPos chunk_pos, World& world) {
   Chunk* c = world.get_chunk(chunk_pos);
   if (c && c->has_no_cubes()) {
-    std::scoped_lock lock(chunks_finished_mutex);
+    std::unique_lock lock(chunks_finished_mutex);
     chunks_finished.emplace_back(chunk_pos, std::make_unique<ChunkMesh>());
     return true;
   }
@@ -35,10 +67,15 @@ bool ChunkMeshWorker::add_to_queue(ChunkPos chunk_pos, World& world) {
     }
   }
 
-  auto data = std::make_unique<ChunkMeshData>(chunk_pos, world);
-  if (!data->is_valid()) { return false; }
-  std::scoped_lock lock(chunk_queue_mutex);
-  chunk_queue.emplace_back(chunk_pos, std::move(data));
+  {
+    auto data = std::make_unique<ChunkMeshData>(chunk_pos, world);
+    if (!data->is_valid()) { return false; }
+    std::unique_lock lock(chunk_queue_mutex);
+    chunk_queue.emplace_back(chunk_pos, std::move(data));
+  }
+
+  cond_var.notify_all();
+
   return true;
 }
 
@@ -61,7 +98,7 @@ bool ChunkMeshWorker::add_to_queue_no_mutex(ChunkPos chunk_pos, World& world) {
 }
 
 void ChunkMeshWorker::sort_queue_by_distance(ChunkPos to) {
-  std::scoped_lock lock(chunk_queue_mutex);
+  std::unique_lock lock(chunk_queue_mutex);
 
   sort_queue_by_distance_no_mutex(to);
 }
@@ -82,94 +119,59 @@ void ChunkMeshWorker::unlock_queue() {
 }
 
 size_t ChunkMeshWorker::get_queue_size() {
-  std::scoped_lock lock(chunk_queue_mutex);
+  std::unique_lock lock(chunk_queue_mutex);
   return chunk_queue.size();
 }
 
-std::optional<ChunkMeshWorker::chunk_queue_t> ChunkMeshWorker::pop_from_queue() {
-  std::scoped_lock lock(chunk_queue_mutex);
-
-  if (chunk_queue.empty()) { return std::nullopt; }
-
-  auto data = std::move(chunk_queue.back());
-  chunk_queue.pop_back();
-  return data;
-}
-
 std::vector<std::pair<ChunkPos, std::unique_ptr<ChunkMesh>>> ChunkMeshWorker::collect_finished_chunks() {
-  std::scoped_lock lock(chunks_finished_mutex);
+  std::unique_lock lock(chunks_finished_mutex);
   return std::exchange(chunks_finished, {});
-}
-
-void ChunkMeshWorker::update() {
-  if (is_running) { return; }
-  if (chunk_queue.size() == 0) { return; }
-
-  is_running = true;
-
-  std::thread thread([=, this]() {
-    while (true) {
-      auto elem = pop_from_queue();
-      if (!elem.has_value()) { break; }
-      auto [chunk_pos, data] = std::move(elem.value());
-
-      ensure(data->is_valid());
-      auto mesh = std::make_unique<ChunkMesh>(std::move(data));
-      {
-        std::scoped_lock lock(chunks_finished_mutex);
-        chunks_finished.emplace_back(chunk_pos, std::move(mesh));
-      }
-    }
-    is_running = false;
-  });
-  thread.detach();
 }
 
 //
 // TerrainGenWorker
 //
+ChunkTerrainGenWorker::ChunkTerrainGenWorker(std::shared_ptr<WorldGen> world_gen_) : world_gen(world_gen_) {
+  thread = std::thread([=, this]() -> void {
+    while (true) {
+      ChunkPos chunk_pos;
+      {
+        std::unique_lock lock(chunk_queue_mutex);
+        cond_var.wait(lock, [&]() -> bool { return kill_thread || chunk_queue.size() > 0; });
 
-void ChunkTerrainGenWorker::add_to_queue(ChunkPos chunk_pos) {
-  std::scoped_lock lock(chunk_queue_mutex);
-  chunk_queue.emplace_back(chunk_pos);
+        if (kill_thread) { break; }
+
+        chunk_pos = chunk_queue.back();
+        chunk_queue.pop_back();
+      }
+
+      auto chunk = std::make_unique<Chunk>(chunk_pos);
+      world_gen->generate_chunk(chunk.get());
+
+      {
+        std::unique_lock lock2(chunks_finished_mutex);
+        chunk->flags.awaiting_mesh_update = true;
+        chunks_finished.emplace_back(std::move(chunk));
+      }
+    }
+  });
 }
 
-std::optional<ChunkPos> ChunkTerrainGenWorker::pop_from_queue() {
-  std::scoped_lock lock(chunk_queue_mutex);
+ChunkTerrainGenWorker::~ChunkTerrainGenWorker() {
+  kill_thread = true;
+  cond_var.notify_all();
+  thread.join();
+}
 
-  if (chunk_queue.empty()) { return std::nullopt; }
-
-  ChunkPos chunk_pos = chunk_queue.back();
-  chunk_queue.pop_back();
-  return chunk_pos;
+void ChunkTerrainGenWorker::add_to_queue(ChunkPos chunk_pos) {
+  {
+    std::unique_lock lock(chunk_queue_mutex);
+    chunk_queue.emplace_back(chunk_pos);
+  }
+  cond_var.notify_all();
 }
 
 std::vector<std::unique_ptr<Chunk>> ChunkTerrainGenWorker::collect_finished_chunks() {
-  std::scoped_lock lock(chunks_finished_mutex);
+  std::unique_lock lock(chunks_finished_mutex);
   return std::exchange(chunks_finished, {});
-  ;
-}
-
-void ChunkTerrainGenWorker::update() {
-  if (!is_running) {
-    is_running = true;
-
-    std::thread thread([=, this]() {
-      while (true) {
-        std::optional<ChunkPos> chunk_pos = pop_from_queue();
-        if (!chunk_pos) { break; }
-
-        auto chunk = std::make_unique<Chunk>(chunk_pos.value());
-        world_gen->generate_chunk(chunk.get());
-
-        {
-          std::scoped_lock lock(chunks_finished_mutex);
-          chunk->flags.awaiting_mesh_update = true;
-          chunks_finished.emplace_back(std::move(chunk));
-        }
-      }
-      is_running = false;
-    });
-    thread.detach();
-  }
 }

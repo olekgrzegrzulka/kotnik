@@ -27,14 +27,11 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 WorldRenderer::WorldRenderer(World& world_, Shader& cube_shader_, Texture& atlas_texture_)
     : world{world_}, cube_shader{cube_shader_}, atlas_texture{atlas_texture_} {
   for (size_t i = 0; i < 1; i += 1) {
-    chunk_mesh_workers.push_back(new ChunkMeshWorker);
+    chunk_mesh_workers.push_back(std::make_unique<ChunkMeshWorker>());
   }
 }
 
 WorldRenderer::~WorldRenderer() {
-  for (size_t i = 0; i < chunk_mesh_workers.size(); i += 1) {
-    delete chunk_mesh_workers[i];
-  }
 }
 
 void WorldRenderer::add_chunk_for_mesh_update(ChunkPos chunk_pos) {
@@ -49,10 +46,6 @@ void WorldRenderer::add_chunk_for_mesh_update(ChunkPos chunk_pos) {
 }
 
 void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) {
-  for (auto& worker : chunk_mesh_workers) {
-    worker->update();
-  }
-
   // Retrieve new meshes for chunks
   for (const auto& worker : chunk_mesh_workers) {
     for (auto& [chunk_pos, chunk_mesh] : worker->collect_finished_chunks()) {

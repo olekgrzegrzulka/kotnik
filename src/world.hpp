@@ -72,7 +72,7 @@ private:
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_being_generated;
   std::vector<std::unique_ptr<Entity>> entities;
 
-  std::vector<ChunkTerrainGenWorker*> chunk_terrain_gen_workers;
+  std::vector<std::unique_ptr<ChunkTerrainGenWorker>> chunk_terrain_gen_workers;
 
   Player* player = nullptr;
 

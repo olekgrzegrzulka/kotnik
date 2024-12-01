@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <unordered_set>
 #include <vector>
 #include "common.hpp"
@@ -19,7 +20,7 @@ private:
   Texture& atlas_texture;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_being_meshed;
-  std::vector<ChunkMeshWorker*> chunk_mesh_workers;
+  std::vector<std::unique_ptr<ChunkMeshWorker>> chunk_mesh_workers;
 
   void add_chunk_for_mesh_update(ChunkPos);
 
