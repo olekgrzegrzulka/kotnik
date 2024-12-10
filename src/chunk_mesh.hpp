@@ -19,13 +19,7 @@ public:
 
   bool is_valid() const { return valid; }
   ChunkPos get_chunk_pos() const { return chunk_pos; }
-  bool is_cube_occluded(LocalPos local_pos) const {
-    ensure(is_local_pos_valid(local_pos));
-    return occlusion_map[local_pos_to_index(local_pos)];
-  }
-
 private:
-  std::bitset<Chunk::chunk_cube_count> occlusion_map;
   std::vector<std::vector<CubeId>> chunks_data;
   bool valid = false;
   ChunkPos chunk_pos;

@@ -21,8 +21,6 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
     }
   }
 
-  occlusion_map = world.get_chunk(chunk_pos_)->get_occlusion_map();
-
   chunks_data.resize(3 * 3 * 3);
 
   for (i32 x = -1; x <= 1; x += 1) {
@@ -58,7 +56,6 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
 
   for (size_t i = 0; i < (size_t)Chunk::chunk_cube_count; i += 1) {
     LocalPos l = index_to_local_pos(i);
-    if (data->is_cube_occluded(l)) { continue; }
     if (data->get_cube_id(l) == CubeId::AIR) { continue; }
 
     auto cube = cubes::get(data->get_cube_id(l));

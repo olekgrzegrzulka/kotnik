@@ -52,9 +52,6 @@ private:
   std::vector<CubeId> cubes{};
   bool no_cubes = true;
 
-  // A true value means that the cube at index is occluded. All cubes with neigbours outside chunk bounds always have value of false
-  std::bitset<chunk_cube_count> occlusion_map;
-
   // The highest cube in chunk. Empty if column has no cubes
   std::array<std::optional<uint16_t>, chunk_size * chunk_size> heightmap{};
 
@@ -68,12 +65,6 @@ public:
   void set_cube(LocalPos, CubeId);
   void set_cube_maybe_neigbour(LocalPos, CubeId);
   void set_cube_index(u32 index, CubeId);
-
-  // Getters
-  bool is_cube_occluded(LocalPos local_pos) const {
-    ensure(is_local_pos_valid(local_pos));
-    return occlusion_map[local_pos_to_index(local_pos)];
-  }
 
   bool is_solid(LocalPos local_pos) const {
     return get_cube(local_pos) != CubeId::AIR;
@@ -93,13 +84,6 @@ public:
   std::vector<CubeId> get_cubes() const {
     return cubes;
   }
-
-  decltype(occlusion_map) get_occlusion_map() const {
-    return occlusion_map;
-  }
-
-private:
-  void update_occlusion_map(LocalPos local_pos);
 };
 
 // Checks if a local position is in range of chunk's array
