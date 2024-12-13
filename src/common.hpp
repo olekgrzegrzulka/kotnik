@@ -11,8 +11,6 @@
 #include <glm/gtx/norm.hpp>
 #include <stdint.h>
 
-// Type definitions
-
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -28,6 +26,14 @@ typedef glm::vec<3, i32> CubePos;
 typedef glm::vec<3, i32> LocalPos;
 typedef glm::vec<3, double> WorldPos;
 typedef glm::vec<3, u8> LightLevel;
+
+struct rgb {
+  u8 r;
+  u8 g;
+  u8 b;
+
+  constexpr bool operator==(const rgb& rhs) const = default;
+};
 
 enum Dir {
   NONE = 0,
@@ -241,6 +247,12 @@ struct Vec3Hasher {
   template <typename T>
   std::size_t operator()(const glm::vec<3, T>& vec3) const {
     return vec3.x * 1048576 + vec3.y * 1024 + vec3.z;
+  }
+};
+
+struct RGBHasher {
+  std::size_t operator()(const rgb& c) const {
+    return c.r * 65536 + c.g * 256 + c.b;
   }
 };
 

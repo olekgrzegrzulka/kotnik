@@ -1,14 +1,12 @@
 #include <iterator>
 #include <map>
 #include <memory>
-#include <tuple>
 #include <glm/gtx/norm.hpp>
 #include <sys/types.h>
 #include "biome.hpp"
 #include "common.hpp"
 #include "stb_image.h"
 
-using rgb = std::tuple<u8, u8, u8>;
 using Biome = biomes::Biome;
 using BiomeId = biomes::BiomeId;
 
@@ -72,7 +70,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   auto color_to_biome_id = [&](rgb color) -> BiomeId {
     auto it = bitmap_color_to_biome_id.find(color);
     if (it == bitmap_color_to_biome_id.end()) {
-      debug_warn("biomemap: unknown biome color rgb(", (int)std::get<0>(color), ", ", (int)std::get<1>(color), ", ", (int)std::get<2>(color), "), defaulting to Flatlands");
+      debug_warn("biomemap: unknown biome color rgb(", color.r, ", ", color.g, ", ", color.b, "), defaulting to Flatlands");
       return biomes::BiomeId::FLATLANDS;
     }
     return (*it).second;
