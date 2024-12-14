@@ -1,6 +1,6 @@
 #include <iterator>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <glm/gtx/norm.hpp>
 #include <sys/types.h>
 #include "biome.hpp"
@@ -24,7 +24,7 @@ struct BiomeMap {
   }
 };
 
-static const std::map<rgb, BiomeId>
+static const std::unordered_map<rgb, BiomeId, RGBHasher>
     bitmap_color_to_biome_id{
         {{18, 64, 132}, BiomeId::DEEP_OCEAN},
         {{40, 92, 196}, BiomeId::OCEAN},
@@ -70,7 +70,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   auto color_to_biome_id = [&](rgb color) -> BiomeId {
     auto it = bitmap_color_to_biome_id.find(color);
     if (it == bitmap_color_to_biome_id.end()) {
-      debug_warn("biomemap: unknown biome color rgb(", color.r, ", ", color.g, ", ", color.b, "), defaulting to Flatlands");
+      debug_warn("biomemap: unknown biome color rgb(", (i32)color.r, ", ", (i32)color.g, ", ", (i32)color.b, "), defaulting to Flatlands");
       return biomes::BiomeId::FLATLANDS;
     }
     return (*it).second;

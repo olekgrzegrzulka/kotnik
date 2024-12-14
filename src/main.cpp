@@ -24,6 +24,7 @@
 #include "input.hpp"
 #include "player.hpp"
 #include "shader.hpp"
+#include "skybox.hpp"
 #include "texture.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
@@ -72,8 +73,9 @@ int main() {
   auto held_cube_renderer = HeldCubeRenderer(cube_shader, atlas_texture);
 
   Shader crosshair_shader{"crosshair"};
-
   Texture crosshair_texture{"crosshair.png"};
+
+  skybox_init();
 
   // Create crosshair VAO
   GLuint crosshair_vao;
@@ -136,7 +138,12 @@ int main() {
     glClearColor(0.59f, 0.83f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Draw sky
+    glDisable(GL_DEPTH_TEST);
+    skybox_draw(camera_matrix);
+
     // Draw cubes
+    glEnable(GL_DEPTH_TEST);
     world_renderer.update(camera_pos, camera_matrix);
 
     CubeId players_held_cube = player ? player->cube_to_place : CubeId::AIR;
