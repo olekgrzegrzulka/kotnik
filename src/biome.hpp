@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include "common.hpp"
+#include "cubes.hpp"
 
 enum class CubeId : u16;
 
@@ -32,8 +33,12 @@ struct Biome final {
   float noise_spiky_multiplier = 0;
   float noise_3d_multiplier = 0;
 
-  std::function<CubeId(i32 y, i32 depth, float rng)> get_ground_cube;
-  std::function<CubeId(i32 y, float rng)> get_foliage_cube;
+  std::function<CubeId(i32 y, i32 depth, float rng)> get_ground_cube = [](i32, i32, float) -> CubeId {
+    return CubeId::DIRT;
+  };
+  std::function<CubeId(i32 y, float rng)> get_foliage_cube = [](i32, float) -> CubeId {
+    return CubeId::AIR;
+  };
 };
 
 const Biome& get_biome(BiomeId id);
