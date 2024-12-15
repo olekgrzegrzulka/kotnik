@@ -12,14 +12,14 @@ struct vertex {
   glm::vec<3, float> pos;
 };
 
-GLuint vbo;
-GLuint vao;
-std::vector<vertex> vertices;
-glm::vec3 color_top;
-glm::vec3 color_up;
-glm::vec3 color_mid;
-glm::vec3 color_down;
-glm::vec3 color_bottom;
+static GLuint vbo;
+static GLuint vao;
+static std::vector<vertex> vertices;
+static glm::vec3 color_top;
+static glm::vec3 color_up;
+static glm::vec3 color_mid;
+static glm::vec3 color_down;
+static glm::vec3 color_bottom;
 
 void skybox_init() {
   skybox_set_color(
