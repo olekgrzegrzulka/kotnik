@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -6,6 +7,7 @@
 #include <glm/glm.hpp>
 #include "aabb.hpp"
 #include "common.hpp"
+#include "cubes.hpp"
 #include "entity.hpp"
 #include "input.hpp"
 #include "world.hpp"
@@ -249,6 +251,11 @@ public:
       }
     }
 
+    auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, world_pos);
+    bool is_in_water = std::any_of(overlapping_cubes.begin(), overlapping_cubes.end(), [&](auto& cube_pos) {
+      return world.get_cube(cube_pos) == CubeId::WATER;
+    });
+
     if (is_flying) {
       velocity.y += 0.02 * (input_held("ascend") - input_held("descend"));
       velocity.y *= 0.92;
@@ -261,8 +268,19 @@ public:
           jump_delay = 2;
         }
       }
-      if (!is_flying) { velocity.y += world.physical_properties.gravity; }
-      velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
+      if (!is_flying) {
+        if (!is_in_water) {
+          velocity.y += world.physical_properties.gravity;
+        } else {
+          velocity.y += world.physical_properties.water_gravity;
+        }
+      }
+
+      if (!is_in_water) {
+        velocity.y -= world.physical_properties.air_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
+      } else {
+        velocity.y -= world.physical_properties.water_friction * std::pow(velocity.y, 2.0) * glm::sign(velocity.y);
+      }
       if (glm::length(velocity) < 0.03) { velocity *= 0.99; }
     }
   }
@@ -274,34 +292,57 @@ public:
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{a * (player_target_position.x - world_pos.x), 0, 0};
-      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
-        break;
+      bool stop = false;
+      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, test_position);
+      for (auto cube_pos : overlapping_cubes) {
+        if (world.get_cube(cube_pos) != CubeId::WATER) {
+          stop = true;
+          break;
+        }
       }
+      if (stop) { break; }
       move_vector_individual_axis.x = test_position.x - world_pos.x;
     }
 
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, a * (player_target_position.y - world_pos.y), 0};
-      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
-        break;
+      bool stop = false;
+      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, test_position);
+      for (auto cube_pos : overlapping_cubes) {
+        if (world.get_cube(cube_pos) != CubeId::WATER) {
+          stop = true;
+          break;
+        }
       }
+      if (stop) { break; }
       move_vector_individual_axis.y = test_position.y - world_pos.y;
     }
 
     for (int i = 0; i <= ITERATIONS; i += 1) {
       const double a = (double)i / ITERATIONS;
       const WorldPos test_position = world_pos + WorldPos{0, 0, a * (player_target_position.z - world_pos.z)};
-      if (world.aabb_get_solid_cubes(aabb, test_position).size() > 0) {
-        break;
+      bool stop = false;
+      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, test_position);
+      for (auto cube_pos : overlapping_cubes) {
+        if (world.get_cube(cube_pos) != CubeId::WATER) {
+          stop = true;
+          break;
+        }
       }
+      if (stop) { break; }
       move_vector_individual_axis.z = test_position.z - world_pos.z;
     }
 
     velocity = move_vector_individual_axis;
 
     // To prevent getting stuck inside cubes, push out the player away from average position of all overlapping cubes
-    for (int i = 20; i > 0 && world.aabb_get_solid_cubes(aabb, world_pos + velocity).size() > 0; i -= 1) {
+    for (int i = 20; i > 0; i -= 1) {
+      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, world_pos + velocity);
+      bool is_overlapping_a_cube = std::any_of(overlapping_cubes.begin(), overlapping_cubes.end(), [&](auto& cube_pos) {
+        return world.get_cube(cube_pos) != CubeId::WATER;
+      });
+      if (!is_overlapping_a_cube) { break; }
       velocity -= move_vector_individual_axis * 0.05;
     }
   }

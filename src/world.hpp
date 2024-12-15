@@ -63,6 +63,9 @@ public:
     double gravity = -0.012;
     double air_friction = 0.01;
 
+    double water_gravity = -0.007;
+    double water_friction = 0.17;
+
   } physical_properties;
 
 private:
