@@ -1,3 +1,4 @@
+#include "clouds.hpp"
 #define GLM_FORCE_RADIANS
 #include "common.hpp"
 #include "glad/glad.h"
@@ -76,6 +77,7 @@ int main() {
   Texture crosshair_texture{"crosshair.png"};
 
   skybox_init();
+  clouds_init();
 
   // Create crosshair VAO
   GLuint crosshair_vao;
@@ -138,9 +140,9 @@ int main() {
     glClearColor(0.59f, 0.83f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw sky
     glDisable(GL_DEPTH_TEST);
     skybox_draw(camera_matrix);
+    clouds_draw(camera_matrix);
 
     // Draw cubes
     glEnable(GL_DEPTH_TEST);

@@ -26,6 +26,7 @@ set(SOURCES
     ./src/biome_map.cpp
     ./src/world_renderer.cpp
     ./src/skybox.cpp
+    ./src/clouds.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
