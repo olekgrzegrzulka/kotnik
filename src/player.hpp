@@ -337,13 +337,29 @@ public:
     velocity = move_vector_individual_axis;
 
     // To prevent getting stuck inside cubes, push out the player away from average position of all overlapping cubes
-    for (int i = 20; i > 0; i -= 1) {
-      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, world_pos + velocity);
+    double velocity_to_preserve_ratio = 1.0;
+    double step_size = 1.0;
+    auto last_good_velocity = velocity;
+
+    for (int i = 0; i < 12; i += 1) {
+      auto next_velocity = velocity * velocity_to_preserve_ratio;
+      auto next_pos = world_pos + next_velocity;
+      auto overlapping_cubes = world.aabb_get_solid_cubes(aabb, next_pos);
       bool is_overlapping_a_cube = std::any_of(overlapping_cubes.begin(), overlapping_cubes.end(), [&](auto& cube_pos) {
         return world.get_cube(cube_pos) != CubeId::WATER;
       });
-      if (!is_overlapping_a_cube) { break; }
-      velocity -= move_vector_individual_axis * 0.05;
+
+      if (i == 0 && !is_overlapping_a_cube) { break; }
+
+      if (is_overlapping_a_cube) {
+        velocity_to_preserve_ratio -= step_size;
+      } else {
+        last_good_velocity = next_velocity;
+        velocity_to_preserve_ratio += step_size;
+      }
+      step_size *= 0.5;
     }
+
+    velocity = last_good_velocity;
   }
 };
