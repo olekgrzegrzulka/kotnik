@@ -76,6 +76,11 @@ static void print_(T&& arg) {
 }
 
 template <typename T>
+static void print_(glm::vec<2, T> vec2) {
+  std::cout << "[" << vec2.x << ", " << vec2.y << "]";
+}
+
+template <typename T>
 static void print_(glm::vec<3, T> vec3) {
   std::cout << "[" << vec3.x << ", " << vec3.y << ", " << vec3.z << "]";
 }
