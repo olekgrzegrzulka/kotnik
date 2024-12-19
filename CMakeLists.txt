@@ -9,8 +9,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(OUTPUT_NAME "${PROJECT_NAME}")
+set(BUILD_SHARED_LIBS OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+add_subdirectory(lib/freetype)
 
 set(SOURCES
     ./src/main.cpp
@@ -27,6 +30,8 @@ set(SOURCES
     ./src/world_renderer.cpp
     ./src/skybox.cpp
     ./src/clouds.cpp
+    ./src/ui/sprite.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_NAME} PRIVATE freetype)

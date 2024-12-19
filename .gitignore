@@ -43,3 +43,4 @@ compile_commands.json
 kotnik
 ideas.txt
 .ignore
+lib/freetype/build
