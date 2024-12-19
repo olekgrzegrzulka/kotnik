@@ -47,13 +47,20 @@ int main() {
 
   glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
+
   glfwMakeContextCurrent(window);
+glfwSetWindowUserPointer(window, &window_size);
   glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+decltype(window_size)* window_size_ = reinterpret_cast<decltype(window_size)*>(glfwGetWindowUserPointer(window));
+    window_size_->x = width;
+    window_size_->y = height;
   });
   const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
   glfwSetWindowSize(window, mode->width, mode->height);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  window_size = {mode->width, mode->height};
 
   // // Setup GLAD
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -64,6 +71,7 @@ int main() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glCullFace(GL_BACK);
+  glViewport(0, 0, mode->width, mode->height);
 
   Texture atlas_texture{"atlas.png"};
 
