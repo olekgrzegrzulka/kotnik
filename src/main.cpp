@@ -1,6 +1,5 @@
-#include "clouds.hpp"
 #define GLM_FORCE_RADIANS
-#include "common.hpp"
+
 #include "glad/glad.h"
 
 #define STBI_ASSERT(x) ensure(x);
@@ -20,13 +19,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
+#include "clouds.hpp"
+#include "common.hpp"
 #include "cube_indicator_renderer.hpp"
+#include "cubes.hpp"
 #include "held_cube_renderer.hpp"
 #include "input.hpp"
 #include "player.hpp"
 #include "shader.hpp"
 #include "skybox.hpp"
 #include "texture.hpp"
+#include "ui/ui.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
 
@@ -41,37 +44,37 @@ void check_opengl_errors() {
 
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
+
   if (!glfwInit()) {
     debug_error("Failed to initialize glfw");
   }
 
-  glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-  GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
+  glm::vec<2, i32> window_size;
 
+  // glfw
+  glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+  GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
   glfwMakeContextCurrent(window);
-glfwSetWindowUserPointer(window, &window_size);
+  glfwSetWindowUserPointer(window, &window_size);
   glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-decltype(window_size)* window_size_ = reinterpret_cast<decltype(window_size)*>(glfwGetWindowUserPointer(window));
+    auto* window_size_ = reinterpret_cast<glm::vec<2, i32>*>(glfwGetWindowUserPointer(window));
     window_size_->x = width;
     window_size_->y = height;
   });
-  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  glfwSetWindowSize(window, mode->width, mode->height);
+  glfwGetWindowSize(window, &window_size.x, &window_size.y);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  window_size = {mode->width, mode->height};
-
-  // // Setup GLAD
+  // glad
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-  // Configure OpenGL
+  // gl
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glCullFace(GL_BACK);
-  glViewport(0, 0, mode->width, mode->height);
+  glViewport(0, 0, window_size.x, window_size.y);
 
   Texture atlas_texture{"atlas.png"};
 
@@ -120,6 +123,8 @@ decltype(window_size)* window_size_ = reinterpret_cast<decltype(window_size)*>(g
   WorldRenderer world_renderer(world, cube_shader, atlas_texture);
   world.add_entity<Player>({0, 20, 0});
 
+  UI ui{window_size.x, window_size.y};
+
   Input::init(window);
 
   while (!glfwWindowShouldClose(window)) {
@@ -166,11 +171,14 @@ decltype(window_size)* window_size_ = reinterpret_cast<decltype(window_size)*>(g
     }
 
     // Draw crosshair
+    glDisable(GL_DEPTH_TEST);
     crosshair_shader.use();
     crosshair_shader.set_uniform_float("aspect_ratio", aspect_ratio);
     glBindVertexArray(crosshair_vao);
     crosshair_texture.bind(0);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    ui.update(window_size.x, window_size.y);
+    ui.draw();
 
     // Swap the front and back buffers
     glfwSwapBuffers(window);
