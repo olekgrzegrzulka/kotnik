@@ -30,7 +30,6 @@ set(SOURCES
     ./src/world_renderer.cpp
     ./src/skybox.cpp
     ./src/clouds.cpp
-    ./src/ui/sprite.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
