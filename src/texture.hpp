@@ -13,6 +13,7 @@ public:
   }
 
   void bind(u32 slot) {
+    glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(slot, sampler);
   }
