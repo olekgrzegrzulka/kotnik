@@ -58,7 +58,7 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
     LocalPos l = index_to_local_pos(i);
     if (data->get_cube_id(l) == CubeId::AIR) { continue; }
 
-    auto cube = cubes_get(data->get_cube_id(l));
+    auto& cube = cubes_get(data->get_cube_id(l));
 
     NeigbourCubeIds neigbour_cube_ids{};
 

@@ -75,6 +75,12 @@ struct Cube {
   constexpr Cube() {}
   constexpr Cube(std::string name_) : name{name_} {}
 
+  Cube(const Cube&) = delete;
+  Cube& operator=(const Cube&) = delete;
+
+  Cube(Cube&&) = default;
+  Cube& operator=(Cube&&) = delete;
+
   enum class CubeOccludeMode {
     NEVER,
     ALWAYS,
