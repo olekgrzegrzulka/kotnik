@@ -41,56 +41,56 @@ public:
     }
   };
 
-  void use() {
+  void use() const {
     glUseProgram(shader_program);
   }
 
-  void set_uniform_u32(std::string name, u32 value) {
+  void set_uniform_u32(std::string name, u32 value) const {
     auto location = get_uniform_location(name);
     glUniform1ui(location, value);
   }
 
-  void set_uniform_u32(std::string name, u32 value1, u32 value2) {
+  void set_uniform_u32(std::string name, u32 value1, u32 value2) const {
     auto location = get_uniform_location(name);
     glUniform2ui(location, value1, value2);
   }
 
-  void set_uniform_u32(std::string name, u32 value1, u32 value2, u32 value3) {
+  void set_uniform_u32(std::string name, u32 value1, u32 value2, u32 value3) const {
     auto location = get_uniform_location(name);
     glUniform3ui(location, value1, value2, value3);
   }
 
-  void set_uniform_i32(std::string name, i32 value) {
+  void set_uniform_i32(std::string name, i32 value) const {
     auto location = get_uniform_location(name);
     glUniform1i(location, value);
   }
 
-  void set_uniform_i32(std::string name, i32 value1, i32 value2) {
+  void set_uniform_i32(std::string name, i32 value1, i32 value2) const {
     auto location = get_uniform_location(name);
     glUniform2i(location, value1, value2);
   }
 
-  void set_uniform_i32(std::string name, i32 value1, i32 value2, i32 value3) {
+  void set_uniform_i32(std::string name, i32 value1, i32 value2, i32 value3) const {
     auto location = get_uniform_location(name);
     glUniform3i(location, value1, value2, value3);
   }
 
-  void set_uniform_float(std::string name, float value) {
+  void set_uniform_float(std::string name, float value) const {
     auto location = get_uniform_location(name);
     glUniform1f(location, value);
   }
 
-  void set_uniform_float(std::string name, float value1, float value2) {
+  void set_uniform_float(std::string name, float value1, float value2) const {
     auto location = get_uniform_location(name);
     glUniform2f(location, value1, value2);
   }
 
-  void set_uniform_float(std::string name, float value1, float value2, float value3) {
+  void set_uniform_float(std::string name, float value1, float value2, float value3) const {
     auto location = get_uniform_location(name);
     glUniform3f(location, value1, value2, value3);
   }
 
-  void set_uniform_mat4(std::string name, glm::mat4 value) {
+  void set_uniform_mat4(std::string name, glm::mat4 value) const {
     auto location = get_uniform_location(name);
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
   }

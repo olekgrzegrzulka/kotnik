@@ -12,7 +12,7 @@ public:
     sampler = Texture::create_sampler();
   }
 
-  void bind(u32 slot) {
+  void bind(u32 slot) const {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(slot, sampler);
@@ -49,7 +49,7 @@ private:
     return texture_;
   }
 
-  GLuint create_sampler() const {
+  static GLuint create_sampler() {
     GLuint sampler_ = 0;
     glCreateSamplers(1, &sampler_);
     glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_S, GL_REPEAT);
