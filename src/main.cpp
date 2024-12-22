@@ -83,7 +83,7 @@ decltype(window_size)* window_size_ = reinterpret_cast<decltype(window_size)*>(g
 
   Shader crosshair_shader{"crosshair"};
   Texture crosshair_texture{"crosshair.png"};
-
+  cubes_init();
   skybox_init();
   clouds_init();
 

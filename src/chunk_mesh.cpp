@@ -58,7 +58,7 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
     LocalPos l = index_to_local_pos(i);
     if (data->get_cube_id(l) == CubeId::AIR) { continue; }
 
-    auto cube = cubes::get(data->get_cube_id(l));
+    auto cube = cubes_get(data->get_cube_id(l));
 
     NeigbourCubeIds neigbour_cube_ids{};
 
@@ -123,7 +123,7 @@ void ChunkMesh::initialize() {
     // VBO
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(cubes::CompactVertex), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CompactVertex), vertices.data(), GL_STATIC_DRAW);
 
     // VAO
     glGenVertexArrays(1, (GLuint*)&vao);
@@ -133,11 +133,11 @@ void ChunkMesh::initialize() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pos));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pos));
 
     // Bind packed normals information
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pack));
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
 
     // Unbind buffers
     glBindVertexArray(0);
@@ -153,16 +153,16 @@ void ChunkMesh::initialize() {
     // Create vertex VBO
     glGenBuffers(1, &vbo_translucent);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_translucent);
-    glBufferData(GL_ARRAY_BUFFER, vertices_translucent.size() * sizeof(cubes::CompactVertex), vertices_translucent.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_translucent.size() * sizeof(CompactVertex), vertices_translucent.data(), GL_STATIC_DRAW);
 
     // Bind vertex position
     glBindBuffer(GL_ARRAY_BUFFER, vbo_translucent);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pos));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pos));
 
     // Bind packed normals information
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pack));
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
 
     // Unbind buffers
     glBindVertexArray(0);
@@ -171,7 +171,7 @@ void ChunkMesh::initialize() {
     // Normal
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(cubes::CompactVertex), vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CompactVertex), vertices.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -179,7 +179,7 @@ void ChunkMesh::initialize() {
     // Translucent
     glBindVertexArray(vao_translucent);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_translucent);
-    glBufferData(GL_ARRAY_BUFFER, vertices_translucent.size() * sizeof(cubes::CompactVertex), vertices_translucent.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_translucent.size() * sizeof(CompactVertex), vertices_translucent.data(), GL_DYNAMIC_DRAW);
 
     // Unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0);

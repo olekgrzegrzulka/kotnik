@@ -24,7 +24,7 @@ private:
 
   std::optional<CubeId> cube_id;
 
-  std::vector<cubes::CompactVertex> vertices;
+  std::vector<CompactVertex> vertices;
   GLuint vao = 0;
   GLuint vbo = 0;
 
@@ -81,7 +81,7 @@ public:
 private:
   void update_mesh(CubeId cube) {
     vertices.clear();
-    cubes::get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), vertices);
+    cubes_get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), vertices);
     // Create and bind VAO
     glGenVertexArrays(1, (GLuint*)&vao);
 
@@ -90,16 +90,16 @@ private:
     // Create vertex VBO
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(cubes::CompactVertex), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CompactVertex), vertices.data(), GL_STATIC_DRAW);
 
     // Bind vertex position
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pos));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pos));
 
     // Bind packed normals information
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(cubes::CompactVertex), (void*)offsetof(cubes::CompactVertex, pack));
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
 
     // Unbind buffers
     glBindVertexArray(0);

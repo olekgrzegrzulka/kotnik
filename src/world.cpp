@@ -457,7 +457,7 @@ std::vector<CubePos> World::aabb_get_solid_cubes(AABB aabb, WorldPos world_pos) 
   std::vector<CubePos> overlapping_cubes = aabb_get_overlapping_cubes(aabb, world_pos);
 
   for (auto cube_pos : overlapping_cubes) {
-    auto cube = cubes::get(get_cube(cube_pos));
+    auto cube = cubes_get(get_cube(cube_pos));
     bool collider_overlapping = std::any_of(cube.collider_aabbs.begin(), cube.collider_aabbs.end(), [&](auto& cube_aabb) {
       return AABB::test(aabb, world_pos, cube_aabb, WorldPos{cube_pos} /* + WorldPos{0.5, 0.5, 0.5} */);
     });

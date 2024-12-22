@@ -1,9 +1,10 @@
 #include "cubes.hpp"
+#include <vector>
+#include "common.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
 
-using CompactVertex = cubes::CompactVertex;
-using CompactVertexNormal = cubes::CompactVertexNormal;
+static std::vector<Cube> cube_array;
 
 namespace full_cube_vertices {
 static constexpr std::array<float, 6> u = {0.0, 0.0, 1.0, 1.0, 1.0, 0.0};
@@ -65,7 +66,7 @@ static const std::vector<CompactVertex> top = {
 };
 }; // namespace full_cube_vertices
 
-cubes::cubes() {
+void cubes_init() {
   using enum Cube::CubeOccludeMode;
   cube_array.resize((size_t)CubeId::CUBE_ID_SIZE);
   cube_array[0] = Cube{"Air"};
@@ -108,17 +109,23 @@ cubes::cubes() {
   cube_array[13] = Cube{"Stone Tiles"}.add_model_full_cube({12.0f, 0.0f}).add_collider();
 }
 
-constexpr cubes::Cube& cubes::Cube::add_model_full_cube(glm::vec<2, float> uv) {
+const Cube& cubes_get(CubeId cube_id) {
+  ensure(!cube_array.empty());
+  ensure(cube_id < CubeId::CUBE_ID_SIZE);
+  return cube_array[(size_t)cube_id];
+}
+
+constexpr Cube& Cube::add_model_full_cube(glm::vec<2, float> uv) {
   return add_model_full_cube(uv, uv, uv, uv, uv, uv);
 }
 
-constexpr cubes::Cube& cubes::Cube::add_model_full_cube(
+constexpr Cube& Cube::add_model_full_cube(
     glm::vec<2, float> uv_left, glm::vec<2, float> uv_right,
     glm::vec<2, float> uv_bottom, glm::vec<2, float> uv_top,
     glm::vec<2, float> uv_front, glm::vec<2, float> uv_back) {
 
   // Push vertices with proper UV coordinates
-  draw_data.vertices.emplace_back(cubes::Cube::CubeVertices{});
+  draw_data.vertices.emplace_back(Cube::CubeVertices{});
   size_t i = draw_data.vertices.size() - 1;
   for (size_t j = 0; j < 6; j += 1) {
     auto vertex_left = full_cube_vertices::left[j];
@@ -149,11 +156,11 @@ constexpr cubes::Cube& cubes::Cube::add_model_full_cube(
   return *this;
 }
 
-constexpr cubes::Cube& cubes::Cube::add_model_x_shape(glm::vec<2, float> uv) {
-  draw_data.vertices.emplace_back(cubes::Cube::CubeVertices{});
+constexpr Cube& Cube::add_model_x_shape(glm::vec<2, float> uv) {
+  draw_data.vertices.emplace_back(Cube::CubeVertices{});
   size_t i = draw_data.vertices.size() - 1;
 
-  using enum cubes::CompactVertexNormal;
+  using enum CompactVertexNormal;
 
   draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 1.0, 0.0}, 0.0 + uv.x, 0.0 + uv.y, RIGHT_FACE));
   draw_data.vertices[i].vertices.emplace_back(CompactVertex({0.0, 0.0, 0.0}, 0.0 + uv.x, 1.0 + uv.y, RIGHT_FACE));
@@ -186,7 +193,7 @@ constexpr cubes::Cube& cubes::Cube::add_model_x_shape(glm::vec<2, float> uv) {
   return *this;
 };
 
-void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, std::optional<i32> rng_opt, std::vector<cubes::CompactVertex>& vertices_list) const {
+void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, std::optional<i32> rng_opt, std::vector<CompactVertex>& vertices_list) const {
   CubeId cube_id = neigbour_cube_ids.center.value();
 
   static FastNoiseLite noise_rng;
@@ -201,12 +208,12 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_left_face = [&]() -> bool {
     CubeId left_cube_id = neigbour_cube_ids.left.value();
-    auto& left_cube = cubes::get(left_cube_id);
-    if (left_cube.draw_data.occlude_adjacent_cube.right == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& left_cube = cubes_get(left_cube_id);
+    if (left_cube.draw_data.occlude_adjacent_cube.right == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (left_cube.draw_data.occlude_adjacent_cube.right == cubes::Cube::CubeOccludeMode::IF_SAME_ID && left_cube_id == cube_id) {
+    if (left_cube.draw_data.occlude_adjacent_cube.right == Cube::CubeOccludeMode::IF_SAME_ID && left_cube_id == cube_id) {
       return false;
     }
 
@@ -215,12 +222,12 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_right_face = [&]() -> bool {
     CubeId right_cube_id = neigbour_cube_ids.right.value();
-    auto& right_cube = cubes::get(right_cube_id);
-    if (right_cube.draw_data.occlude_adjacent_cube.left == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& right_cube = cubes_get(right_cube_id);
+    if (right_cube.draw_data.occlude_adjacent_cube.left == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (right_cube.draw_data.occlude_adjacent_cube.left == cubes::Cube::CubeOccludeMode::IF_SAME_ID && right_cube_id == cube_id) {
+    if (right_cube.draw_data.occlude_adjacent_cube.left == Cube::CubeOccludeMode::IF_SAME_ID && right_cube_id == cube_id) {
       return false;
     }
 
@@ -229,12 +236,12 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_bottom_face = [&]() -> bool {
     CubeId bottom_cube_id = neigbour_cube_ids.bottom.value();
-    auto& bottom_cube = cubes::get(bottom_cube_id);
-    if (bottom_cube.draw_data.occlude_adjacent_cube.top == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& bottom_cube = cubes_get(bottom_cube_id);
+    if (bottom_cube.draw_data.occlude_adjacent_cube.top == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (bottom_cube.draw_data.occlude_adjacent_cube.top == cubes::Cube::CubeOccludeMode::IF_SAME_ID && bottom_cube_id == cube_id) {
+    if (bottom_cube.draw_data.occlude_adjacent_cube.top == Cube::CubeOccludeMode::IF_SAME_ID && bottom_cube_id == cube_id) {
       return false;
     }
 
@@ -243,12 +250,12 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_top_face = [&]() -> bool {
     CubeId top_cube_id = neigbour_cube_ids.top.value();
-    auto& top_cube = cubes::get(top_cube_id);
-    if (top_cube.draw_data.occlude_adjacent_cube.bottom == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& top_cube = cubes_get(top_cube_id);
+    if (top_cube.draw_data.occlude_adjacent_cube.bottom == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (top_cube.draw_data.occlude_adjacent_cube.bottom == cubes::Cube::CubeOccludeMode::IF_SAME_ID && top_cube_id == cube_id) {
+    if (top_cube.draw_data.occlude_adjacent_cube.bottom == Cube::CubeOccludeMode::IF_SAME_ID && top_cube_id == cube_id) {
       return false;
     }
 
@@ -257,12 +264,12 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_front_face = [&]() -> bool {
     CubeId front_cube_id = neigbour_cube_ids.front.value();
-    auto& front_cube = cubes::get(front_cube_id);
-    if (front_cube.draw_data.occlude_adjacent_cube.back == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& front_cube = cubes_get(front_cube_id);
+    if (front_cube.draw_data.occlude_adjacent_cube.back == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (front_cube.draw_data.occlude_adjacent_cube.back == cubes::Cube::CubeOccludeMode::IF_SAME_ID && front_cube_id == cube_id) {
+    if (front_cube.draw_data.occlude_adjacent_cube.back == Cube::CubeOccludeMode::IF_SAME_ID && front_cube_id == cube_id) {
       return false;
     }
 
@@ -271,24 +278,24 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
 
   bool draw_back_face = [&]() -> bool {
     CubeId back_cube_id = neigbour_cube_ids.back.value();
-    auto& back_cube = cubes::get(back_cube_id);
-    if (back_cube.draw_data.occlude_adjacent_cube.front == cubes::Cube::CubeOccludeMode::ALWAYS) {
+    auto& back_cube = cubes_get(back_cube_id);
+    if (back_cube.draw_data.occlude_adjacent_cube.front == Cube::CubeOccludeMode::ALWAYS) {
       return false;
     }
 
-    if (back_cube.draw_data.occlude_adjacent_cube.front == cubes::Cube::CubeOccludeMode::IF_SAME_ID && back_cube_id == cube_id) {
+    if (back_cube.draw_data.occlude_adjacent_cube.front == Cube::CubeOccludeMode::IF_SAME_ID && back_cube_id == cube_id) {
       return false;
     }
 
     return true;
   }();
 
-  auto reduce_vertex_brightness_for_ao = [&neigbour_cube_ids](cubes::CompactVertex& vertex, std::optional<float> x, std::optional<float> y, std::optional<float> z, const std::optional<CubeId>& neigbour) {
+  auto reduce_vertex_brightness_for_ao = [&neigbour_cube_ids](CompactVertex& vertex, std::optional<float> x, std::optional<float> y, std::optional<float> z, const std::optional<CubeId>& neigbour) {
     if constexpr (!WorldRenderer::ambient_occlusion_enabled) { return; }
 
     if (vertex.pos.x == x.value_or(vertex.pos.x) && vertex.pos.y == y.value_or(vertex.pos.y) && vertex.pos.z == z.value_or(vertex.pos.z) &&
         neigbour.value_or(CubeId::AIR) != CubeId::AIR) {
-      auto ao = cubes::get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
+      auto ao = cubes_get(neigbour.value_or(CubeId::AIR)).draw_data.ao;
       if (ao == Cube::CubeAOMode::ALWAYS) {
         vertex.pack.brightness = 255 - WorldRenderer::ambient_occlusion_intensity;
       } else if ((ao == Cube::CubeAOMode::IF_SAME_ID && neigbour_cube_ids.center.value() == neigbour.value())) {
@@ -399,7 +406,7 @@ void cubes::Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_
   }
 }
 
-void cubes::Cube::get_vertices(CubePos cube_pos, i32 rng, std::vector<cubes::CompactVertex>& vertices_list) const {
+void Cube::get_vertices(CubePos cube_pos, i32 rng, std::vector<CompactVertex>& vertices_list) const {
   if (draw_data.vertices.size() == 0) { return; }
   size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
   for (auto vertex : draw_data.vertices[vertices_index].vertices) {

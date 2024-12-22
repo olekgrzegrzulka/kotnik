@@ -1,8 +1,6 @@
 #pragma once
-#include <bitset>
 #include <cstddef>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 #include "chunk.hpp"
 #include "common.hpp"
@@ -19,6 +17,7 @@ public:
 
   bool is_valid() const { return valid; }
   ChunkPos get_chunk_pos() const { return chunk_pos; }
+
 private:
   std::vector<std::vector<CubeId>> chunks_data;
   bool valid = false;
@@ -32,11 +31,11 @@ private:
 
 class ChunkMesh {
 public:
-  std::vector<cubes::CompactVertex> vertices;
+  std::vector<CompactVertex> vertices;
   u32 vbo = 0;
   u32 vao = 0;
 
-  std::vector<cubes::CompactVertex> vertices_translucent;
+  std::vector<CompactVertex> vertices_translucent;
   u32 vbo_translucent = 0;
   u32 vao_translucent = 0;
 
