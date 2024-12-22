@@ -1,6 +1,7 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
+#include "common.hpp"
 
 namespace Input {
 
@@ -129,36 +130,42 @@ enum class Key {
   KEY_RIGHT_SUPER = 347,
   KEY_MENU = 348,
   KEY_LAST = KEY_MENU,
+  KEY_SIZE = GLFW_KEY_LAST + 1
 };
 
 enum class Mouse {
-  MOUSE_BUTTON_1 = 0,
-  MOUSE_BUTTON_2 = 1,
-  MOUSE_BUTTON_3 = 2,
-  MOUSE_BUTTON_4 = 3,
-  MOUSE_BUTTON_5 = 4,
-  MOUSE_BUTTON_6 = 5,
-  MOUSE_BUTTON_7 = 6,
-  MOUSE_BUTTON_8 = 7,
-  MOUSE_BUTTON_LAST = MOUSE_BUTTON_8,
-  MOUSE_BUTTON_LEFT = MOUSE_BUTTON_1,
-  MOUSE_BUTTON_RIGHT = MOUSE_BUTTON_2,
-  MOUSE_BUTTON_MIDDLE = MOUSE_BUTTON_3,
+  MOUSE_BUTTON_LEFT,
+  MOUSE_BUTTON_RIGHT,
+  MOUSE_BUTTON_MIDDLE,
+  MOUSE_BUTTON_4,
+  MOUSE_BUTTON_5,
+  MOUSE_BUTTON_6,
+  MOUSE_BUTTON_7,
+  MOUSE_BUTTON_8,
+  MOUSE_BUTTON_SIZE,
 };
 
-void glfw_cursor_position_callback(GLFWwindow* window, double x, double y);
+void glfw_cursor_position_callback(GLFWwindow*, double x, double y);
 
-void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void glfw_mouse_button_callback(GLFWwindow*, i32 button, i32 action, i32 mods);
 
-void glfw_scroll_button_callback(GLFWwindow* window, double xoffset, double yoffset);
+void glfw_scroll_button_callback(GLFWwindow*, double xoffset, double yoffset);
 
-void init(GLFWwindow* window);
+void init(GLFWwindow*);
 
 void update();
 
-bool mouse_pressed(Input::Mouse button);
+int get_mouse_x();
 
-bool key_pressed(Input::Key key);
+int get_mouse_y();
 
-glm::vec<2, int> get_mouse_delta();
+bool mouse_pressed(Input::Mouse);
+bool mouse_just_pressed(Input::Mouse);
+bool mouse_just_released(Input::Mouse);
+
+bool key_pressed(Input::Key);
+bool key_just_pressed(Input::Key);
+bool key_just_released(Input::Key);
+
+glm::vec<2, i32> get_mouse_delta();
 }; // namespace Input
