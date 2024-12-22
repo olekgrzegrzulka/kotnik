@@ -54,13 +54,13 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
   BENCHMARK("chunk meshing");
   const ChunkPos chunk_pos = data->get_chunk_pos();
 
+  NeigbourCubeIds neigbour_cube_ids{};
+
   for (size_t i = 0; i < (size_t)Chunk::chunk_cube_count; i += 1) {
     LocalPos l = index_to_local_pos(i);
     if (data->get_cube_id(l) == CubeId::AIR) { continue; }
 
     auto& cube = cubes_get(data->get_cube_id(l));
-
-    NeigbourCubeIds neigbour_cube_ids{};
 
     neigbour_cube_ids.center = data->get_cube_id(LocalPos{l.x, l.y, l.z});
 
