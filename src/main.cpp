@@ -1,5 +1,6 @@
 #define GLM_FORCE_RADIANS
 
+#include "common.hpp"
 #include "glad/glad.h"
 
 #define STBI_ASSERT(x) ensure(x);
@@ -20,7 +21,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <unistd.h>
 #include "clouds.hpp"
-#include "common.hpp"
 #include "cube_indicator_renderer.hpp"
 #include "cubes.hpp"
 #include "held_cube_renderer.hpp"
