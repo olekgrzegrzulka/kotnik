@@ -49,6 +49,8 @@ public:
     window_height = window_height_;
 
     for (auto&& widget : widgets) {
+      widget->set_window_width(window_width);
+      widget->set_window_height(window_height);
       widget->update();
     }
   }

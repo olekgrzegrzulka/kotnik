@@ -54,6 +54,10 @@ protected:
   Anchor screen_anchor = Anchor::TOP_LEFT;
   bool dirty = true;
 
+private:
+  i32 window_width;
+  i32 window_height;
+
 public:
   Widget(const UI& ui_) : ui{ui_} {}
 
@@ -73,6 +77,8 @@ public:
   WIDGET_DEF_SETTER_DIRTY(height)
   WIDGET_DEF_SETTER_DIRTY(anchor)
   WIDGET_DEF_SETTER_DIRTY(screen_anchor)
+  WIDGET_DEF_SETTER_DIRTY(window_width);
+  WIDGET_DEF_SETTER_DIRTY(window_height);
 
   WIDGET_DEF_GETTER(x)
   WIDGET_DEF_GETTER(y)

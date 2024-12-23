@@ -34,6 +34,8 @@ set(SOURCES
     ./src/ui/sprite.cpp
     ./src/ui/label.cpp
     ./src/ui/pause_menu.cpp
+    ./src/ui/slider.cpp
+    ./src/ui/button.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
