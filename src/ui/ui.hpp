@@ -54,6 +54,7 @@ public:
   }
 
   void draw() {
+    glDisable(GL_DEPTH_TEST);
     for (auto&& widget : widgets) {
       widget->draw();
     }
