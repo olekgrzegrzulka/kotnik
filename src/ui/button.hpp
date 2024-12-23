@@ -80,7 +80,7 @@ public:
     auto center = get_position(Anchor::CENTER_CENTER);
     label.set_x(center.x);
     label.set_y(center.y);
-    label.set_screen_anchor(screen_anchor);
+    label.set_screen_anchor(Anchor::TOP_LEFT);
     label.set_anchor(Anchor::CENTER_CENTER);
     label.update();
   }
