@@ -82,8 +82,6 @@ public:
     label.set_y(center.y);
     label.set_screen_anchor(screen_anchor);
     label.set_anchor(Anchor::CENTER_CENTER);
-    label.set_window_width(window_width);
-    label.set_window_height(window_height);
     label.update();
   }
 

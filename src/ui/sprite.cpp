@@ -30,6 +30,9 @@ void Sprite::draw() {
 }
 
 void Sprite::update_mesh() {
+  i32 window_width = ui.get_window_width();
+  i32 window_height = ui.get_window_height();
+
   glm::vec2 size_screen_uv = glm::vec2(width, height) / glm::vec2(window_width, window_height);
   glm::vec2 position_screen_uv = glm::vec2(x, y) / glm::vec<2, float>(window_width, window_height);
 

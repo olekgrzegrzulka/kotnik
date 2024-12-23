@@ -41,8 +41,6 @@ public:
   T& add_widget(Args&&... args) {
     widgets.emplace_back(std::make_unique<T>(*this, std::forward<Args&&...>(args)...));
     T& widget = static_cast<T&>(*widgets.back().get());
-    widget.set_window_width(window_width);
-    widget.set_window_height(window_height);
     return widget;
   }
 
@@ -51,8 +49,6 @@ public:
     window_height = window_height_;
 
     for (auto&& widget : widgets) {
-      widget->set_window_width(window_width);
-      widget->set_window_height(window_height);
       widget->update();
     }
   }
@@ -62,7 +58,8 @@ public:
       widget->draw();
     }
   }
-
+  i32 get_window_width() const { return window_width; }
+  i32 get_window_height() const { return window_height; }
   const glm::mat4& get_matrix() const { return matrix; }
   const Texture& get_widget_texture() const { return widget_texture; }
   const FontFace& get_font_face() const { return font_face; }

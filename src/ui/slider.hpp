@@ -64,8 +64,6 @@ public:
     track.set_x(x);
     track.set_y(y);
     track.set_width(width);
-    track.set_window_width(window_width);
-    track.set_window_height(window_height);
     track.set_anchor(anchor);
     track.set_screen_anchor(screen_anchor);
 
@@ -73,8 +71,6 @@ public:
     thumb_x += (value - min_value) / (float)(max_value - min_value) * width;
     thumb.set_x(thumb_x);
     thumb.set_y(track.get_position(Anchor::CENTER_CENTER).y);
-    thumb.set_window_width(window_width);
-    thumb.set_window_height(window_height);
     thumb.set_anchor(Anchor::CENTER_CENTER);
     thumb.set_screen_anchor(Anchor::TOP_LEFT);
 

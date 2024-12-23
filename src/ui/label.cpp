@@ -39,6 +39,9 @@ void Label::draw() {
 }
 
 void Label::update_mesh() {
+  i32 window_width = ui.get_window_width();
+  i32 window_height = ui.get_window_height();
+
   vertices.clear();
   width = 0;
   height = 0;

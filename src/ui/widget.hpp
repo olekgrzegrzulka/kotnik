@@ -50,8 +50,6 @@ protected:
   i32 y = 0;
   i32 width = 64;
   i32 height = 64;
-  u32 window_width = 0;
-  u32 window_height = 0;
   Anchor anchor = Anchor::TOP_LEFT;
   Anchor screen_anchor = Anchor::TOP_LEFT;
   bool dirty = true;
@@ -67,19 +65,12 @@ public:
 
   // Returns widget's scene position relative to some anchor
   // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
-  glm::vec<2, i32> get_position(Anchor relative_to = Anchor::TOP_LEFT) const {
-    glm::vec<2, i32> value = anchor_to_uv(screen_anchor) * glm::vec2{window_width, window_height};
-    value += glm::vec2(x, y) - glm::vec2(width, height) * anchor_to_uv(anchor);
-    value += glm::vec<2, float>{width, height} * anchor_to_uv(relative_to);
-    return value;
-  }
+  glm::vec<2, i32> get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
 
   WIDGET_DEF_SETTER_DIRTY(x)
   WIDGET_DEF_SETTER_DIRTY(y)
   WIDGET_DEF_SETTER_DIRTY(width)
   WIDGET_DEF_SETTER_DIRTY(height)
-  WIDGET_DEF_SETTER_DIRTY(window_width)
-  WIDGET_DEF_SETTER_DIRTY(window_height)
   WIDGET_DEF_SETTER_DIRTY(anchor)
   WIDGET_DEF_SETTER_DIRTY(screen_anchor)
 
@@ -87,8 +78,6 @@ public:
   WIDGET_DEF_GETTER(y)
   WIDGET_DEF_GETTER(width)
   WIDGET_DEF_GETTER(height)
-  WIDGET_DEF_GETTER(window_width)
-  WIDGET_DEF_GETTER(window_height)
   WIDGET_DEF_GETTER(anchor)
   WIDGET_DEF_GETTER(screen_anchor)
 };

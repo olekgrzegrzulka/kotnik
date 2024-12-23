@@ -30,6 +30,7 @@ set(SOURCES
     ./src/world_renderer.cpp
     ./src/skybox.cpp
     ./src/clouds.cpp
+    ./src/ui/widget.cpp
     ./src/ui/sprite.cpp
     ./src/ui/label.cpp
 )
