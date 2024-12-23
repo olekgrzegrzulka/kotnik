@@ -1,3 +1,5 @@
+#include "ui/sprite.hpp"
+#include "ui/widget.hpp"
 #define GLM_FORCE_RADIANS
 
 #include "common.hpp"
@@ -13,7 +15,6 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
-#include <vector>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -84,46 +85,22 @@ int main() {
 
   auto held_cube_renderer = HeldCubeRenderer(cube_shader, atlas_texture);
 
-  Shader crosshair_shader{"crosshair"};
-  Texture crosshair_texture{"crosshair.png"};
   cubes_init();
   skybox_init();
   clouds_init();
-
-  // Create crosshair VAO
-  GLuint crosshair_vao;
-  glGenVertexArrays(1, &crosshair_vao);
-  glBindVertexArray(crosshair_vao);
-
-  GLuint crosshair_vbo;
-  // clang-format off
-  std::vector<glm::vec<2, float>> crosshair_vertices = {
-      {-1.0f, -1.0f}, {0.0f, 0.0f},
-      {1.0f, -1.0f}, {1.0f, 0.0f},
-      {-1.0f, 1.0f}, {0.0f, 1.0f},
-      {1.0f, 1.0f}, {1.0f, 1.0f},
-  };
-  // clang-format on
-  glGenBuffers(1, &crosshair_vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, crosshair_vbo);
-  glBufferData(GL_ARRAY_BUFFER, crosshair_vertices.size() * sizeof(glm::vec<2, float>), crosshair_vertices.data(), GL_STATIC_DRAW);
-  // Vertex
-  glBindBuffer(GL_ARRAY_BUFFER, crosshair_vbo);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec<2, float>), (void*)0);
-  // UV
-  glBindBuffer(GL_ARRAY_BUFFER, crosshair_vbo);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec<2, float>), (void*)sizeof(glm::vec<2, float>));
-
-  glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   World world;
   WorldRenderer world_renderer(world, cube_shader, atlas_texture);
   world.add_entity<Player>({0, 20, 0});
 
   UI ui{window_size.x, window_size.y};
+  auto& crosshair = ui.add_widget<Sprite>();
+  crosshair.set_width(32);
+  crosshair.set_height(32);
+  crosshair.set_uv_start({0.0 / 16.0, 6.0 / 16.0});
+  crosshair.set_uv_end({1.0 / 16.0, 7.0 / 16.0});
+  crosshair.set_anchor(Anchor::CENTER_CENTER);
+  crosshair.set_screen_anchor(Anchor::CENTER_CENTER);
 
   Input::init(window);
 
@@ -170,13 +147,6 @@ int main() {
       cube_indicator_renderer.draw(camera_pos, camera_matrix, cube_indicator_pos.value());
     }
 
-    // Draw crosshair
-    glDisable(GL_DEPTH_TEST);
-    crosshair_shader.use();
-    crosshair_shader.set_uniform_float("aspect_ratio", aspect_ratio);
-    glBindVertexArray(crosshair_vao);
-    crosshair_texture.bind(0);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     ui.update(window_size.x, window_size.y);
     ui.draw();
 
