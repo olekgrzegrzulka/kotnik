@@ -1,5 +1,4 @@
-#include "ui/sprite.hpp"
-#include "ui/widget.hpp"
+
 #define GLM_FORCE_RADIANS
 
 #include "common.hpp"
@@ -30,6 +29,7 @@
 #include "shader.hpp"
 #include "skybox.hpp"
 #include "texture.hpp"
+#include "ui/pause_menu.hpp"
 #include "ui/ui.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
@@ -102,6 +102,8 @@ int main() {
   crosshair.set_anchor(Anchor::CENTER_CENTER);
   crosshair.set_screen_anchor(Anchor::CENTER_CENTER);
 
+  auto& pause_menu = ui.add_widget<PauseMenu>();
+
   Input::init(window);
 
   while (!glfwWindowShouldClose(window)) {
@@ -145,6 +147,32 @@ int main() {
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
       cube_indicator_renderer.draw(camera_pos, camera_matrix, cube_indicator_pos.value());
+    }
+
+    bool pause_menu_new_visiblity = pause_menu.get_is_visible();
+
+    if (Input::key_just_pressed(Input::Key::KEY_ESCAPE)) {
+      pause_menu_new_visiblity = !pause_menu_new_visiblity;
+    }
+
+    if (pause_menu.resume_pressed) {
+      pause_menu.resume_pressed = false;
+      pause_menu_new_visiblity = false;
+    }
+
+    if (pause_menu_new_visiblity != pause_menu.get_is_visible()) {
+      if (pause_menu_new_visiblity) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+      }
+    }
+
+    pause_menu.set_is_visible(pause_menu_new_visiblity);
+
+    if (pause_menu.quit_pressed) {
+      pause_menu.quit_pressed = false;
+      break;
     }
 
     ui.update(window_size.x, window_size.y);

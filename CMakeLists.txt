@@ -33,6 +33,7 @@ set(SOURCES
     ./src/ui/widget.cpp
     ./src/ui/sprite.cpp
     ./src/ui/label.cpp
+    ./src/ui/pause_menu.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
