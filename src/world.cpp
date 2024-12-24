@@ -364,7 +364,7 @@ void World::update() {
   }
   chunks_awaiting_generation.clear();
 
-  {
+  if (!chunk_terrain_gen_workers.empty()) {
     size_t i = 0;
     for (auto& [_, chunk_pos] : chunks_awaiting_generation_sorted) {
       if (chunks_being_generated.contains(chunk_pos)) { continue; }
