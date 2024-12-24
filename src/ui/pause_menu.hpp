@@ -1,5 +1,4 @@
 #pragma once
-
 #include "sprite.hpp"
 #include "ui.hpp"
 #include "widget.hpp"
@@ -7,7 +6,13 @@
 class PauseMenu : public Widget {
 public:
   PauseMenu(const UI& ui_)
-      : Widget::Widget(ui_), background(ui_), button_resume(ui_, U"Resume"), button_quit(ui_, U"Quit") {
+      : Widget::Widget(ui_),
+        background(add_child<Sprite>()),
+        button_resume(add_child<Button>(U"Resume")),
+        button_quit(add_child<Button>(U"Quit")) {
+
+    process = false;
+    process_children_first = false;
 
     background.set_uv_start({0.0 / 16.0, 7.0 / 16.0});
     background.set_uv_end({1.0 / 16.0, 8.0 / 16.0});
@@ -27,13 +32,13 @@ public:
     button_quit.set_y(-30);
 
     button_resume.on_press([&]() {
-      if (is_visible) {
+      if (process) {
         resume_pressed = true;
       }
     });
 
     button_quit.on_press([&]() {
-      if (is_visible) {
+      if (process) {
         quit_pressed = true;
       }
     });
@@ -43,15 +48,11 @@ public:
 
   void draw() override;
 
-  bool get_is_visible() const { return is_visible; }
-  void set_is_visible(bool is_visible_) { is_visible = is_visible_; }
-
   bool quit_pressed = false;
   bool resume_pressed = false;
 
 protected:
-  bool is_visible = false;
-  Sprite background;
-  Button button_resume;
-  Button button_quit;
+  Sprite& background;
+  Button& button_resume;
+  Button& button_quit;
 };

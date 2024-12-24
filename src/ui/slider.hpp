@@ -8,8 +8,8 @@ class UI;
 
 class Slider final : public Widget {
 protected:
-  Sprite track;
-  Sprite thumb;
+  Sprite& track;
+  Sprite& thumb;
   bool is_dragged = false;
   i32 value = 0;
   i32 min_value = -10;
@@ -17,7 +17,7 @@ protected:
   std::function<void(i32)> lambda = nullptr;
 
 public:
-  Slider(const UI& ui_) : Widget::Widget(ui_), track(ui_), thumb(ui_) {
+  Slider(const UI& ui_) : Widget::Widget(ui_), track(add_child<Sprite>()), thumb(add_child<Sprite>()) {
     set_height(16);
 
     track.set_uv_start({2.0 / 16.0, 0.0 / 16.0});
@@ -36,8 +36,6 @@ public:
   void update() override;
 
   void draw() override {
-    track.draw();
-    thumb.draw();
   }
 
   WIDGET_DEF_SETTER_DIRTY(value)

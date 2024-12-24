@@ -149,7 +149,7 @@ int main() {
       cube_indicator_renderer.draw(camera_pos, camera_matrix, cube_indicator_pos.value());
     }
 
-    bool pause_menu_new_visiblity = pause_menu.get_is_visible();
+    bool pause_menu_new_visiblity = pause_menu.get_process();
 
     if (Input::key_just_pressed(Input::Key::KEY_ESCAPE)) {
       pause_menu_new_visiblity = !pause_menu_new_visiblity;
@@ -160,7 +160,7 @@ int main() {
       pause_menu_new_visiblity = false;
     }
 
-    if (pause_menu_new_visiblity != pause_menu.get_is_visible()) {
+    if (pause_menu_new_visiblity != pause_menu.get_process()) {
       if (pause_menu_new_visiblity) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
       } else {
@@ -168,7 +168,7 @@ int main() {
       }
     }
 
-    pause_menu.set_is_visible(pause_menu_new_visiblity);
+    pause_menu.set_process(pause_menu_new_visiblity);
 
     if (pause_menu.quit_pressed) {
       pause_menu.quit_pressed = false;

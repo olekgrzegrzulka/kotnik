@@ -1,12 +1,7 @@
 #include "button.hpp"
-#include "../common.hpp"
 #include "../input.hpp"
-#include "ui.hpp"
 
 void Button::update() {
-  i32 window_width = ui.get_window_width();
-  i32 window_height = ui.get_window_height();
-
   bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x && Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
   bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y && Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
 
@@ -42,7 +37,4 @@ void Button::update() {
   label.set_y(center.y);
   label.set_screen_anchor(Anchor::TOP_LEFT);
   label.set_anchor(Anchor::CENTER_CENTER);
-  label.set_window_width(window_width);
-  label.set_window_height(window_height);
-  label.update();
 }

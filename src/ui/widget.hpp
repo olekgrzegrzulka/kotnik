@@ -1,4 +1,7 @@
 #pragma once
+#include <memory>
+#include <type_traits>
+#include <vector>
 #include <glm/vec2.hpp>
 #include "../common.hpp"
 
@@ -46,6 +49,7 @@ inline glm::vec2 anchor_to_uv(Anchor anchor) {
 class Widget {
 protected:
   const UI& ui;
+  bool process = true;
   i32 x = 0;
   i32 y = 0;
   i32 width = 64;
@@ -53,6 +57,9 @@ protected:
   Anchor anchor = Anchor::TOP_LEFT;
   Anchor screen_anchor = Anchor::TOP_LEFT;
   bool dirty = true;
+
+  std::vector<std::unique_ptr<Widget>> children;
+  bool process_children_first = false;
 
 private:
   i32 window_width;
@@ -71,6 +78,7 @@ public:
   // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
   glm::vec<2, i32> get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
 
+  WIDGET_DEF_SETTER_DIRTY(process)
   WIDGET_DEF_SETTER_DIRTY(x)
   WIDGET_DEF_SETTER_DIRTY(y)
   WIDGET_DEF_SETTER_DIRTY(width)
@@ -79,11 +87,27 @@ public:
   WIDGET_DEF_SETTER_DIRTY(screen_anchor)
   WIDGET_DEF_SETTER_DIRTY(window_width);
   WIDGET_DEF_SETTER_DIRTY(window_height);
+  WIDGET_DEF_SETTER_DIRTY(process_children_first)
 
+  auto& get_children() {
+    return children;
+  }
+
+  WIDGET_DEF_GETTER(process)
   WIDGET_DEF_GETTER(x)
   WIDGET_DEF_GETTER(y)
   WIDGET_DEF_GETTER(width)
   WIDGET_DEF_GETTER(height)
   WIDGET_DEF_GETTER(anchor)
   WIDGET_DEF_GETTER(screen_anchor)
+  WIDGET_DEF_GETTER(process_children_first)
+
+protected:
+  template <class T, class... Args>
+  T& add_child(Args&&... args) {
+    static_assert(std::is_base_of_v<Widget, T>);
+    children.emplace_back(std::make_unique<T>(ui, std::forward<Args&&...>(args)...));
+    T& widget = static_cast<T&>(*children.back().get());
+    return widget;
+  }
 };

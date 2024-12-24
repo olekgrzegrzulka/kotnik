@@ -1,12 +1,8 @@
 #include "slider.hpp"
 #include "../common.hpp"
 #include "../input.hpp"
-#include "ui.hpp"
 
 void Slider::update() {
-  i32 window_width = ui.get_window_width();
-  i32 window_height = ui.get_window_height();
-
   static constexpr i32 x_margin = 10;
   bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x - x_margin &&
                            Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x + x_margin;
@@ -37,8 +33,6 @@ void Slider::update() {
   track.set_x(x);
   track.set_y(y);
   track.set_width(width);
-  track.set_window_width(window_width);
-  track.set_window_height(window_height);
   track.set_anchor(anchor);
   track.set_screen_anchor(screen_anchor);
 
@@ -46,8 +40,6 @@ void Slider::update() {
   thumb_x += (value - min_value) / (float)(max_value - min_value) * width;
   thumb.set_x(thumb_x);
   thumb.set_y(track.get_position(Anchor::CENTER_CENTER).y);
-  thumb.set_window_width(window_width);
-  thumb.set_window_height(window_height);
   thumb.set_anchor(Anchor::CENTER_CENTER);
   thumb.set_screen_anchor(Anchor::TOP_LEFT);
 
@@ -66,7 +58,4 @@ void Slider::update() {
     thumb.set_uv_start({2.0 / 16.0, 1.0 / 16.0});
     thumb.set_uv_end({3.0 / 16.0, 2.0 / 16.0});
   }
-
-  track.update();
-  thumb.update();
 }

@@ -2,7 +2,6 @@
 #include <functional>
 #include <string>
 #include "../glad/glad.h"
-#include "../input.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
@@ -18,7 +17,7 @@ enum class ButtonState {
 
 class Button : public Sprite {
 protected:
-  Label label;
+  Label& label;
   std::function<void()> lambda = nullptr;
   ButtonState state;
 
@@ -32,13 +31,13 @@ protected:
   glm::vec2 uv_end_disabled = glm::vec2(1.0f / 16.0f, 4.0f / 16.0f);
 
 public:
-  Button(const UI& ui_) : Sprite::Sprite(ui_), label(ui_, U"") {
+  Button(const UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>(U"")) {
     set_sprite_idle();
     set_nine_slice_margin(3.0f);
     set_nine_slice_scale(1.0f);
   }
 
-  Button(const UI& ui_, std::u32string label_) : Sprite::Sprite(ui_), label(ui_, label_) {
+  Button(const UI& ui_, std::u32string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
     set_sprite_idle();
     set_nine_slice_margin(3.0f);
     set_nine_slice_scale(1.0f);
@@ -50,7 +49,6 @@ public:
 
   virtual void draw() override {
     Sprite::draw();
-    label.draw();
   }
 
   void on_press(std::function<void()> lambda_) {

@@ -49,18 +49,17 @@ public:
     window_height = window_height_;
 
     for (auto&& widget : widgets) {
-      widget->set_window_width(window_width);
-      widget->set_window_height(window_height);
-      widget->update();
+      update_widget_recursive(widget);
     }
   }
 
   void draw() {
     glDisable(GL_DEPTH_TEST);
     for (auto&& widget : widgets) {
-      widget->draw();
+      draw_widget_recursive(widget);
     }
   }
+
   i32 get_window_width() const { return window_width; }
   i32 get_window_height() const { return window_height; }
   const glm::mat4& get_matrix() const { return matrix; }
@@ -68,6 +67,36 @@ public:
   const FontFace& get_font_face() const { return font_face; }
   const Shader& get_sprite_shader() const { return sprite_shader; }
   const Shader& get_text_shader() const { return text_shader; }
+
+private:
+  void update_widget_recursive(std::unique_ptr<Widget>& widget) {
+    if (!widget->get_process()) { return; }
+
+    widget->set_window_width(window_width);
+    widget->set_window_height(window_height);
+
+    if (!widget->get_process_children_first()) { widget->update(); }
+
+    for (auto&& child : widget->get_children()) {
+      child->set_window_width(window_width);
+      child->set_window_height(window_height);
+      update_widget_recursive(child);
+    }
+
+    if (widget->get_process_children_first()) { widget->update(); }
+  }
+
+  void draw_widget_recursive(std::unique_ptr<Widget>& widget) {
+    if (!widget->get_process()) { return; }
+
+    if (!widget->get_process_children_first()) { widget->draw(); }
+
+    for (auto&& child : widget->get_children()) {
+      draw_widget_recursive(child);
+    }
+
+    if (widget->get_process_children_first()) { widget->draw(); }
+  }
 
 protected:
   glm::mat4 matrix;
