@@ -171,10 +171,6 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   }
 
   if (!chunks_for_remeshing.empty()) {
-    for (auto& worker : chunk_mesh_workers) {
-      // worker->lock_queue();
-    }
-
     size_t i = 0;
     for (auto& [_, chunk] : chunks_for_remeshing) {
       size_t worker_index = i % chunk_mesh_workers.size();
@@ -190,8 +186,6 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
 
     for (auto& worker : chunk_mesh_workers) {
       worker->sort_queue_by_distance(player_chunk_pos);
-      // worker->sort_queue_by_distance_no_mutex(player_chunk_pos);
-      // worker->unlock_queue();
     }
   }
 }
