@@ -63,7 +63,7 @@ constexpr glm::vec<3, T> Vec3Forward = {0, 0, -1};
 template <typename T>
 constexpr glm::vec<3, T> Vec3Back = {0, 0, 1};
 
-static CubePos floor_position(WorldPos pos) {
+[[maybe_unused]] static CubePos floor_position(WorldPos pos) {
   return CubePos{
       glm::floor(pos.x),
       glm::floor(pos.y),

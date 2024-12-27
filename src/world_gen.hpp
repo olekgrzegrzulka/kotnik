@@ -1,5 +1,4 @@
 #pragma once
-
 #include <optional>
 #include "common.hpp"
 #include "fast_noise_lite.h"
@@ -18,6 +17,10 @@ public:
 
   void generate_chunk(Chunk* chunk) const;
   void generate_chunk_only_water(Chunk* chunk) const;
+
+  float get_humidity(WorldPos world_pos) const;
+  float get_temperature(WorldPos world_pos) const;
+  biomes::Biome get_blended_biome(float humidity, float temperature) const;
   biomes::Biome get_blended_biome(WorldPos world_pos) const;
 
   float get_heightmap_noise(WorldPos pos, const biomes::Biome& blended_biome) const;

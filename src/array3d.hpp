@@ -1,57 +1,53 @@
 #pragma once
+#include <array>
 #include <cstddef>
-#include <vector>
 #include <glm/vec3.hpp>
 #include "common.hpp"
 
-template <class T>
+template <class T, size_t W, size_t H, size_t D>
 class Array3D {
+  static constexpr size_t Size = W * H * D;
+
 public:
-  Array3D() = default;
-
-  Array3D(size_t w, size_t d, size_t h) {
-    end_x = w;
-    end_y = d;
-    end_z = h;
-
-    data.resize(w * d * h);
+  constexpr Array3D() {
+    begin_x = 0;
+    begin_y = 0;
+    begin_z = 0;
+    end_x = W;
+    end_y = H;
+    end_z = D;
   }
 
-  Array3D(int begin_x_, int begin_y_, int begin_z_, int end_x_, int end_y_, int end_z_) {
-    ensure(end_x_ >= begin_x_);
-    ensure(end_y_ >= begin_y_);
-    ensure(end_z_ >= begin_z_);
-
+  constexpr Array3D(i32 begin_x_, i32 begin_y_, i32 begin_z_) {
     begin_x = begin_x_;
     begin_y = begin_y_;
     begin_z = begin_z_;
-    end_x = end_x_;
-    end_y = end_y_;
-    end_z = end_z_;
-
-    size_t array_size = (end_x - begin_x) * (end_y - begin_y) * (end_z - begin_z);
-    data.resize(array_size);
+    end_x = begin_x_ + W;
+    end_y = begin_y_ + H;
+    end_z = begin_z_ + D;
   }
 
-  T at(glm::vec<3, int> at) const {
+  constexpr T at(glm::vec<3, i32> at) const {
     ensure(has_index(at));
     at.x -= begin_x;
     at.y -= begin_y;
     at.z -= begin_z;
 
-    return data.at(at.x + at.y * (end_x - begin_x) + at.z * (end_x - begin_x) * (end_y - begin_y));
+    ensure(at.x + at.y * W + at.z * W * H >= 0 && at.x + at.y * W + at.z * W * H < Size);
+    return data.at(at.x + at.y * W + at.z * W * H);
   }
 
-  void set(glm::vec<3, int> at, T to) {
+  constexpr void set(glm::vec<3, int> at, T to) {
     ensure(has_index(at));
     at.x -= begin_x;
     at.y -= begin_y;
     at.z -= begin_z;
 
-    data[at.x + at.y * (end_x - begin_x) + at.z * (end_x - begin_x) * (end_y - begin_y)] = to;
+    ensure(at.x + at.y * W + at.z * W * H >= 0 && at.x + at.y * W + at.z * W * H < Size);
+    data[at.x + at.y * W + at.z * W * H] = to;
   }
 
-  bool has_index(glm::vec<3, int> at) const {
+  constexpr bool has_index(glm::vec<3, int> at) const {
     return at.x >= begin_x && at.y >= begin_y && at.z >= begin_z &&
            at.x < end_x && at.y < end_y && at.z < end_z;
   }
@@ -65,5 +61,5 @@ private:
   int end_y = 0;
   int end_z = 0;
 
-  std::vector<T> data;
+  std::array<T, Size> data{};
 };

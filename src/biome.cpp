@@ -176,23 +176,17 @@ const Biome& get_biome(BiomeId id) {
 }
 
 Biome biome_lerp(const biomes::Biome& biome_a, const biomes::Biome& biome_b, float t) {
-  if (t < 0.0f || t > 1.0f) {
-    debug_error("biomes::blend_two_biomes(): t value out of range");
-  }
+  const Biome& stronger_biome = (t <= 0.5f) ? biome_a : biome_b;
 
-  Biome blended_biome{
+  return Biome{
+      .name = stronger_biome.name,
       .base_height = biome_a.base_height * (1.0f - t) + biome_b.base_height * t,
       .noise_height_multiplier = biome_a.noise_height_multiplier * (1.0f - t) + biome_b.noise_height_multiplier * t,
       .noise_spiky_multiplier = biome_a.noise_spiky_multiplier * (1.0f - t) + biome_b.noise_spiky_multiplier * t,
       .noise_3d_multiplier = biome_a.noise_3d_multiplier * (1.0f - t) + biome_b.noise_3d_multiplier * t,
+      .get_ground_cube = stronger_biome.get_ground_cube,
+      .get_foliage_cube = stronger_biome.get_foliage_cube,
   };
-
-  const Biome& stronger_biome = (t <= 0.5f) ? biome_a : biome_b;
-  blended_biome.name = stronger_biome.name;
-  blended_biome.get_ground_cube = stronger_biome.get_ground_cube;
-  blended_biome.get_foliage_cube = stronger_biome.get_foliage_cube;
-
-  return blended_biome;
 }
 
 Biome biome_lerp(BiomeId biome_a, BiomeId biome_b, float t) {

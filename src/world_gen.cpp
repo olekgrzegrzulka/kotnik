@@ -1,96 +1,128 @@
 #include "world_gen.hpp"
 #include <algorithm>
-#include <array>
+#include <cmath>
 #include <cstdlib>
 #include <optional>
-#include <vector>
 #include "array3d.hpp"
 #include "biome.hpp"
 #include "biome_map.hpp"
 #include "chunk.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
+#include "fast_noise_lite.h"
 #include "random.hpp"
 #include "world.hpp"
 
 struct ChunkGenArray {
 public:
+  static constexpr auto noise_grid_points_x = std::to_array({0, 5, 10, 15, 20, 25, 31});
+  static constexpr auto noise_grid_points_y = std::to_array({-1, 4, 9, 14, 19, 24, 29, 35});
+  static constexpr auto noise_grid_points_z = std::to_array({0, 5, 10, 15, 20, 25, 31});
+
+  static constexpr auto biome_grid_points_x = std::to_array({0, 5, 10, 15, 20, 25, 31});
+  static constexpr auto biome_grid_points_z = std::to_array({0, 5, 10, 15, 20, 25, 31});
+
   static constexpr i32 lip_negative_y = 1;
   static constexpr i32 lip_positive_y = 4;
-  static constexpr i32 noise_step_size = 5;
+  static constexpr CubePos begin = CubePos{0, -lip_negative_y, 0};
+  static constexpr CubePos end = CubePos{Chunk::chunk_size, Chunk::chunk_size, Chunk::chunk_size} + CubePos{0, lip_positive_y, 0};
+  static constexpr glm::vec<3, size_t> array_size = {
+      Chunk::chunk_size,
+      Chunk::chunk_size + lip_negative_y + lip_positive_y,
+      Chunk::chunk_size,
+  };
 
-  // Used for lerping biome samples across chunk to reduce jagginess
-  struct SmoothBiomeGrid {
-    // (1 + biome_samples_subdivisions) ^ 2 samples will be used
-    static constexpr size_t biome_samples_subdivisions = 2;
+  const WorldGen& world_gen;
 
-    static constexpr size_t biome_sample_step_size = Chunk::chunk_size >> biome_samples_subdivisions;
-    static constexpr size_t biome_sample_grid_extents = (Chunk::chunk_size / biome_sample_step_size) + 1;
-    static_assert(biome_sample_step_size >= 1);
+private:
+  Array3D<bool, array_size.x, array_size.y, array_size.z> ground_array;
 
-    SmoothBiomeGrid(const WorldGen& world_gen, CubePos begin) {
-      for (i32 z = 0; z < (i32)biome_sample_grid_extents; z += 1) {
-        for (i32 x = 0; x < (i32)biome_sample_grid_extents; x += 1) {
-          data[x + z * biome_sample_grid_extents] = world_gen.get_blended_biome(begin + CubePos{x * biome_sample_step_size, 0, z * biome_sample_step_size});
+public:
+  ChunkPos chunk_pos;
+  Array3D<biomes::Biome, array_size.x, 1, array_size.z> biome_array;
+
+private:
+  bool empty = true;
+
+public:
+  ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos_) : world_gen(wg),
+                                                           ground_array{begin.x, begin.y, begin.z},
+                                                           chunk_pos(chunk_pos_),
+                                                           biome_array{begin.x, 0, begin.z} {
+    Array3D<float, array_size.x, 1, array_size.z> noise_heightmap_array{begin.x, 0, begin.z};
+    Array3D<float, array_size.x, array_size.y, array_size.z> noise_3d_array{begin.x, begin.y, begin.z};
+
+    // Get biomes at grid points
+    for (i32 x : biome_grid_points_x) {
+      for (i32 z : biome_grid_points_z) {
+        CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z};
+        biome_array.set({x, 0, z}, world_gen.get_blended_biome(cube_pos));
+      }
+    }
+
+    // Interpolate biome array
+    {
+      size_t grid_point_x_high_i = 1;
+      for (i32 x = begin.x; x < end.x; x += 1) {
+
+        while (x > biome_grid_points_x[grid_point_x_high_i]) {
+          grid_point_x_high_i += 1;
+        }
+
+        size_t grid_point_z_high_i = 1;
+        for (i32 z = begin.z; z < end.z; z += 1) {
+          while (z > biome_grid_points_z[grid_point_z_high_i]) {
+            grid_point_z_high_i += 1;
+          }
+
+          const glm::vec<2, i32> grid_point_low{
+              biome_grid_points_x[grid_point_x_high_i - 1],
+              biome_grid_points_z[grid_point_z_high_i - 1],
+          };
+
+          const glm::vec<2, i32> grid_point_high{
+              biome_grid_points_x[grid_point_x_high_i],
+              biome_grid_points_z[grid_point_z_high_i],
+          };
+
+          const bool is_grid_point_x = (x == grid_point_low.x) || (x == grid_point_high.x);
+          const bool is_grid_point_z = (z == grid_point_low.y) || (z == grid_point_high.y);
+          if (is_grid_point_x && is_grid_point_z) { continue; }
+
+          const float x_coefficient = (x - grid_point_low.x) / (float)(grid_point_high.x - grid_point_low.x);
+          const float z_coefficient = (z - grid_point_low.y) / (float)(grid_point_high.y - grid_point_low.y);
+
+          const biomes::Biome biome_low_x = biomes::biome_lerp(
+              biome_array.at({grid_point_low.x, 0, grid_point_low.y}),
+              biome_array.at({grid_point_low.x, 0, grid_point_high.y}),
+              z_coefficient);
+          const biomes::Biome biome_high_x = biomes::biome_lerp(
+              biome_array.at({grid_point_high.x, 0, grid_point_low.y}),
+              biome_array.at({grid_point_high.x, 0, grid_point_high.y}),
+              z_coefficient);
+
+          biome_array.set({x, 0, z}, biomes::biome_lerp(biome_low_x, biome_high_x, x_coefficient));
         }
       }
     }
 
-    biomes::Biome get_biome(i32 x_local, i32 z_local) {
-      float coefficient_x = (float)(x_local % biome_sample_step_size) / (float)(biome_sample_step_size);
-      float coefficient_z = (float)(z_local % (biome_sample_step_size)) / (float)(biome_sample_step_size);
-
-      int biome_grid_x = x_local / biome_sample_step_size;
-      int biome_grid_z = z_local / biome_sample_step_size;
-
-      size_t i_front_left = biome_grid_x + biome_grid_z * biome_sample_grid_extents;
-      size_t i_front_right = biome_grid_x + 1 + biome_grid_z * biome_sample_grid_extents;
-      size_t i_back_left = biome_grid_x + (biome_grid_z + 1) * biome_sample_grid_extents;
-      size_t i_back_right = biome_grid_x + 1 + (biome_grid_z + 1) * biome_sample_grid_extents;
-
-      biomes::Biome blended_biome_front = biomes::biome_lerp(data[i_front_left], data[i_front_right], coefficient_x);
-      biomes::Biome blended_biome_back = biomes::biome_lerp(data[i_back_left], data[i_back_right], coefficient_x);
-
-      return biomes::biome_lerp(blended_biome_front, blended_biome_back, coefficient_z);
-    }
-
-    std::array<biomes::Biome, biome_sample_grid_extents * biome_sample_grid_extents> data;
-  };
-
-  ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos) : world_gen(wg) {
-    BENCHMARK("chunkgen");
-
-    begin = CubePos{0, -lip_negative_y, 0};
-    end = CubePos{Chunk::chunk_size, Chunk::chunk_size, Chunk::chunk_size} + CubePos{0, lip_positive_y, 0};
-
-    ground_array = Array3D<bool>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
-    auto noise_heightmap_array = Array3D<float>{begin.x, 0, begin.z, end.x, 1, end.z};
-    auto noise_3d_array = Array3D<float>{begin.x, begin.y, begin.z, end.x, end.y, end.z};
-    biome_array = Array3D<biomes::Biome>{begin.x, 0, begin.z, end.x, 1, end.z};
-    SmoothBiomeGrid biome_grid(wg, begin + chunk_pos * Chunk::chunk_size);
-
+    // Generate heightmap array
     for (i32 z = begin.z; z < end.z; z += 1) {
       for (i32 x = begin.x; x < end.x; x += 1) {
-        auto blended_biome = biome_grid.get_biome(x, z);
-        biome_array.set({x, 0, z}, blended_biome);
-        float noise_heightmap = wg.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, blended_biome);
+        CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z};
+        float noise_heightmap = wg.get_heightmap_noise(cube_pos, biome_array.at({x, 0, z}));
         noise_heightmap_array.set({x, 0, z}, noise_heightmap);
       }
     }
 
-    for (i32 x = begin.x; x < end.x; x += 1) {
-      if (!(x == begin.x || x == end.x - 1 || wrapi(x, 0, noise_step_size) == 0)) { continue; }
-      for (i32 y = begin.y; y < end.y; y += 1) {
-        if (!(y == begin.y || y == end.y - 1 || wrapi(y, 0, noise_step_size) == 0)) { continue; }
-        for (i32 z = begin.z; z < end.z; z += 1) {
-          if (!(z == begin.z || z == end.z - 1 || wrapi(z, 0, noise_step_size) == 0)) { continue; }
-
-          CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
-
-          float noise_3d = wg.get_3d_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, y, z}, biome_array.at({x, 0, z}));
+    // Fill 3d noise and ground arrays at grid points
+    for (i32 x : noise_grid_points_x) {
+      for (i32 y : noise_grid_points_y) {
+        for (i32 z : noise_grid_points_z) {
+          const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+          const float noise_3d = wg.get_3d_noise(cube_pos, biome_array.at({x, 0, z}));
           noise_3d_array.set({x, y, z}, noise_3d);
-
-          bool is_solid = world_gen.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_array.at({x, 0, z}), noise_3d);
+          const bool is_solid = world_gen.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_array.at({x, 0, z}), noise_3d);
           if (is_solid) { empty = false; }
           ground_array.set({x, y, z}, is_solid);
         }
@@ -98,70 +130,86 @@ public:
     }
 
     if (empty) { return; }
-    // return;
 
-    // Fix the skipped cubes in checkerboard generation
+    // Interpolate 3d noise and ground arrays
+    size_t grid_point_x_high_i = 1;
     for (i32 x = begin.x; x < end.x; x += 1) {
+
+      while (x > noise_grid_points_x[grid_point_x_high_i]) {
+        grid_point_x_high_i += 1;
+      }
+
+      size_t grid_point_y_high_i = 1;
       for (i32 y = begin.y; y < end.y; y += 1) {
+
+        while (y > noise_grid_points_y[grid_point_y_high_i]) {
+          grid_point_y_high_i += 1;
+        }
+
+        size_t grid_point_z_high_i = 1;
         for (i32 z = begin.z; z < end.z; z += 1) {
-          i32 x_wrapped = wrapi(x, 0, noise_step_size);
-          i32 y_wrapped = wrapi(y, 0, noise_step_size);
-          i32 z_wrapped = wrapi(z, 0, noise_step_size);
 
-          bool x_has_value = x == begin.x || x == end.x - 1 || x_wrapped == 0;
-          bool y_has_value = y == begin.y || y == end.y - 1 || y_wrapped == 0;
-          bool z_has_value = z == begin.z || z == end.z - 1 || z_wrapped == 0;
-          if (x_has_value && y_has_value && z_has_value) { continue; }
+          while (z > noise_grid_points_z[grid_point_z_high_i]) {
+            grid_point_z_high_i += 1;
+          }
 
-          i32 x_low = std::max(x - x_wrapped, begin.x);
-          i32 x_high = std::min(x + noise_step_size - x_wrapped, end.x - 1);
-          i32 y_low = std::max(y - y_wrapped, begin.y);
-          i32 y_high = std::min(y + noise_step_size - y_wrapped, end.y - 1);
-          i32 z_low = std::max(z - z_wrapped, begin.z);
-          i32 z_high = std::min(z + noise_step_size - z_wrapped, end.z - 1);
+          const glm::vec<3, i32> grid_point_low{
+              noise_grid_points_x[grid_point_x_high_i - 1],
+              noise_grid_points_y[grid_point_y_high_i - 1],
+              noise_grid_points_z[grid_point_z_high_i - 1],
+          };
 
-          float noise_3d_x_low_z_low = std::lerp(noise_3d_array.at({x_low, y_low, z_low}), noise_3d_array.at({x_low, y_high, z_low}), y_wrapped / (float)(noise_step_size - 1));
-          float noise_3d_x_low_z_high = std::lerp(noise_3d_array.at({x_low, y_low, z_high}), noise_3d_array.at({x_low, y_high, z_high}), y_wrapped / (float)(noise_step_size - 1));
-          float noise_3d_x_high_z_low = std::lerp(noise_3d_array.at({x_high, y_low, z_low}), noise_3d_array.at({x_high, y_high, z_low}), y_wrapped / (float)(noise_step_size - 1));
-          float noise_3d_x_high_z_high = std::lerp(noise_3d_array.at({x_high, y_low, z_high}), noise_3d_array.at({x_high, y_high, z_high}), y_wrapped / (float)(noise_step_size - 1));
+          const glm::vec<3, i32> grid_point_high{
+              noise_grid_points_x[grid_point_x_high_i],
+              noise_grid_points_y[grid_point_y_high_i],
+              noise_grid_points_z[grid_point_z_high_i],
+          };
 
-          float noise_3d_x_low = std::lerp(noise_3d_x_low_z_low, noise_3d_x_low_z_high, z_wrapped / (float)(noise_step_size - 1));
-          float noise_3d_x_high = std::lerp(noise_3d_x_high_z_low, noise_3d_x_high_z_high, z_wrapped / (float)(noise_step_size - 1));
+          const bool is_grid_point_x = (x == grid_point_low.x) || (x == grid_point_high.x);
+          const bool is_grid_point_y = (y == grid_point_low.y) || (y == grid_point_high.y);
+          const bool is_grid_point_z = (z == grid_point_low.z) || (z == grid_point_high.z);
+          if (is_grid_point_x && is_grid_point_y && is_grid_point_z) { continue; }
 
-          float noise_3d_value = std::lerp(noise_3d_x_low, noise_3d_x_high, x_wrapped / (float)(noise_step_size - 1));
+          const float x_coefficient = (x - grid_point_low.x) / (float)(grid_point_high.x - grid_point_low.x);
+          const float y_coefficient = (y - grid_point_low.y) / (float)(grid_point_high.y - grid_point_low.y);
+          const float z_coefficient = (z - grid_point_low.z) / (float)(grid_point_high.z - grid_point_low.z);
 
-          float noise_heightmap_x_low = std::lerp(noise_heightmap_array.at({x_low, 0, z_low}), noise_heightmap_array.at({x_low, 0, z_high}), z_wrapped / (float)(noise_step_size - 1));
-          float noise_heightmap_x_high = std::lerp(noise_heightmap_array.at({x_high, 0, z_low}), noise_heightmap_array.at({x_high, 0, z_high}), z_wrapped / (float)(noise_step_size - 1));
+          const float noise_3d_x_low_z_low = (noise_3d_array.at({grid_point_low.x, grid_point_low.y, grid_point_low.z}) * (1.0f - y_coefficient) +
+                                              noise_3d_array.at({grid_point_low.x, grid_point_high.y, grid_point_low.z}) * y_coefficient);
+          const float noise_3d_x_low_z_high = (noise_3d_array.at({grid_point_low.x, grid_point_low.y, grid_point_high.z}) * (1.0f - y_coefficient) +
+                                               noise_3d_array.at({grid_point_low.x, grid_point_high.y, grid_point_high.z}) * y_coefficient);
+          const float noise_3d_x_high_z_low = (noise_3d_array.at({grid_point_high.x, grid_point_low.y, grid_point_low.z}) * (1.0f - y_coefficient) +
+                                               noise_3d_array.at({grid_point_high.x, grid_point_high.y, grid_point_low.z}) * y_coefficient);
+          const float noise_3d_x_high_z_high = (noise_3d_array.at({grid_point_high.x, grid_point_low.y, grid_point_high.z}) * (1.0f - y_coefficient) +
+                                                noise_3d_array.at({grid_point_high.x, grid_point_high.y, grid_point_high.z}) * y_coefficient);
 
-          float noise_heightmap_value = std::lerp(noise_heightmap_x_low, noise_heightmap_x_high, x_wrapped / (float)(noise_step_size - 1));
+          const float noise_3d_x_low = noise_3d_x_low_z_low * (1.0f - z_coefficient) + noise_3d_x_low_z_high * z_coefficient;
+          const float noise_3d_x_high = noise_3d_x_high_z_low * (1.0f - z_coefficient) + noise_3d_x_high_z_high * z_coefficient;
 
-          CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+          const float noise_3d_value = noise_3d_x_low * (1.0f - x_coefficient) + noise_3d_x_high * x_coefficient;
+
+          const float noise_heightmap_x_low = noise_heightmap_array.at({grid_point_low.x, 0, grid_point_low.z}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_low.x, 0, grid_point_high.z}) * z_coefficient;
+          const float noise_heightmap_x_high = noise_heightmap_array.at({grid_point_high.x, 0, grid_point_low.z}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_high.x, 0, grid_point_high.z}) * z_coefficient;
+
+          const float noise_heightmap_value = noise_heightmap_x_low * (1.0f - x_coefficient) + noise_heightmap_x_high * x_coefficient;
+          const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
+
           ground_array.set({x, y, z}, wg.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_value, noise_3d_value));
         }
       }
     }
   }
 
-  bool is_solid_unsafe(LocalPos local_pos) {
+  bool is_solid_unsafe(const LocalPos& local_pos) const {
     return ground_array.at(local_pos);
   }
 
-  std::optional<bool> is_solid(LocalPos local_pos) {
+  std::optional<bool> is_solid(const LocalPos& local_pos) const {
     if (!ground_array.has_index(local_pos)) { return std::nullopt; }
-    return ground_array.at(local_pos);
+    return is_solid_unsafe(local_pos);
   }
 
   bool is_empty() const { return empty; }
-
-private:
-  CubePos begin;
-  CubePos end;
-  const WorldGen& world_gen;
-  bool empty = true;
-
-public:
-  Array3D<bool> ground_array;
-  Array3D<biomes::Biome> biome_array;
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
@@ -200,13 +248,19 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_temperature.SetFractalGain(0.4f);
 }
 
+float WorldGen::get_humidity(WorldPos world_pos) const {
+  return std::clamp(noise_humidity.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f, 0.0f, 1.0f);
+}
+
+float WorldGen::get_temperature(WorldPos world_pos) const {
+  return std::clamp(noise_temperature.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f, 0.0f, 1.0f);
+}
+
 biomes::Biome WorldGen::get_blended_biome(WorldPos world_pos) const {
-  float humidity = noise_humidity.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f;
-  humidity = std::clamp(humidity, 0.0f, 1.0f);
+  return biomemap::get_biome(get_humidity(world_pos), get_temperature(world_pos));
+}
 
-  float temperature = noise_temperature.GetNoise(world_pos.x, world_pos.z) * 0.5f + 0.5f;
-  temperature = std::clamp(temperature, 0.0f, 1.0f);
-
+biomes::Biome WorldGen::get_blended_biome(float humidity, float temperature) const {
   return biomemap::get_biome(humidity, temperature);
 }
 
@@ -408,26 +462,25 @@ void gen_tree_pine(Chunk* chunk, LocalPos at) {
 }
 
 void WorldGen::generate_chunk_only_water(Chunk* chunk) const {
-  for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
-    for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
-      for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
-        i64 y = chunk->position.y * Chunk::chunk_size + (int)y_local;
-        if (y <= 0) {
-          chunk->set_cube({x_local, y_local, z_local}, CubeId::WATER);
-        }
+  for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
+    i64 y = chunk->position.y * Chunk::chunk_size + (i32)y_local;
+    if (y > 0) { continue; }
+    for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
+      for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
+        chunk->set_cube({x_local, y_local, z_local}, CubeId::WATER);
       }
     }
   }
 }
 
 void WorldGen::generate_chunk(Chunk* chunk) const {
+  BENCHMARK("chunkgen");
   auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
   if (chunk_solid_cubes_array.is_empty()) {
     generate_chunk_only_water(chunk);
     return;
   }
-
-  Array3D<bool> tree_map(Chunk::chunk_size, 1, Chunk::chunk_size);
+  Array3D<int, Chunk::chunk_size, 1, Chunk::chunk_size> tree_map;
 
   auto tree_map_get_or_false = [&tree_map](i32 at_x, i32 at_y) -> bool {
     if (!tree_map.has_index({at_x, 0, at_y})) { return false; }
@@ -449,8 +502,9 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
 
   for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
     for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
-      // auto blended_biome = chunk_solid_cubes_array.biome_array.at({x_local, 0, z_local});
-      auto blended_biome = get_blended_biome(local_pos_to_cube_pos(chunk->position, {x_local, 0, z_local}));
+      // FIXME: biomes are blocky when fetching them from biome_array
+      const auto& blended_biome = chunk_solid_cubes_array.biome_array.at({x_local, 0, z_local});
+      // auto blended_biome = get_blended_biome(local_pos_to_cube_pos(chunk->position, {x_local, 0, z_local}));
 
       for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
         float y = chunk->position.y * Chunk::chunk_size + (int)y_local;
