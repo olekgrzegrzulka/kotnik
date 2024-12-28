@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/mat4x4.hpp>
 #include "common.hpp"
 
 void skybox_init();

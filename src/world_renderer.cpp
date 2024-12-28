@@ -4,8 +4,8 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/norm.hpp>
+#include <glm/mat4x4.hpp>
 #include "chunk.hpp"
 #include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"

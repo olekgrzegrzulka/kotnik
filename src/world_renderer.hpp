@@ -2,6 +2,7 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
+#include <glm/mat4x4.hpp>
 #include "common.hpp"
 
 struct ChunkMeshWorker;

@@ -7,8 +7,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtx/norm.hpp>
+#include <glm/common.hpp>
+#include <glm/vec3.hpp>
 #include <stdint.h>
 
 using u8 = uint8_t;

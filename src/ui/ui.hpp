@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <glm/fwd.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include "../common.hpp"

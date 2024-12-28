@@ -15,10 +15,12 @@
 #include <ios>
 #include <iostream>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/quaternion.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/trigonometric.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <unistd.h>
 #include "clouds.hpp"
 #include "cube_indicator_renderer.hpp"

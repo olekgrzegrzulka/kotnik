@@ -4,7 +4,9 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
-#include <glm/glm.hpp>
+#include <glm/common.hpp>
+#include <glm/geometric.hpp>
+#include <glm/trigonometric.hpp>
 #include "aabb.hpp"
 #include "common.hpp"
 #include "cubes.hpp"

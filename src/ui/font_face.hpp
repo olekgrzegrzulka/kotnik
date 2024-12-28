@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <utility>
 #include <ft2build.h>
-#include <glm/fwd.hpp>
 #include <glm/vec2.hpp>
 #include "../common.hpp"
 #include "button.hpp"
