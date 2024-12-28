@@ -33,8 +33,13 @@ void Button::update() {
   Sprite::update();
 
   auto center = get_position(Anchor::CENTER_CENTER);
-  label.set_x(center.x);
-  label.set_y(center.y);
+  if (state == ButtonState::PRESSED) {
+    label.set_x(center.x + 1);
+    label.set_y(center.y + 1);
+  } else {
+    label.set_x(center.x);
+    label.set_y(center.y);
+  }
   label.set_screen_anchor(Anchor::TOP_LEFT);
   label.set_anchor(Anchor::CENTER_CENTER);
 }
