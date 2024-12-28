@@ -68,7 +68,9 @@ public:
 
   } physical_properties;
 
-private:
+  bool worldgen_enabled = true;
+
+protected:
   std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, Vec3Hasher> chunks;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_generation;

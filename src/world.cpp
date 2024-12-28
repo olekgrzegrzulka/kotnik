@@ -345,13 +345,15 @@ void World::update() {
     }
   }
 
-  // Load chunks near player
   ChunkPos player_chunk_pos = (player) ? world_pos_to_chunk_pos(player->world_pos) : ChunkPos{0, 0, 0};
-  for (int x = -chunk_load_distance; x <= chunk_load_distance; x += 1) {
-    for (int z = -chunk_load_distance; z <= chunk_load_distance; z += 1) {
-      for (int y = -chunk_load_distance; y <= chunk_load_distance; y += 1) {
-        ChunkPos chunk_pos{x, y, z};
-        create_new_chunk(player_chunk_pos + chunk_pos);
+  // Load chunks near player
+  if (worldgen_enabled) {
+    for (int x = -chunk_load_distance; x <= chunk_load_distance; x += 1) {
+      for (int z = -chunk_load_distance; z <= chunk_load_distance; z += 1) {
+        for (int y = -chunk_load_distance; y <= chunk_load_distance; y += 1) {
+          ChunkPos chunk_pos{x, y, z};
+          create_new_chunk(player_chunk_pos + chunk_pos);
+        }
       }
     }
   }
