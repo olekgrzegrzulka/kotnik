@@ -1,5 +1,8 @@
 #include <algorithm>
+#include <codecvt>
 #include <limits>
+#include <locale>
+#include <string>
 #include <vector>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -11,7 +14,7 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
-Label::Label(const UI& ui_, std::u32string text_) : Widget::Widget(ui_) {
+Label::Label(const UI& ui_, std::string text_) : Widget::Widget(ui_) {
   set_text(text_);
 }
 
@@ -49,8 +52,11 @@ void Label::update_mesh() {
   glm::vec<2, i32> max_bearing = {std::numeric_limits<i32>::min(), std::numeric_limits<i32>::min()};
 
   // // calculate text dimensions
-  i32 text_length = 0;
-  for (auto c : text) {
+  size_t text_length = 0;
+  static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+  auto text_utf32 = converter.from_bytes(text);
+
+  for (auto c : text_utf32) {
     if (text_length++ > max_text_length) { break; }
 
     auto* glyph = ui.get_font_face().find_glyph(c);
@@ -70,12 +76,12 @@ void Label::update_mesh() {
   pen.x -= width * anchor_to_uv(anchor).x;
   pen.y -= height * anchor_to_uv(anchor).y;
 
-  for (auto c : text) {
+  for (auto c : text_utf32) {
     auto* glyph = ui.get_font_face().find_glyph(c);
     if (!glyph) { continue; }
 
-    auto size_screen_uv = glm::vec2(glyph->size.x, glyph->size.y) / glm::vec2(window_width, window_height);
-    auto position_screen_uv = glm::vec2(pen.x + glyph->bearing.x, pen.y - glyph->bearing.y) / glm::vec2{window_width, window_height};
+    auto size_screen_uv = glm::vec2(glyph->size.x, glyph->size.y) / glm::vec2(window_width_, window_height_);
+    auto position_screen_uv = glm::vec2(pen.x + glyph->bearing.x, pen.y - glyph->bearing.y) / glm::vec2{window_width_, window_height_};
 
     auto start = position_screen_uv;
     auto end = start + size_screen_uv;

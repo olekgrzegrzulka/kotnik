@@ -14,14 +14,14 @@ public:
   static constexpr i32 max_text_length = 512;
 
 private:
-  std::u32string text;
+  std::string text;
   GLuint vao = 0;
   GLuint vbo = 0;
   std::vector<vertex2> vertices;
   glm::vec3 text_color = {1.0, 1.0, 1.0};
 
 public:
-  Label(const UI&, std::u32string);
+  Label(const UI&, std::string);
 
   ~Label() override;
 

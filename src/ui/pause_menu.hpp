@@ -8,8 +8,8 @@ public:
   PauseMenu(const UI& ui_)
       : Widget::Widget(ui_),
         background(add_child<Sprite>()),
-        button_resume(add_child<Button>(U"Resume")),
-        button_quit(add_child<Button>(U"Quit")) {
+        button_resume(add_child<Button>("Resume")),
+        button_quit(add_child<Button>("Quit")) {
 
     process = false;
     process_children_first = false;

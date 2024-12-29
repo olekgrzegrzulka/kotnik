@@ -31,13 +31,13 @@ protected:
   glm::vec2 uv_end_disabled = glm::vec2(1.0f / 16.0f, 4.0f / 16.0f);
 
 public:
-  Button(const UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>(U"")) {
+  Button(const UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>("")) {
     set_sprite_idle();
     set_nine_slice_margin(3.0f);
     set_nine_slice_scale(1.0f);
   }
 
-  Button(const UI& ui_, std::u32string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+  Button(const UI& ui_, std::string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
     set_sprite_idle();
     set_nine_slice_margin(3.0f);
     set_nine_slice_scale(1.0f);
