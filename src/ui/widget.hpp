@@ -43,6 +43,8 @@ inline glm::vec2 anchor_to_uv(Anchor anchor) {
   case BOTTOM_CENTER: {return {0.5, 1.0};}
   case BOTTOM_RIGHT:  {return {1.0, 1.0};}
   }
+  ensure(false);
+  return {0.0, 0.0};
 }
 // clang-format on
 

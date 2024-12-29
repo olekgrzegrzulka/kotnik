@@ -384,7 +384,7 @@ void gen_tree_spruce(Chunk* chunk, LocalPos at) {
 
   for (i32 i = 0; i <= tree_height; i += 1) {
     LocalPos local_pos_leaves = {at.x, at.y + i, at.z};
-    chunk->set_cube_maybe_neigbour({at.x, at.y + i, at.z}, CubeId::WOOD);
+    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::WOOD);
   }
 }
 
@@ -518,7 +518,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
         }
         depth -= 1;
 
-        bool just_over_ground = (true == chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, -1, 0}).value_or(false)) &&
+        bool just_over_ground = (true == chunk_solid_cubes_array.is_solid_unsafe(local_pos + LocalPos{0, -1, 0})) &&
                                 (false == chunk_solid_cubes_array.is_solid_unsafe(local_pos));
 
         if (is_solid) {

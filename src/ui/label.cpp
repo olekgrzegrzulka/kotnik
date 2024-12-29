@@ -39,8 +39,8 @@ void Label::draw() {
 }
 
 void Label::update_mesh() {
-  i32 window_width = ui.get_window_width();
-  i32 window_height = ui.get_window_height();
+  i32 window_width_ = ui.get_window_width();
+  i32 window_height_ = ui.get_window_height();
 
   vertices.clear();
   width = 0;
@@ -66,7 +66,7 @@ void Label::update_mesh() {
   // calculate initial pen position
   glm::vec2 pen = {x, y};
   pen.y += max_bearing.y;
-  pen += anchor_to_uv(screen_anchor) * glm::vec2{window_width, window_height};
+  pen += anchor_to_uv(screen_anchor) * glm::vec2{window_width_, window_height_};
   pen.x -= width * anchor_to_uv(anchor).x;
   pen.y -= height * anchor_to_uv(anchor).y;
 

@@ -59,9 +59,9 @@ int main() {
   GLFWwindow* window = glfwCreateWindow(800, 600, "Kotník", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSetWindowUserPointer(window, &window_size);
-  glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window, int width, int height) {
+  glfwSetWindowSizeCallback(window, []([[maybe_unused]] GLFWwindow* window_, int width, int height) {
     glViewport(0, 0, width, height);
-    auto* window_size_ = reinterpret_cast<glm::vec<2, i32>*>(glfwGetWindowUserPointer(window));
+    auto* window_size_ = reinterpret_cast<glm::vec<2, i32>*>(glfwGetWindowUserPointer(window_));
     window_size_->x = width;
     window_size_->y = height;
   });

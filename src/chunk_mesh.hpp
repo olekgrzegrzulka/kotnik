@@ -13,7 +13,7 @@ struct ChunkMeshData {
 public:
   ChunkMeshData(ChunkPos, World&);
 
-  CubeId get_cube_id(LocalPos at);
+  CubeId get_cube_id(LocalPos at, bool check_if_neigbour_chunk = true);
 
   bool is_valid() const { return valid; }
   ChunkPos get_chunk_pos() const { return chunk_pos; }

@@ -39,12 +39,15 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
   chunk_pos = chunk_pos_;
 }
 
-CubeId ChunkMeshData::get_cube_id(LocalPos at) {
-  auto chunk_pos_ = neigbour_chunk_pos({0, 0, 0}, at);
-  i32 i = (chunk_pos_.x + 1) + (chunk_pos_.y + 1) * 3 + (chunk_pos_.z + 1) * 9;
-  ensure(i >= 0 && i < 27);
-  if (chunks_data[i].size() == 0) { return CubeId::AIR; }
-  return chunks_data[i][local_pos_to_index(wrap_around_local_pos(at))];
+inline CubeId ChunkMeshData::get_cube_id(LocalPos at, bool check_if_not_current_chunk) {
+  if (check_if_not_current_chunk) {
+    auto chunk_pos_ = neigbour_chunk_pos({0, 0, 0}, at);
+    size_t i = (chunk_pos_.x + 1) + (chunk_pos_.y + 1) * 3 + (chunk_pos_.z + 1) * 9;
+    if (chunks_data[i].size() == 0) { return CubeId::AIR; }
+    return chunks_data[i][local_pos_to_index(wrap_around_local_pos(at))];
+  } else {
+    return chunks_data[13][local_pos_to_index(at)];
+  }
 }
 
 ChunkMesh::ChunkMesh() {
@@ -58,45 +61,44 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
 
   for (size_t i = 0; i < (size_t)Chunk::chunk_cube_count; i += 1) {
     LocalPos l = index_to_local_pos(i);
-    if (data->get_cube_id(l) == CubeId::AIR) { continue; }
+    if (data->get_cube_id(l, 13) == CubeId::AIR) { continue; }
+    bool is_edge = l.x == 0 || l.x == Chunk::chunk_size - 1 || l.y == 0 || l.y == Chunk::chunk_size - 1 || l.z == 0 || l.z == Chunk::chunk_size - 1;
+    auto& cube = cubes_get(data->get_cube_id(l, false));
 
-    auto& cube = cubes_get(data->get_cube_id(l));
-
-    neigbour_cube_ids.center = data->get_cube_id(LocalPos{l.x, l.y, l.z});
-
+    neigbour_cube_ids.center = data->get_cube_id(LocalPos{l.x, l.y, l.z}, false);
     // Straight neigbour_cube_ids
-    neigbour_cube_ids.left = data->get_cube_id(l + LocalPos{-1, +0, +0});
-    neigbour_cube_ids.right = data->get_cube_id(l + LocalPos{+1, +0, +0});
-    neigbour_cube_ids.bottom = data->get_cube_id(l + LocalPos{+0, -1, +0});
-    neigbour_cube_ids.top = data->get_cube_id(l + LocalPos{+0, +1, +0});
-    neigbour_cube_ids.front = data->get_cube_id(l + LocalPos{+0, +0, -1});
-    neigbour_cube_ids.back = data->get_cube_id(l + LocalPos{+0, +0, +1});
+    neigbour_cube_ids.left = data->get_cube_id(l + LocalPos{-1, +0, +0}, is_edge);
+    neigbour_cube_ids.right = data->get_cube_id(l + LocalPos{+1, +0, +0}, is_edge);
+    neigbour_cube_ids.bottom = data->get_cube_id(l + LocalPos{+0, -1, +0}, is_edge);
+    neigbour_cube_ids.top = data->get_cube_id(l + LocalPos{+0, +1, +0}, is_edge);
+    neigbour_cube_ids.front = data->get_cube_id(l + LocalPos{+0, +0, -1}, is_edge);
+    neigbour_cube_ids.back = data->get_cube_id(l + LocalPos{+0, +0, +1}, is_edge);
 
     // Edge neighbours
-    neigbour_cube_ids.left_bottom = data->get_cube_id(l + LocalPos{-1, -1, +0});
-    neigbour_cube_ids.right_bottom = data->get_cube_id(l + LocalPos{+1, -1, +0});
-    neigbour_cube_ids.front_bottom = data->get_cube_id(l + LocalPos{+0, -1, -1});
-    neigbour_cube_ids.back_bottom = data->get_cube_id(l + LocalPos{+0, -1, +1});
+    neigbour_cube_ids.left_bottom = data->get_cube_id(l + LocalPos{-1, -1, +0}, is_edge);
+    neigbour_cube_ids.right_bottom = data->get_cube_id(l + LocalPos{+1, -1, +0}, is_edge);
+    neigbour_cube_ids.front_bottom = data->get_cube_id(l + LocalPos{+0, -1, -1}, is_edge);
+    neigbour_cube_ids.back_bottom = data->get_cube_id(l + LocalPos{+0, -1, +1}, is_edge);
 
-    neigbour_cube_ids.left_top = data->get_cube_id(l + LocalPos{-1, +1, +0});
-    neigbour_cube_ids.right_top = data->get_cube_id(l + LocalPos{+1, +1, +0});
-    neigbour_cube_ids.front_top = data->get_cube_id(l + LocalPos{+0, +1, -1});
-    neigbour_cube_ids.back_top = data->get_cube_id(l + LocalPos{+0, +1, +1});
+    neigbour_cube_ids.left_top = data->get_cube_id(l + LocalPos{-1, +1, +0}, is_edge);
+    neigbour_cube_ids.right_top = data->get_cube_id(l + LocalPos{+1, +1, +0}, is_edge);
+    neigbour_cube_ids.front_top = data->get_cube_id(l + LocalPos{+0, +1, -1}, is_edge);
+    neigbour_cube_ids.back_top = data->get_cube_id(l + LocalPos{+0, +1, +1}, is_edge);
 
-    neigbour_cube_ids.left_front = data->get_cube_id(l + LocalPos{-1, +0, -1});
-    neigbour_cube_ids.right_front = data->get_cube_id(l + LocalPos{+1, +0, -1});
-    neigbour_cube_ids.left_back = data->get_cube_id(l + LocalPos{-1, +0, +1});
-    neigbour_cube_ids.right_back = data->get_cube_id(l + LocalPos{+1, +0, +1});
+    neigbour_cube_ids.left_front = data->get_cube_id(l + LocalPos{-1, +0, -1}, is_edge);
+    neigbour_cube_ids.right_front = data->get_cube_id(l + LocalPos{+1, +0, -1}, is_edge);
+    neigbour_cube_ids.left_back = data->get_cube_id(l + LocalPos{-1, +0, +1}, is_edge);
+    neigbour_cube_ids.right_back = data->get_cube_id(l + LocalPos{+1, +0, +1}, is_edge);
 
     // Corner neighbours
-    neigbour_cube_ids.left_bottom_front = data->get_cube_id(l + LocalPos{-1, -1, -1});
-    neigbour_cube_ids.left_bottom_back = data->get_cube_id(l + LocalPos{-1, -1, +1});
-    neigbour_cube_ids.left_top_front = data->get_cube_id(l + LocalPos{-1, +1, -1});
-    neigbour_cube_ids.left_top_back = data->get_cube_id(l + LocalPos{-1, +1, +1});
-    neigbour_cube_ids.right_bottom_front = data->get_cube_id(l + LocalPos{+1, -1, -1});
-    neigbour_cube_ids.right_bottom_back = data->get_cube_id(l + LocalPos{+1, -1, +1});
-    neigbour_cube_ids.right_top_front = data->get_cube_id(l + LocalPos{+1, +1, -1});
-    neigbour_cube_ids.right_top_back = data->get_cube_id(l + LocalPos{+1, +1, +1});
+    neigbour_cube_ids.left_bottom_front = data->get_cube_id(l + LocalPos{-1, -1, -1}, is_edge);
+    neigbour_cube_ids.left_bottom_back = data->get_cube_id(l + LocalPos{-1, -1, +1}, is_edge);
+    neigbour_cube_ids.left_top_front = data->get_cube_id(l + LocalPos{-1, +1, -1}, is_edge);
+    neigbour_cube_ids.left_top_back = data->get_cube_id(l + LocalPos{-1, +1, +1}, is_edge);
+    neigbour_cube_ids.right_bottom_front = data->get_cube_id(l + LocalPos{+1, -1, -1}, is_edge);
+    neigbour_cube_ids.right_bottom_back = data->get_cube_id(l + LocalPos{+1, -1, +1}, is_edge);
+    neigbour_cube_ids.right_top_front = data->get_cube_id(l + LocalPos{+1, +1, -1}, is_edge);
+    neigbour_cube_ids.right_top_back = data->get_cube_id(l + LocalPos{+1, +1, +1}, is_edge);
 
     if (cube.draw_data.is_translucent) {
       cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices_translucent);
