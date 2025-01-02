@@ -15,7 +15,7 @@
 #include "world_gen.hpp"
 
 World::World() {
-  i32 seed = StaticRandom::get().next<i32>();
+  seed = StaticRandom::get().next<i32>();
   debug_log("Created world with seed ", seed);
   world_gen = std::make_unique<WorldGen>(*this, seed);
 

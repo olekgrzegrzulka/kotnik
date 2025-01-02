@@ -60,11 +60,11 @@ public:
   static const i32 chunk_load_distance = 7;
 
   struct {
-    double gravity = -0.012;
-    double air_friction = 0.01;
+    double gravity = -0.01;
+    double air_friction = 0.015;
 
-    double water_gravity = -0.007;
-    double water_friction = 0.17;
+    double water_gravity = -0.0052;
+    double water_friction = 0.35;
 
   } physical_properties;
 
@@ -82,6 +82,7 @@ protected:
   Player* player = nullptr;
 
   std::shared_ptr<WorldGen> world_gen;
+  i32 seed = 0;
 
 public:
   World();
@@ -89,6 +90,8 @@ public:
   ~World();
 
   const Player* get_player() const;
+
+  i32 get_seed() const { return seed; }
 
   template <class T>
   void add_entity(WorldPos world_pos) {
