@@ -64,7 +64,12 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_ocean.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
+  biome_ocean.get_ground_cube = [](i32 y, i32 depth, float) -> CubeId {
+    if (y > 2) {
+      if (depth == 0) { return CubeId::GRASS; }
+      if (depth <= 3) { return CubeId::DIRT; }
+      return CubeId::STONE;
+    }
     if (depth <= 3) { return CubeId::SAND; }
     return CubeId::STONE;
   };
@@ -85,7 +90,12 @@ const BiomeList init_biome_list() {
       .noise_3d_multiplier = 0.0f,
   };
 
-  biome_deep_ocean.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
+  biome_deep_ocean.get_ground_cube = [](i32 y, i32 depth, float) -> CubeId {
+    if (y > 2) {
+      if (depth == 0) { return CubeId::GRASS; }
+      if (depth <= 3) { return CubeId::DIRT; }
+      return CubeId::STONE;
+    }
     if (depth <= 3) { return CubeId::SAND; }
     return CubeId::STONE;
   };
@@ -124,7 +134,7 @@ const BiomeList init_biome_list() {
       .base_height = 20.0f,
       .noise_height_multiplier = 60.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 40.0f,
+      .noise_3d_multiplier = 25.0f,
   };
 
   biome_highlands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {

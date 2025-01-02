@@ -26,9 +26,7 @@ public:
   float get_heightmap_noise(WorldPos pos, const biomes::Biome& blended_biome) const;
   float get_3d_noise(WorldPos pos, const biomes::Biome& blended_biome) const;
 
-  bool is_ground(WorldPos pos, const biomes::Biome& blended_biome,
-                 std::optional<float> noise_heightmap_value = std::nullopt, std::optional<float> noise_3d_value = std::nullopt) const;
-
+  bool is_ground(WorldPos pos, const biomes::Biome& blended_biome, float noise_heightmap_value, float noise_3d_value) const;
   bool is_ground(WorldPos pos, const biomes::Biome& blended_biome) const;
   bool is_ground(WorldPos pos) const;
 

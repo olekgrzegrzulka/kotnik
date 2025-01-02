@@ -193,7 +193,6 @@ public:
 
           const float noise_heightmap_value = noise_heightmap_x_low * (1.0f - x_coefficient) + noise_heightmap_x_high * x_coefficient;
           const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
-
           ground_array.set({x, y, z}, wg.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_value, noise_3d_value));
         }
       }
@@ -213,16 +212,18 @@ public:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
-  constexpr float scale = 0.82;
+  constexpr float freq_biome = 0.0016f;
+  constexpr float freq_height = 0.0034f;
+  constexpr float freq_3d = 0.01095f;
   noise_heightmap.SetSeed(seed);
-  noise_heightmap.SetFrequency(0.006064f / scale);
+  noise_heightmap.SetFrequency(freq_height);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_heightmap.SetFractalOctaves(3);
   noise_heightmap.SetFractalGain(0.4f);
   noise_heightmap.SetFractalLacunarity(2.57f);
 
   noise_3d.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_3d.SetFrequency(0.00351f / scale);
+  noise_3d.SetFrequency(freq_3d);
   noise_3d.SetSeed(seed);
   noise_3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_3d.SetFractalOctaves(3);
@@ -233,7 +234,7 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
 
   noise_humidity.SetSeed(seed + 1);
   noise_humidity.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
-  noise_humidity.SetFrequency(0.00224f / scale);
+  noise_humidity.SetFrequency(freq_biome);
   noise_humidity.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_humidity.SetFractalOctaves(4);
   noise_humidity.SetFractalLacunarity(2.2f);
@@ -242,7 +243,7 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_temperature.SetSeed(seed + 2);
   noise_temperature.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
   noise_temperature.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
-  noise_temperature.SetFrequency(0.00224f / scale);
+  noise_temperature.SetFrequency(freq_biome);
   noise_temperature.SetFractalOctaves(4);
   noise_temperature.SetFractalLacunarity(2.2f);
   noise_temperature.SetFractalGain(0.4f);
@@ -269,41 +270,22 @@ float WorldGen::get_heightmap_noise(WorldPos pos, const biomes::Biome& blended_b
 }
 
 float WorldGen::get_3d_noise(WorldPos pos, const biomes::Biome& blended_biome) const {
-  return noise_3d.GetNoise(pos.x, pos.y * 2.0f, pos.z) * blended_biome.noise_3d_multiplier;
+  return noise_3d.GetNoise(pos.x, pos.y * 1.0f, pos.z) * blended_biome.noise_3d_multiplier;
 }
 
-bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome,
-                         std::optional<float> noise_heightmap_value_opt, std::optional<float> noise_3d_value_opt) const {
-
-  float noise_3d_value = 0.0f;
-  if (blended_biome.noise_3d_multiplier > 0.01f) {
-    if (noise_3d_value_opt.has_value()) {
-      noise_3d_value = noise_3d_value_opt.value();
-    } else {
-      noise_3d_value = get_3d_noise(pos, blended_biome);
-    }
-  }
-
-  float noise_heightmap_value = 0.0f;
-  if (noise_heightmap_value_opt.has_value()) {
-    noise_heightmap_value = noise_heightmap_value_opt.value();
-  } else {
-    noise_heightmap_value = get_heightmap_noise(pos, blended_biome);
-  }
-
+bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome, float noise_heightmap_value, float noise_3d_value) const {
   noise_3d_value = 1.0f + noise_3d_value * 0.032f;
   float value = (blended_biome.base_height + noise_heightmap_value) * noise_3d_value;
-
   return value > pos.y;
 }
 
 bool WorldGen::is_ground(WorldPos pos, const biomes::Biome& blended_biome) const {
-  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome));
+  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome), get_3d_noise(pos, blended_biome));
 }
 
 bool WorldGen::is_ground(WorldPos pos) const {
   auto blended_biome = get_blended_biome(pos);
-  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome));
+  return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome), get_3d_noise(pos, blended_biome));
 }
 
 void gen_tree_poplar(Chunk* chunk, LocalPos at) {
