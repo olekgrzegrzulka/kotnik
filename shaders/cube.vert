@@ -30,13 +30,14 @@ void main() {
     brightness = 0.5 + dot * 0.5;
     brightness = min(brightness, float(brightness_vertex) / 255.0);
 
-    float fog_start = 78.0;
-    float fog_end = 80.0;
+    const float fog_start = 180.0;
+    const float fog_end = 240.0;
     float dist = distance(vertex, camera_pos);
-    dist = abs(vertex.x - camera_pos.x) + abs(vertex.y - camera_pos.y) + abs(vertex.z - camera_pos.z);
-    dist = max(max(abs(vertex.x - camera_pos.x), abs(vertex.y - camera_pos.y)), abs(vertex.z - camera_pos.z));
-
-    fog_factor = min(1.0, max(0.0, dist - fog_start) / fog_end);
+    dist = sqrt(
+        (vertex.x - camera_pos.x) * (vertex.x - camera_pos.x) +
+        (vertex.y - camera_pos.y) * (vertex.y - camera_pos.y) +
+        (vertex.z - camera_pos.z) * (vertex.z - camera_pos.z));
+    fog_factor = (clamp(dist, fog_start, fog_end) - fog_start) / (fog_end - fog_start);
 
     alpha_frag = alpha;
 
