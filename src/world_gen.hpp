@@ -1,5 +1,4 @@
 #pragma once
-#include <optional>
 #include "common.hpp"
 #include "fast_noise_lite.h"
 

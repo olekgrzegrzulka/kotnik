@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <optional>
+#include <xmmintrin.h>
 #include "array3d.hpp"
 #include "biome.hpp"
 #include "biome_map.hpp"
@@ -106,19 +107,13 @@ public:
       }
     }
 
-    // Generate heightmap array
-    for (i32 z = begin.z; z < end.z; z += 1) {
-      for (i32 x = begin.x; x < end.x; x += 1) {
-        CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z};
-        float noise_heightmap = wg.get_heightmap_noise(cube_pos, biome_array.at({x, 0, z}));
-        noise_heightmap_array.set({x, 0, z}, noise_heightmap);
-      }
-    }
-
     // Fill 3d noise and ground arrays at grid points
     for (i32 x : noise_grid_points_x) {
-      for (i32 y : noise_grid_points_y) {
-        for (i32 z : noise_grid_points_z) {
+      for (i32 z : noise_grid_points_z) {
+        float noise_heightmap = wg.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, biome_array.at({x, 0, z}));
+        noise_heightmap_array.set({x, 0, z}, noise_heightmap);
+
+        for (i32 y : noise_grid_points_y) {
           const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
           const float noise_3d = wg.get_3d_noise(cube_pos, biome_array.at({x, 0, z}));
           noise_3d_array.set({x, y, z}, noise_3d);
@@ -212,9 +207,9 @@ public:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
-  constexpr float freq_biome = 0.0016f;
-  constexpr float freq_height = 0.0034f;
-  constexpr float freq_3d = 0.01095f;
+  constexpr float freq_biome = 0.00145f;
+  constexpr float freq_height = 0.0075f;
+  constexpr float freq_3d = 0.00425f;
   noise_heightmap.SetSeed(seed);
   noise_heightmap.SetFrequency(freq_height);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
@@ -288,7 +283,7 @@ bool WorldGen::is_ground(WorldPos pos) const {
   return is_ground(pos, blended_biome, get_heightmap_noise(pos, blended_biome), get_3d_noise(pos, blended_biome));
 }
 
-void gen_tree_poplar(Chunk* chunk, LocalPos at) {
+void gen_tree_poplar(Chunk* chunk, LocalPos at, bool birch = false) {
   i32 tree_height = StaticRandom::get().next<i32>(4, 6);
 
   for (i32 ox = -2; ox <= 2; ox += 1) {
@@ -310,11 +305,13 @@ void gen_tree_poplar(Chunk* chunk, LocalPos at) {
 
   for (i32 i = 0; i <= tree_height; i += 1) {
     LocalPos local_pos_leaves = {at.x, at.y + i, at.z};
-    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::WOOD);
+    CubeId trunk = CubeId::WOOD;
+    if (birch) { trunk = CubeId::WOOD_BIRCH; }
+    chunk->set_cube_maybe_neigbour(local_pos_leaves, trunk);
   }
 }
 
-void gen_tree_spruce(Chunk* chunk, LocalPos at) {
+void gen_tree_spruce(Chunk* chunk, LocalPos at, bool birch = false) {
   bool spiky = StaticRandom::get().next<int>(0, 1) == 1;
   i32 tree_height = StaticRandom::get().next<i32>(6, 12);
 
@@ -366,80 +363,9 @@ void gen_tree_spruce(Chunk* chunk, LocalPos at) {
 
   for (i32 i = 0; i <= tree_height; i += 1) {
     LocalPos local_pos_leaves = {at.x, at.y + i, at.z};
-    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::WOOD);
-  }
-}
-
-void gen_tree_pine(Chunk* chunk, LocalPos at) {
-  i32 tree_height = StaticRandom::get().next<i32>(7, 10);
-
-  auto gen_branch = [&](LocalPos center) {
-    for (i32 ox = center.x - 1; ox <= center.x + 1; ox += 1) {
-      for (i32 oy = center.y - 1; oy <= center.y + 1; oy += 1) {
-        for (i32 oz = center.z - 1; oz <= center.z + 1; oz += 1) {
-          bool x_edge = std::abs(ox - center.x) == 1;
-          bool y_edge = std::abs(oy - center.y) == 1;
-          bool z_edge = std::abs(oz - center.z) == 1;
-          if ((i32)x_edge + (i32)y_edge + (i32)z_edge >= 3) { continue; }
-          LocalPos local_pos_leaves = {at.x + ox, at.y + oy, at.z + oz};
-          if (is_local_pos_valid(local_pos_leaves) && chunk->get_cube(local_pos_leaves) != CubeId::AIR) { continue; }
-          chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::LEAVES);
-        }
-      }
-    }
-  };
-
-  // Top crown
-  for (i32 i = 0; i < 10; i += 1) {
-    LocalPos center = {
-        StaticRandom::get().next<i32>(-2, 2),
-        StaticRandom::get().next<i32>(tree_height, tree_height),
-        StaticRandom::get().next<i32>(-2, 2),
-    };
-
-    gen_branch(center);
-  }
-
-  // Lower crown
-  i32 crown_detail_count = StaticRandom::get().next<i32>(1, 3);
-  for (i32 i = 0; i < crown_detail_count; i += 1) {
-
-    LocalPos center = {
-        StaticRandom::get().next<i32>(-1, 1),
-        StaticRandom::get().next<i32>(tree_height - 2, tree_height - 1),
-        StaticRandom::get().next<i32>(-1, 1),
-    };
-
-    gen_branch(center);
-  }
-
-  for (i32 i = 0; i < crown_detail_count; i += 1) {
-
-    LocalPos center = {
-        StaticRandom::get().next<i32>(-2, 2),
-        tree_height + 1,
-        StaticRandom::get().next<i32>(-2, 2),
-    };
-
-    gen_branch(center);
-  }
-
-  // Branches
-  i32 branch_count = StaticRandom::get().next<i32>(0, 2);
-  for (i32 i = 0; i < branch_count; i += 1) {
-
-    LocalPos center = {
-        StaticRandom::get().rand_sign<i32>(),
-        StaticRandom::get().next<i32>(3, tree_height - 2),
-        StaticRandom::get().rand_sign<i32>(),
-    };
-
-    gen_branch(center);
-  }
-
-  for (i32 i = 0; i <= tree_height; i += 1) {
-    LocalPos local_pos_leaves = {at.x, at.y + i, at.z};
-    chunk->set_cube_maybe_neigbour(local_pos_leaves, CubeId::WOOD);
+    CubeId trunk = CubeId::WOOD;
+    if (birch) { trunk = CubeId::WOOD_BIRCH; }
+    chunk->set_cube_maybe_neigbour(local_pos_leaves, trunk);
   }
 }
 
@@ -469,7 +395,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
     return tree_map.at({at_x, 0, at_y});
   };
 
-  for (size_t i = 0; i < 8; i += 1) {
+  for (size_t i = 0; i < 32; i += 1) {
     // Starting from (1, 1) to prevent two trees sticking on chunk boundaries
     i32 ox = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
     i32 oy = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
@@ -523,14 +449,16 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
             gen_tree = false;
           }
 
-          if (gen_tree) { // Tree gen
-            i32 tree_type = StaticRandom::get().next<i32>(0, 2);
-            if (tree_type == 0) {
-              gen_tree_poplar(chunk, {x_local, y_local, z_local});
-            } else if (tree_type == 1) {
-              gen_tree_spruce(chunk, {x_local, y_local, z_local});
-            } else if (tree_type == 2) {
-              gen_tree_pine(chunk, {x_local, y_local, z_local});
+          if (gen_tree) {
+            i32 tree_type = StaticRandom::get().next<i32>(1, 100);
+            if (tree_type >= 1 && tree_type <= 50) {
+              gen_tree_poplar(chunk, {x_local, y_local, z_local}, false);
+            } else if (tree_type >= 51 && tree_type <= 65) {
+              gen_tree_poplar(chunk, {x_local, y_local, z_local}, true);
+            } else if (tree_type >= 66 && tree_type <= 85) {
+              gen_tree_spruce(chunk, {x_local, y_local, z_local}, false);
+            } else if (tree_type >= 86 && tree_type <= 100) {
+              gen_tree_spruce(chunk, {x_local, y_local, z_local}, true);
             }
           } else { // Foliage gen
             float rng = StaticRandom::get().next<float>(0.0f, 1.0f);

@@ -161,4 +161,6 @@ public:
   std::unordered_map<u32, CubeId> get_neigbours(const Chunk& chunk, LocalPos _local_pos, bool edges = false, bool corners = false) const;
 
   void update();
+
+  const WorldGen& get_world_gen() const { return *world_gen.get(); }
 };

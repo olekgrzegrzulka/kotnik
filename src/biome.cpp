@@ -10,7 +10,6 @@ const BiomeList init_biome_list() {
   BiomeList biome_list;
 
   // Flatlands
-
   Biome biome_flatlands{
       .name = "Flatlands",
       .base_height = 0.0f,
@@ -34,7 +33,6 @@ const BiomeList init_biome_list() {
   biome_list[(size_t)BiomeId::FLATLANDS] = biome_flatlands;
 
   // Desert
-
   Biome biome_desert{
       .name = "Desert",
       .base_height = 0.0f,
@@ -54,8 +52,47 @@ const BiomeList init_biome_list() {
 
   biome_list[(size_t)BiomeId::DESERT] = biome_desert;
 
-  // Ocean
+  // Desert Highlands
+  Biome biome_desert_highlands{
+      .name = "Desert Highlands",
+      .base_height = 50.0f,
+      .noise_height_multiplier = 10.0f,
+      .noise_spiky_multiplier = 0.0f,
+      .noise_3d_multiplier = 10.0f,
+  };
 
+  biome_desert_highlands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
+    if (depth <= 4) { return CubeId::SAND; }
+    return CubeId::STONE;
+  };
+
+  biome_desert_highlands.get_foliage_cube = [](i32, float) -> CubeId {
+    return CubeId::AIR;
+  };
+
+  biome_list[(size_t)BiomeId::DESERT_HIGHLANDS] = biome_desert_highlands;
+
+  // Shallow Waters
+  Biome biome_shallow_waters{
+      .name = "Shallow Waters",
+      .base_height = -2.0f,
+      .noise_height_multiplier = 2.0f,
+      .noise_spiky_multiplier = 0.0f,
+      .noise_3d_multiplier = 0.0f,
+  };
+
+  biome_shallow_waters.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
+    if (depth <= 3) { return CubeId::SAND; }
+    return CubeId::STONE;
+  };
+
+  biome_shallow_waters.get_foliage_cube = [](i32, float) -> CubeId {
+    return CubeId::AIR;
+  };
+
+  biome_list[(size_t)BiomeId::SHALLOW_WATERS] = biome_shallow_waters;
+
+  // Ocean
   Biome biome_ocean{
       .name = "Ocean",
       .base_height = -8.0f,
@@ -80,8 +117,21 @@ const BiomeList init_biome_list() {
 
   biome_list[(size_t)BiomeId::OCEAN] = biome_ocean;
 
-  // Deep Ocean
+  // Ocean (but for Desert biome, replacing grass on higher altitudes with sand)
+  Biome biome_ocean_desert = Biome{biome_ocean};
 
+  biome_ocean_desert.get_ground_cube = [](i32 y, i32 depth, float) -> CubeId {
+    if (y > 2) {
+      if (depth <= 4) { return CubeId::SAND; }
+      return CubeId::STONE;
+    }
+    if (depth <= 3) { return CubeId::SAND; }
+    return CubeId::STONE;
+  };
+
+  biome_list[(size_t)BiomeId::OCEAN_DESERT] = biome_ocean_desert;
+
+  // Deep Ocean
   Biome biome_deep_ocean{
       .name = "Deep Ocean",
       .base_height = -32.0f,
@@ -107,7 +157,6 @@ const BiomeList init_biome_list() {
   biome_list[(size_t)BiomeId::DEEP_OCEAN] = biome_deep_ocean;
 
   // Beach
-
   Biome biome_beach{
       .name = "Beach",
       .base_height = 0.0f,
@@ -128,13 +177,12 @@ const BiomeList init_biome_list() {
   biome_list[(size_t)BiomeId::BEACH] = biome_beach;
 
   // Highlands
-
   Biome biome_highlands{
       .name = "Highlands",
-      .base_height = 20.0f,
-      .noise_height_multiplier = 60.0f,
+      .base_height = 60.0f,
+      .noise_height_multiplier = 15.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 25.0f,
+      .noise_3d_multiplier = 35.0f,
   };
 
   biome_highlands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -152,13 +200,12 @@ const BiomeList init_biome_list() {
   biome_list[(size_t)BiomeId::HIGHLANDS] = biome_highlands;
 
   // Hillylands
-
   Biome biome_hillylands{
       .name = "Hillylands",
-      .base_height = 0.0f,
+      .base_height = 10.0f,
       .noise_height_multiplier = 20.0f,
       .noise_spiky_multiplier = 0.0f,
-      .noise_3d_multiplier = 15.0f,
+      .noise_3d_multiplier = 8.0f,
   };
 
   biome_hillylands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -174,6 +221,25 @@ const BiomeList init_biome_list() {
   };
 
   biome_list[(size_t)BiomeId::HILLYLANDS] = biome_hillylands;
+
+  // Stony Plain
+  Biome biome_stony_shores{
+      .name = "Stony Shores",
+      .base_height = 0.0f,
+      .noise_height_multiplier = 4.0f,
+      .noise_spiky_multiplier = 0.0f,
+      .noise_3d_multiplier = 0.0f,
+  };
+
+  biome_stony_shores.get_ground_cube = [](i32, i32, float) -> CubeId {
+    return CubeId::STONE;
+  };
+
+  biome_stony_shores.get_foliage_cube = [](i32, float) -> CubeId {
+    return CubeId::AIR;
+  };
+
+  biome_list[(size_t)BiomeId::STONY_SHORES] = biome_stony_shores;
 
   debug_log("Initialized biome list");
   return biome_list;

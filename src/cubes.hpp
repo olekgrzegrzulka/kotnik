@@ -15,6 +15,7 @@ enum class CubeId : u16 {
   SAND,
   GRAVEL,
   WOOD,
+  WOOD_BIRCH,
   LEAVES,
   GRASS_PLANT,
   FLOWER,

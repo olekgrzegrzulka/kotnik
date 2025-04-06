@@ -1,5 +1,6 @@
 #include <iterator>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <glm/gtx/norm.hpp>
 #include <sys/types.h>
@@ -26,10 +27,11 @@ struct BiomeMap {
 
 static const std::unordered_map<rgb, BiomeId, RGBHasher>
     bitmap_color_to_biome_id{
+        {{113, 159, 249}, BiomeId::SHALLOW_WATERS},
         {{18, 64, 132}, BiomeId::DEEP_OCEAN},
         {{40, 92, 196}, BiomeId::OCEAN},
+        {{64, 134, 160}, BiomeId::OCEAN_DESERT},
         {{245, 197, 120}, BiomeId::BEACH},
-        // {{139, 147, 175}, BiomeId::ROCKY_SHORE},
         {{156, 219, 67}, BiomeId::FLATLANDS},
         // {{31, 163, 80}, BiomeId::FOREST},
         // {{26, 122, 62}, BiomeId::DEEP_FOREST},
@@ -37,9 +39,12 @@ static const std::unordered_map<rgb, BiomeId, RGBHasher>
         {{26, 122, 62}, BiomeId::HILLYLANDS},
         // {{106, 152, 42}, BiomeId::SWAMPLANDS},
         {{251, 170, 42}, BiomeId::DESERT},
+        {{210, 118, 15}, BiomeId::DESERT_HIGHLANDS},
+        {{141, 141, 141}, BiomeId::STONY_SHORES},
     };
 
 const std::unique_ptr<BiomeMap> init_biome_map() {
+  std::set<rgb> unknown_biomes;
   auto st = ScopeTimer{"Generating the biome map"};
 
   int width, height, channels;
@@ -70,7 +75,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   auto color_to_biome_id = [&](rgb color) -> BiomeId {
     auto it = bitmap_color_to_biome_id.find(color);
     if (it == bitmap_color_to_biome_id.end()) {
-      debug_warn("biomemap: unknown biome color rgb(", (i32)color.r, ", ", (i32)color.g, ", ", (i32)color.b, "), defaulting to Flatlands");
+      unknown_biomes.emplace(color);
       return biomes::BiomeId::FLATLANDS;
     }
     return (*it).second;
@@ -109,6 +114,10 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
   }
 
   stbi_image_free(data);
+
+  for (rgb color : unknown_biomes) {
+    debug_warn("biomemap: unknown biome color rgb(", (i32)color.r, ", ", (i32)color.g, ", ", (i32)color.b, "), defaulting to Flatlands");
+  }
 
   return biome_map;
 }

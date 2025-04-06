@@ -97,32 +97,38 @@ void cubes_init() {
       {8.0f, 0.0f}, {8.0f, 0.0f},
       {7.0f, 0.0f}, {7.0f, 0.0f});
 
+  cube_array.emplace_back(Cube{"Birch Wood"});
+  cube_array[7].add_collider().add_model_full_cube(
+      {7.0f, 1.0f}, {7.0f, 1.0f},
+      {8.0f, 1.0f}, {8.0f, 1.0f},
+      {7.0f, 1.0f}, {7.0f, 1.0f});
+
   cube_array.emplace_back(Cube{"Leaves"});
-  cube_array[7].add_model_full_cube({9.0f, 0.0f}).add_collider();
-  cube_array[7].set_ao(Cube::CubeAOMode::IF_SAME_ID).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
+  cube_array[8].add_model_full_cube({9.0f, 0.0f}).add_collider();
+  cube_array[8].set_ao(Cube::CubeAOMode::IF_SAME_ID).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
   cube_array.emplace_back(Cube{"Grass Plant"});
-  cube_array[8].set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::NEVER);
-  cube_array[8].add_model_x_shape({13.0f, 0.0f}).add_model_x_shape({13.0f, 1.0f});
-  cube_array[8].set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
+  cube_array[9].set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::NEVER);
+  cube_array[9].add_model_x_shape({13.0f, 0.0f}).add_model_x_shape({13.0f, 1.0f});
+  cube_array[9].set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
   cube_array.emplace_back(Cube{"Flower"});
-  cube_array[9].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
-  cube_array[9].add_model_x_shape({14.0f, 1.0f}).add_model_x_shape({15.0f, 1.0f});
-  cube_array[9].set_ao(Cube::CubeAOMode::NEVER).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
+  cube_array[10].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
+  cube_array[10].add_model_x_shape({14.0f, 1.0f}).add_model_x_shape({15.0f, 1.0f});
+  cube_array[10].set_ao(Cube::CubeAOMode::NEVER).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
   cube_array.emplace_back(Cube{"Water"}).add_model_full_cube({0.0f, 1.0f}).add_collider();
-  cube_array[10].set_is_translucent(true).set_ao(Cube::CubeAOMode::NEVER);
-  cube_array[10].set_occlusion_mode(Cube::CubeOccludeMode::IF_SAME_ID);
+  cube_array[11].set_is_translucent(true).set_ao(Cube::CubeAOMode::NEVER);
+  cube_array[11].set_occlusion_mode(Cube::CubeOccludeMode::IF_SAME_ID);
 
   cube_array.emplace_back(Cube{"Stone Bricks"});
-  cube_array[11].add_model_full_cube({10.0f, 0.0f}).add_collider();
+  cube_array[12].add_model_full_cube({10.0f, 0.0f}).add_collider();
   cube_array.emplace_back(Cube{"Stone Bricks"});
 
-  cube_array[12].add_model_full_cube({11.0f, 0.0f}).add_collider();
+  cube_array[13].add_model_full_cube({11.0f, 0.0f}).add_collider();
 
   cube_array.emplace_back(Cube{"Stone Tiles"});
-  cube_array[13].add_model_full_cube({12.0f, 0.0f}).add_collider();
+  cube_array[14].add_model_full_cube({12.0f, 0.0f}).add_collider();
 }
 
 const Cube& cubes_get(CubeId cube_id) {

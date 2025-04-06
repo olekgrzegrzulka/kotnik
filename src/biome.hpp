@@ -12,11 +12,15 @@ namespace biomes {
 enum class BiomeId : u16 {
   FLATLANDS,
   DESERT,
+  DESERT_HIGHLANDS,
   OCEAN,
+  OCEAN_DESERT,
   DEEP_OCEAN,
   BEACH,
   HIGHLANDS,
   HILLYLANDS,
+  SHALLOW_WATERS,
+  STONY_SHORES,
   // "Rocky Shore"
   // "Forest"
   // "Deep Forest"

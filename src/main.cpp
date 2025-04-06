@@ -1,4 +1,12 @@
 
+#include <cmath>
+#include <sstream>
+#include <string>
+#include "biome.hpp"
+#include "chunk.hpp"
+#include "ui/crosshair.hpp"
+#include "ui/debug_panel.hpp"
+#include "ui/label.hpp"
 #define GLM_FORCE_RADIANS
 
 #include "common.hpp"
@@ -95,15 +103,12 @@ int main() {
   WorldRenderer world_renderer(world, cube_shader, atlas_texture);
   world.add_entity<Player>({0, 20, 0});
 
-  UI ui{window_size.x, window_size.y};
-  auto& crosshair = ui.add_widget<Sprite>();
-  crosshair.set_width(32);
-  crosshair.set_height(32);
-  crosshair.set_uv_start({0.0 / 16.0, 6.0 / 16.0});
-  crosshair.set_uv_end({1.0 / 16.0, 7.0 / 16.0});
-  crosshair.set_anchor(Anchor::CENTER_CENTER);
-  crosshair.set_screen_anchor(Anchor::CENTER_CENTER);
+  std::stringstream ss_seed;
+  ss_seed << "Seed: " << world.get_seed();
 
+  UI ui{window_size.x, window_size.y};
+  [[maybe_unused]] auto& crosshair = ui.add_widget<Crosshair>();
+  auto& debug_panel = ui.add_widget<DebugPanel>(ss_seed);
   auto& pause_menu = ui.add_widget<PauseMenu>();
 
   Input::init(window);
@@ -175,6 +180,34 @@ int main() {
     if (pause_menu.quit_pressed) {
       pause_menu.quit_pressed = false;
       break;
+    }
+
+    std::stringstream ss_player_pos_text;
+    ss_player_pos_text << std::fixed << std::setprecision(2);
+    ss_player_pos_text << "World: [" << player->world_pos.x << ", " << player->world_pos.y << ", " << player->world_pos.z << "]";
+    std::string player_pos_text = ss_player_pos_text.str();
+
+    debug_panel.label_player_pos.set_text(player_pos_text);
+    debug_panel.label_player_pos_shadow.set_text(player_pos_text);
+
+    std::stringstream ss_player_chunk_pos_text;
+    ss_player_chunk_pos_text << std::fixed << std::setprecision(2);
+    auto player_chunk_pos = world_pos_to_chunk_pos(player->world_pos);
+    ss_player_chunk_pos_text << "Chunk: [" << player_chunk_pos.x << ", " << player_chunk_pos.y << ", " << player_chunk_pos.z << "]";
+    std::string player_chunk_pos_text = ss_player_chunk_pos_text.str();
+
+    debug_panel.label_player_chunk_pos.set_text(player_chunk_pos_text);
+    debug_panel.label_player_chunk_pos_shadow.set_text(player_chunk_pos_text);
+    static i32 get_biome_counter = 0;
+    static auto get_biome_last_player_pos = player->world_pos;
+    if (get_biome_counter-- <= 0) {
+      if ((get_biome_last_player_pos - player->world_pos).length() > 0.5) {
+        get_biome_last_player_pos = player->world_pos;
+        auto biome_name = "Biome: " + world.get_world_gen().get_blended_biome(player->world_pos).name;
+        debug_panel.label_biome_name.set_text(biome_name);
+        debug_panel.label_biome_name_shadow.set_text(biome_name);
+      }
+      get_biome_counter = 10;
     }
 
     ui.update(window_size.x, window_size.y);

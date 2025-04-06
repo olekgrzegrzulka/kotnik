@@ -32,7 +32,7 @@ struct rgb {
   u8 g;
   u8 b;
 
-  constexpr bool operator==(const rgb& rhs) const = default;
+  auto operator<=>(const rgb& rhs) const = default;
 };
 
 enum Dir {

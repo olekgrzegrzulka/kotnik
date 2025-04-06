@@ -411,7 +411,7 @@ void World::update() {
 
       auto neigb_chunk = neigb_chunk_it->second.get();
 
-      bool replace_leaves_with_wood = neigb_chunk->get_cube(neigb_local_pos) == CubeId::LEAVES && cube_id == CubeId::WOOD;
+      bool replace_leaves_with_wood = neigb_chunk->get_cube(neigb_local_pos) == CubeId::LEAVES && (cube_id == CubeId::WOOD || cube_id == CubeId::WOOD_BIRCH);
 
       // Can only replace air block
       if (!replace_leaves_with_wood && neigb_chunk->get_cube(neigb_local_pos) != CubeId::AIR) {
