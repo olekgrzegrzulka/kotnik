@@ -45,6 +45,27 @@
 #include "world.hpp"
 #include "world_renderer.hpp"
 
+const char* vertexShaderSource = R"(
+    #version 330 core
+    layout (location = 0) in vec2 aPos;
+    layout (location = 1) in vec2 aTexCoord;
+    out vec2 TexCoord;
+    void main() {
+        gl_Position = vec4(aPos, 0.0, 1.0);
+        TexCoord = aTexCoord;
+    }
+)";
+
+const char* fragmentShaderSource = R"(
+    #version 330 core
+    in vec2 TexCoord;
+    out vec4 FragColor;
+    uniform sampler2D screenTexture;
+    void main() {
+        FragColor = texture(screenTexture, TexCoord);
+    }
+)";
+
 void check_opengl_errors() {
   GLenum error;
   while ((error = glGetError()) != GL_NO_ERROR) {
@@ -114,6 +135,58 @@ int main() {
 
   Input::init(window);
 
+  // Create framebuffer
+  GLuint fbo, texture, depthRBO;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+  // Create color texture for framebuffer
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x / 2, window_size.y / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+  // Create depth renderbuffer
+  glGenRenderbuffers(1, &depthRBO);
+  glBindRenderbuffer(GL_RENDERBUFFER, depthRBO);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_size.x / 2, window_size.y / 2);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRBO);
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    debug_error("failed to create framebuffer");
+  }
+
+  float quadVertices[] = {
+      -1.0f, -1.0f, 0.0f, 0.0f,
+      1.0f, -1.0f, 1.0f, 0.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      -1.0f, 1.0f, 0.0f, 1.0f};
+  GLuint quadIndices[] = {0, 1, 2, 2, 3, 0};
+  GLuint vbo, vao, ebo;
+  glGenVertexArrays(1, &vao);
+  glGenBuffers(1, &vbo);
+  glGenBuffers(1, &ebo);
+  glBindVertexArray(vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  Shader framebuffer_shader = Shader{"framebuffer"};
+
+  GLuint framebuffer_sampler = 0;
+  glCreateSamplers(1, &framebuffer_sampler);
+  glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
   while (!glfwWindowShouldClose(window)) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -136,7 +209,8 @@ int main() {
 
     auto camera_pos = player->world_pos;
 
-    // Clear
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glViewport(0, 0, window_size.x / 2, window_size.y / 2);
     glClearColor(0.59f, 0.83f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -234,10 +308,20 @@ int main() {
       debug_panel.label_heightmap_shadow.set_text("Heightmap: ?");
     }
 
+    // Render framebuffer texture to screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, window_size.x, window_size.y);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+    glBindSampler(0, framebuffer_sampler);
+    framebuffer_shader.use();
+    glBindVertexArray(vao);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
     ui.update(window_size.x, window_size.y);
     ui.draw();
 
-    // Swap the front and back buffers
     glfwSwapBuffers(window);
     glfwPollEvents();
 
