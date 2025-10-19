@@ -2,7 +2,6 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include "../common.hpp"
-#include "../glad/glad.h"
 #include "widget.hpp"
 
 class UI;
@@ -25,8 +24,8 @@ protected:
   glm::vec<2, float> uv_end = {1.0f, 1.0f};
 
 protected:
-  GLuint vbo = 0;
-  GLuint vao = 0;
+  u32 vbo = 0;
+  u32 vao = 0;
   std::vector<vertex_sprite> vertices;
 
 public:

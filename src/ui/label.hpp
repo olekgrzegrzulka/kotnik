@@ -3,7 +3,6 @@
 #include <vector>
 #include <glm/vec3.hpp>
 #include "../common.hpp"
-#include "../glad/glad.h"
 #include "../vertex.hpp"
 #include "widget.hpp"
 
@@ -15,12 +14,13 @@ public:
 
 private:
   std::string text;
-  GLuint vao = 0;
-  GLuint vbo = 0;
+  u32 vao = 0;
+  u32 vbo = 0;
   std::vector<vertex2> vertices;
   glm::vec3 text_color = {1.0, 1.0, 1.0};
 
 public:
+  Label(const UI&);
   Label(const UI&, std::string);
 
   ~Label() override;

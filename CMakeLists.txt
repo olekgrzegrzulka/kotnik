@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(kotnik)
 
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror=shadow -Werror=switch -Werror=return-type ${MY_FLAGS} -O3")
 SET(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 20)
@@ -36,6 +38,8 @@ set(SOURCES
     ./src/ui/pause_menu.cpp
     ./src/ui/slider.cpp
     ./src/ui/button.cpp
+    ./src/ui/settings_menu.cpp
+    ./src/world_lighter.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})

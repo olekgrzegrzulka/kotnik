@@ -140,4 +140,11 @@ glm::vec<2, i32> get_mouse_delta() {
       detail::mouse_y - detail::last_mouse_y};
 }
 
+glm::vec<2, i32> get_window_size() {
+  i32 width = 0;
+  i32 height = 0;
+  glfwGetWindowSize(detail::glfw_window, &width, &height);
+  return {width, height};
+}
+
 }; // namespace Input

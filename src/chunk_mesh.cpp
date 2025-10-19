@@ -21,8 +21,6 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
     }
   }
 
-  chunks_data.resize(3 * 3 * 3);
-
   for (i32 x = -1; x <= 1; x += 1) {
     for (i32 y = -1; y <= 1; y += 1) {
       for (i32 z = -1; z <= 1; z += 1) {
@@ -31,7 +29,8 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
         if (chunk->has_no_cubes()) {
           continue;
         }
-        chunks_data[chunk_i] = chunk->get_cubes();
+        cubes[chunk_i] = chunk->get_cubes_copy();
+        lightmaps[chunk_i] = chunk->get_lightmap_copy();
       }
     }
   }
@@ -39,14 +38,25 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
   chunk_pos = chunk_pos_;
 }
 
-inline CubeId ChunkMeshData::get_cube_id(LocalPos at, bool check_if_not_current_chunk) {
-  if (check_if_not_current_chunk) {
+inline CubeId ChunkMeshData::get_cube_id(LocalPos at, bool check_if_neigbour_chunk) {
+  if (check_if_neigbour_chunk) {
     auto chunk_pos_ = neigbour_chunk_pos({0, 0, 0}, at);
     size_t i = (chunk_pos_.x + 1) + (chunk_pos_.y + 1) * 3 + (chunk_pos_.z + 1) * 9;
-    if (chunks_data[i].size() == 0) { return CubeId::AIR; }
-    return chunks_data[i][local_pos_to_index(wrap_around_local_pos(at))];
+    if (cubes[i].size() == 0) { return CubeId::AIR; }
+    return cubes[i][local_pos_to_index(wrap_around_local_pos(at))];
   } else {
-    return chunks_data[13][local_pos_to_index(at)];
+    return cubes[13][local_pos_to_index(at)];
+  }
+}
+
+inline u8 ChunkMeshData::get_lightmap(LocalPos at, bool check_if_neigbour_chunk) {
+  if (check_if_neigbour_chunk) {
+    auto chunk_pos_ = neigbour_chunk_pos({0, 0, 0}, at);
+    size_t i = (chunk_pos_.x + 1) + (chunk_pos_.y + 1) * 3 + (chunk_pos_.z + 1) * 9;
+    if (cubes[i].size() == 0) { return 0; }
+    return lightmaps[i][local_pos_to_index(wrap_around_local_pos(at))];
+  } else {
+    return lightmaps[13][local_pos_to_index(at)];
   }
 }
 
@@ -99,6 +109,15 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
     neigbour_cube_ids.right_bottom_back = data->get_cube_id(l + LocalPos{+1, -1, +1}, is_edge);
     neigbour_cube_ids.right_top_front = data->get_cube_id(l + LocalPos{+1, +1, -1}, is_edge);
     neigbour_cube_ids.right_top_back = data->get_cube_id(l + LocalPos{+1, +1, +1}, is_edge);
+
+    // Brightness
+    neigbour_cube_ids.brightness = data->get_lightmap(l, false);
+    neigbour_cube_ids.brightness_left = data->get_lightmap(l + LocalPos{-1, +0, +0}, is_edge);
+    neigbour_cube_ids.brightness_right = data->get_lightmap(l + LocalPos{+1, +0, +0}, is_edge);
+    neigbour_cube_ids.brightness_bottom = data->get_lightmap(l + LocalPos{+0, -1, +0}, is_edge);
+    neigbour_cube_ids.brightness_top = data->get_lightmap(l + LocalPos{+0, +1, +0}, is_edge);
+    neigbour_cube_ids.brightness_front = data->get_lightmap(l + LocalPos{+0, +0, -1}, is_edge);
+    neigbour_cube_ids.brightness_back = data->get_lightmap(l + LocalPos{+0, +0, +1}, is_edge);
 
     if (cube.draw_data.is_translucent) {
       cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices_translucent);

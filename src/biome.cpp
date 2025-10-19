@@ -16,6 +16,10 @@ const BiomeList init_biome_list() {
       .noise_height_multiplier = 10.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
+      .tree_density = 0.001f,
+      .oak_tree_chance = 0.2f,
+      .birch_tree_chance = 0.05f,
+      .spruce_tree_chance = 0.0f,
   };
 
   biome_flatlands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -31,6 +35,33 @@ const BiomeList init_biome_list() {
   };
 
   biome_list[(size_t)BiomeId::FLATLANDS] = biome_flatlands;
+
+  // Flatlands
+  Biome biome_forest{
+      .name = "Forest",
+      .base_height = 0.0f,
+      .noise_height_multiplier = 10.0f,
+      .noise_spiky_multiplier = 0.0f,
+      .noise_3d_multiplier = 0.0f,
+      .tree_density = 0.8f,
+      .oak_tree_chance = 1.0f,
+      .birch_tree_chance = 0.2f,
+      .spruce_tree_chance = 0.02f,
+  };
+
+  biome_forest.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
+    if (depth == 0) { return CubeId::GRASS; }
+    if (depth <= 3) { return CubeId::DIRT; }
+    return CubeId::STONE;
+  };
+
+  biome_forest.get_foliage_cube = [](i32, float rng) -> CubeId {
+    if (rng > 0.98f) { return CubeId::FLOWER; }
+    if (rng > 0.87f) { return CubeId::GRASS_PLANT; }
+    return CubeId::AIR;
+  };
+
+  biome_list[(size_t)BiomeId::FOREST] = biome_forest;
 
   // Desert
   Biome biome_desert{
@@ -79,6 +110,10 @@ const BiomeList init_biome_list() {
       .noise_height_multiplier = 2.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
+      .tree_density = 0.4f,
+      .oak_tree_chance = 3.0f,
+      .birch_tree_chance = 0.5f,
+      .spruce_tree_chance = 0.1f,
   };
 
   biome_shallow_waters.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -163,6 +198,7 @@ const BiomeList init_biome_list() {
       .noise_height_multiplier = 4.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
+      .tree_density = 0.0f,
   };
 
   biome_beach.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -179,10 +215,14 @@ const BiomeList init_biome_list() {
   // Highlands
   Biome biome_highlands{
       .name = "Highlands",
-      .base_height = 60.0f,
+      .base_height = 65.0f,
       .noise_height_multiplier = 15.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 35.0f,
+      .tree_density = 0.7f,
+      .oak_tree_chance = 6.0f,
+      .birch_tree_chance = 1.0f,
+      .spruce_tree_chance = 1.5f,
   };
 
   biome_highlands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -199,6 +239,32 @@ const BiomeList init_biome_list() {
 
   biome_list[(size_t)BiomeId::HIGHLANDS] = biome_highlands;
 
+  // Plateau
+  Biome biome_plateau{
+      .name = "Plateau",
+      .base_height = 70.0f,
+      .noise_height_multiplier = 4.0f,
+      .noise_spiky_multiplier = 0.0f,
+      .noise_3d_multiplier = 0.0f,
+      .strength = 10000.0f,
+  };
+
+  biome_plateau.get_ground_cube = [](i32, i32 depth, float y) -> CubeId {
+    if (y < 67) { return CubeId::STONE; }
+
+    if (depth == 0) { return CubeId::GRASS; }
+    if (depth <= 3) { return CubeId::DIRT; }
+    return CubeId::STONE;
+  };
+
+  biome_plateau.get_foliage_cube = [](i32, float rng) -> CubeId {
+    if (rng > 0.997f) { return CubeId::FLOWER; }
+    if (rng > 0.91f) { return CubeId::GRASS_PLANT; }
+    return CubeId::AIR;
+  };
+
+  biome_list[(size_t)BiomeId::PLATEAU] = biome_plateau;
+
   // Hillylands
   Biome biome_hillylands{
       .name = "Hillylands",
@@ -206,6 +272,10 @@ const BiomeList init_biome_list() {
       .noise_height_multiplier = 20.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 8.0f,
+      .tree_density = 0.55f,
+      .oak_tree_chance = 5.0f,
+      .birch_tree_chance = 1.0f,
+      .spruce_tree_chance = 1.0f,
   };
 
   biome_hillylands.get_ground_cube = [](i32, i32 depth, float) -> CubeId {
@@ -229,6 +299,7 @@ const BiomeList init_biome_list() {
       .noise_height_multiplier = 4.0f,
       .noise_spiky_multiplier = 0.0f,
       .noise_3d_multiplier = 0.0f,
+      .tree_density = 0.0f,
   };
 
   biome_stony_shores.get_ground_cube = [](i32, i32, float) -> CubeId {
@@ -296,7 +367,7 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
 
   for (size_t i = 0; i < biomes.size(); i += 1) {
     const Biome& b = biomes[i];
-    float w = weights[i];
+    float w = weights[i] * b.strength;
 
     total_weight += w;
 
@@ -304,6 +375,11 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
     blended_biome.noise_height_multiplier += b.noise_height_multiplier * w;
     blended_biome.noise_spiky_multiplier += b.noise_spiky_multiplier * w;
     blended_biome.noise_3d_multiplier += b.noise_3d_multiplier * w;
+    blended_biome.strength += b.strength * w;
+    blended_biome.tree_density += b.tree_density * w;
+    blended_biome.oak_tree_chance += b.oak_tree_chance * w;
+    blended_biome.birch_tree_chance += b.birch_tree_chance * w;
+    blended_biome.spruce_tree_chance += b.spruce_tree_chance * w;
 
     if (weights[i] > weights[strongest_biome_index]) {
       strongest_biome_index = i;
@@ -314,6 +390,11 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
   blended_biome.noise_height_multiplier /= total_weight;
   blended_biome.noise_spiky_multiplier /= total_weight;
   blended_biome.noise_3d_multiplier /= total_weight;
+  blended_biome.strength /= total_weight;
+  blended_biome.tree_density /= total_weight;
+  blended_biome.oak_tree_chance /= total_weight;
+  blended_biome.birch_tree_chance /= total_weight;
+  blended_biome.spruce_tree_chance /= total_weight;
 
   const Biome& strongest_biome = biomes[strongest_biome_index];
   blended_biome.name = strongest_biome.name;

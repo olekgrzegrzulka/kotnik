@@ -10,25 +10,42 @@ void Button::update() {
   bool lmb_just_pressed = Input::mouse_just_pressed(Input::Mouse::MOUSE_BUTTON_LEFT);
   bool lmb_just_released = Input::mouse_just_released(Input::Mouse::MOUSE_BUTTON_LEFT);
 
-  ButtonState new_state = ButtonState::IDLE;
-  if (state == ButtonState::DISABLED) {
-    new_state = ButtonState::DISABLED;
-  } else if (mouse_hovering) {
-    if (lmb_just_pressed) {
-      new_state = ButtonState::PRESSED;
-    } else if (state == ButtonState::PRESSED) {
-      if (lmb_just_released) {
-        pressed();
-      }
-      if (lmb_pressed) {
+  if (switch_mode == false) {
+    ButtonState new_state = ButtonState::IDLE;
+    if (state == ButtonState::DISABLED) {
+      new_state = ButtonState::DISABLED;
+    } else if (mouse_hovering) {
+      if (lmb_just_pressed) {
         new_state = ButtonState::PRESSED;
+      } else if (state == ButtonState::PRESSED) {
+        if (lmb_just_released) {
+          pressed();
+        }
+        if (lmb_pressed) {
+          new_state = ButtonState::PRESSED;
+        }
+      } else {
+        new_state = ButtonState::HOVERED;
       }
-    } else {
-      new_state = ButtonState::HOVERED;
+    }
+
+    set_state(new_state);
+  } else {
+    ButtonState new_state = ButtonState::IDLE;
+    if (state == ButtonState::DISABLED) {
+      new_state = ButtonState::DISABLED;
+    } else if (mouse_hovering && lmb_just_released) {
+      if (state == ButtonState::IDLE) {
+        new_state = ButtonState::PRESSED;
+        pressed();
+      } else if (state == ButtonState::PRESSED) {
+        new_state = ButtonState::IDLE;
+        depressed();
+      }
+
+      set_state(new_state);
     }
   }
-
-  set_state(new_state);
 
   Sprite::update();
 

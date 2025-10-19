@@ -27,7 +27,7 @@ public:
     end_z = begin_z_ + D;
   }
 
-  constexpr T at(glm::vec<3, i32> at) const {
+  constexpr const T& at(glm::vec<3, i32> at) const {
     ensure(has_index(at));
     at.x -= begin_x;
     at.y -= begin_y;
@@ -37,19 +37,25 @@ public:
     return data.at(at.x + at.y * W + at.z * W * H);
   }
 
-  constexpr void set(glm::vec<3, int> at, T to) {
+  template <typename... Args>
+  constexpr void set(glm::vec<3, int> at, Args... to) {
     ensure(has_index(at));
     at.x -= begin_x;
     at.y -= begin_y;
     at.z -= begin_z;
 
     ensure(at.x + at.y * W + at.z * W * H >= 0 && at.x + at.y * W + at.z * W * H < Size);
-    data[at.x + at.y * W + at.z * W * H] = to;
+    data[at.x + at.y * W + at.z * W * H] = std::forward<T>(to...);
   }
 
   constexpr bool has_index(glm::vec<3, int> at) const {
     return at.x >= begin_x && at.y >= begin_y && at.z >= begin_z &&
            at.x < end_x && at.y < end_y && at.z < end_z;
+  }
+
+  template <typename... Args>
+  constexpr void fill(Args... value) {
+    data.fill(value...);
   }
 
 private:

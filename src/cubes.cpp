@@ -329,6 +329,7 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
 
   for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;
+    // vertex.pack.brightness = neigbour_cube_ids.brightness;
     vertices_list.emplace_back(vertex);
   }
 
@@ -342,6 +343,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, {}, {}, 0.0, neigbour_cube_ids.left_front);
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, {}, neigbour_cube_ids.left_top);
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, {}, neigbour_cube_ids.left_bottom);
+
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_left);
 
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
@@ -359,6 +362,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, {}, neigbour_cube_ids.right_top);
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, {}, neigbour_cube_ids.right_bottom);
 
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_right);
+
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
     }
@@ -374,6 +379,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, 1.0, {}, {}, neigbour_cube_ids.right_bottom);
       reduce_vertex_brightness_for_ao(vertex, {}, {}, 0.0, neigbour_cube_ids.front_bottom);
       reduce_vertex_brightness_for_ao(vertex, {}, {}, 1.0, neigbour_cube_ids.back_bottom);
+
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_bottom);
 
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
@@ -391,6 +398,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, {}, {}, 0.0, neigbour_cube_ids.front_top);
       reduce_vertex_brightness_for_ao(vertex, {}, {}, 1.0, neigbour_cube_ids.back_top);
 
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_top);
+
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
     }
@@ -407,6 +416,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, {}, neigbour_cube_ids.front_bottom);
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, {}, neigbour_cube_ids.front_top);
 
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_front);
+
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);
     }
@@ -422,6 +433,8 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       reduce_vertex_brightness_for_ao(vertex, 1.0, {}, {}, neigbour_cube_ids.right_back);
       reduce_vertex_brightness_for_ao(vertex, {}, 0.0, {}, neigbour_cube_ids.back_bottom);
       reduce_vertex_brightness_for_ao(vertex, {}, 1.0, {}, neigbour_cube_ids.back_top);
+
+      // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_back);
 
       vertex.pos += cube_pos;
       vertices_list.emplace_back(vertex);

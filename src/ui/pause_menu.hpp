@@ -1,7 +1,10 @@
 #pragma once
+#include "button.hpp"
+#include "settings_menu.hpp"
 #include "sprite.hpp"
-#include "ui.hpp"
 #include "widget.hpp"
+
+class UI;
 
 class PauseMenu : public Widget {
 public:
@@ -9,7 +12,8 @@ public:
       : Widget::Widget(ui_),
         background(add_child<Sprite>()),
         button_resume(add_child<Button>("Resume")),
-        button_quit(add_child<Button>("Quit")) {
+        button_quit(add_child<Button>("Quit")),
+        settings_menu(add_child<SettingsMenu>()) {
 
     process = false;
     process_children_first = false;
@@ -55,4 +59,5 @@ protected:
   Sprite& background;
   Button& button_resume;
   Button& button_quit;
+  SettingsMenu& settings_menu;
 };

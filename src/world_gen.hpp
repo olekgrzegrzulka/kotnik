@@ -14,7 +14,7 @@ class WorldGen {
 public:
   WorldGen(World& w, i32 seed);
 
-  void generate_chunk(Chunk* chunk) const;
+  std::vector<std::unique_ptr<Chunk>> generate_chunk_column(glm::vec<2, i32>) const;
   void generate_chunk_only_water(Chunk* chunk) const;
 
   float get_humidity(WorldPos world_pos) const;

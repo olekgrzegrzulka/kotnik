@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include <stdint.h>
+#include "array3d.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
 
@@ -11,7 +12,7 @@ constexpr static bool is_local_pos_valid(LocalPos local_pos);
 constexpr static LocalPos index_to_local_pos(size_t index);
 constexpr static size_t local_pos_to_index(LocalPos pos);
 constexpr static CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos local_pos);
-constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos);
+constexpr static ChunkPos cube_pos_to_chunk_pos(CubePos cube_pos);
 constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos);
 constexpr static ChunkPos neigbour_chunk_pos(ChunkPos chunk_pos, LocalPos offset);
 constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos);
@@ -19,6 +20,8 @@ constexpr static LocalPos wrap_around_local_pos(LocalPos local_pos);
 class ChunkMesh;
 
 class Chunk {
+  friend struct ChunkMeshData;
+
 public:
   static constexpr i32 chunk_size = 32;
   static constexpr i32 chunk_cube_count = chunk_size * chunk_size * chunk_size;
@@ -47,18 +50,28 @@ public:
 
   std::unique_ptr<ChunkMesh> mesh;
 
-private:
+protected:
   std::vector<CubeId> cubes{};
   bool no_cubes = true;
 
-  // The highest cube in chunk. Empty if column has no cubes
-  std::array<std::optional<uint16_t>, chunk_size * chunk_size> heightmap{};
+  std::array<u8, chunk_size * chunk_size> heightmap{};
+  std::vector<u8> lightmap;
 
 public:
   Chunk(ChunkPos);
   ~Chunk();
 
   void update();
+
+  void set_lightmap(LocalPos local_pos, u8 value) {
+    ensure(is_local_pos_valid(local_pos));
+    lightmap[local_pos.x + (local_pos.y + local_pos.z * chunk_size) * chunk_size] = value;
+  }
+
+  u8 get_lightmap(LocalPos local_pos) const {
+    ensure(is_local_pos_valid(local_pos));
+    return lightmap[local_pos.x + (local_pos.y + local_pos.z * chunk_size) * chunk_size];
+  }
 
   // Setters
   void set_cube(LocalPos, CubeId);
@@ -76,12 +89,30 @@ public:
 
   bool has_no_cubes() const { return no_cubes; }
 
-  std::optional<uint16_t> get_heightmap(uint16_t x, uint16_t z) const {
-    return heightmap[x + z * chunk_size];
+  void clear_heightmap(i32 x_local, i32 z_local) {
+    ensure(is_local_pos_valid({x_local, 0, z_local}));
+    heightmap[x_local + z_local * chunk_size] = chunk_size;
   }
 
-  std::vector<CubeId> get_cubes() const {
+  void set_heightmap(i32 x_local, i32 z_local, u8 value) {
+    ensure(value < chunk_size);
+    ensure(is_local_pos_valid({x_local, 0, z_local}));
+    heightmap[x_local + z_local * chunk_size] = value;
+  }
+
+  std::optional<u8> get_heightmap(i32 x_local, i32 z_local) const {
+    ensure(is_local_pos_valid({x_local, 0, z_local}));
+    u8 value = heightmap[x_local + z_local * chunk_size];
+    if (value == chunk_size) { return std::nullopt; }
+    return value;
+  }
+
+  decltype(cubes) get_cubes_copy() const {
     return cubes;
+  }
+
+  decltype(lightmap) get_lightmap_copy() const {
+    return lightmap;
   }
 };
 
@@ -111,7 +142,7 @@ constexpr static CubePos local_pos_to_cube_pos(ChunkPos chunk_pos, LocalPos loca
 }
 
 // Returns chunk position that contains the given world position
-constexpr static ChunkPos world_pos_to_chunk_pos(CubePos cube_pos) {
+constexpr static ChunkPos cube_pos_to_chunk_pos(CubePos cube_pos) {
   ChunkPos chunk_pos;
   chunk_pos.x = (cube_pos.x >= 0) ? (cube_pos.x / (i32)Chunk::chunk_size) : ((cube_pos.x - Chunk::chunk_size + 1) / (i32)Chunk::chunk_size);
   chunk_pos.y = (cube_pos.y >= 0) ? (cube_pos.y / (i32)Chunk::chunk_size) : ((cube_pos.y - Chunk::chunk_size + 1) / (i32)Chunk::chunk_size);
@@ -129,6 +160,13 @@ constexpr static std::pair<ChunkPos, LocalPos> cube_to_local(CubePos cube_pos) {
 
   LocalPos local_pos = cube_pos - ((i32)Chunk::chunk_size * chunk_pos);
   return {chunk_pos, local_pos};
+}
+
+constexpr static i32 cube_pos_to_local_pos(i32 cube_pos) {
+  i32 chunk_pos = (cube_pos >= 0) ? (cube_pos / (i32)Chunk::chunk_size) : ((cube_pos - Chunk::chunk_size + 1) / (i32)Chunk::chunk_size);
+  i32 local_pos = cube_pos - ((i32)Chunk::chunk_size * chunk_pos);
+
+  return local_pos;
 }
 
 // Returns a ChunkPosition at an offset from the given chunk position

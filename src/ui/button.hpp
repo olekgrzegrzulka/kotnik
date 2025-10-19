@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 #include <string>
-#include "../glad/glad.h"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
@@ -18,8 +17,10 @@ enum class ButtonState {
 class Button : public Sprite {
 protected:
   Label& label;
-  std::function<void()> lambda = nullptr;
-  ButtonState state;
+  std::function<void()> lambda_press = nullptr;
+  std::function<void()> lambda_depress = nullptr;
+  ButtonState state = ButtonState::IDLE;
+  bool switch_mode = false;
 
   glm::vec2 uv_start_idle = glm::vec2(0.0f / 16.0f, 0.0f / 16.0f);
   glm::vec2 uv_end_idle = glm::vec2(1.0f / 16.0f, 1.0f / 16.0f);
@@ -51,8 +52,12 @@ public:
     Sprite::draw();
   }
 
-  void on_press(std::function<void()> lambda_) {
-    lambda = lambda_;
+  void on_press(std::function<void()> lambda_press_) {
+    lambda_press = lambda_press_;
+  }
+
+  void on_depress(std::function<void()> lambda_depress_) {
+    lambda_depress = lambda_depress_;
   }
 
   void set_disabled(bool disabled) {
@@ -64,6 +69,9 @@ public:
   }
 
   WIDGET_DEF_GETTER(state);
+
+  WIDGET_DEF_SETTER_DIRTY(switch_mode);
+  WIDGET_DEF_GETTER(switch_mode);
 
   void set_uv_start_idle(glm::vec2 to) {
     if (uv_start_idle == to) { return; }
@@ -128,7 +136,11 @@ protected:
   }
 
   void pressed() {
-    if (lambda) { lambda(); }
+    if (lambda_press) { lambda_press(); }
+  }
+
+  void depressed() {
+    if (lambda_depress) { lambda_depress(); }
   }
 
   // Returns true if button's state was changed

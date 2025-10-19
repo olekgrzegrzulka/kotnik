@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include <optional>
 #include <sstream>
 #include <string>
 #include "biome.hpp"
@@ -7,10 +8,10 @@
 #include "ui/crosshair.hpp"
 #include "ui/debug_panel.hpp"
 #include "ui/label.hpp"
+
 #define GLM_FORCE_RADIANS
 
 #include "common.hpp"
-#include "glad/glad.h"
 
 #define STBI_ASSERT(x) ensure(x);
 #define STB_IMAGE_IMPLEMENTATION
@@ -182,6 +183,9 @@ int main() {
       break;
     }
 
+    auto [player_chunk_pos, player_local_pos] = cube_to_local(player->world_pos);
+    Chunk* player_chunk = world.get_chunk(player_chunk_pos);
+
     std::stringstream ss_player_pos_text;
     ss_player_pos_text << std::fixed << std::setprecision(2);
     ss_player_pos_text << "World: [" << player->world_pos.x << ", " << player->world_pos.y << ", " << player->world_pos.z << "]";
@@ -192,7 +196,6 @@ int main() {
 
     std::stringstream ss_player_chunk_pos_text;
     ss_player_chunk_pos_text << std::fixed << std::setprecision(2);
-    auto player_chunk_pos = world_pos_to_chunk_pos(player->world_pos);
     ss_player_chunk_pos_text << "Chunk: [" << player_chunk_pos.x << ", " << player_chunk_pos.y << ", " << player_chunk_pos.z << "]";
     std::string player_chunk_pos_text = ss_player_chunk_pos_text.str();
 
@@ -208,6 +211,27 @@ int main() {
         debug_panel.label_biome_name_shadow.set_text(biome_name);
       }
       get_biome_counter = 10;
+    }
+
+    if (player_chunk) {
+      std::stringstream ss_lightmap_text;
+      ss_lightmap_text << "Lightmap: " << (i32)player_chunk->get_lightmap(player_local_pos);
+      debug_panel.label_lightmap.set_text(ss_lightmap_text.str());
+      debug_panel.label_lightmap_shadow.set_text(ss_lightmap_text.str());
+    } else {
+      debug_panel.label_lightmap.set_text("Lightmap: ?");
+      debug_panel.label_lightmap_shadow.set_text("Lightmap: ?");
+    }
+
+    auto heightmap = player_chunk ? player_chunk->get_heightmap(player_local_pos.x, player_local_pos.z) : std::nullopt;
+    if (heightmap.has_value()) {
+      std::stringstream ss_heightmap_text;
+      ss_heightmap_text << "Heightmap: " << (i32)heightmap.value() + player_chunk_pos.y * Chunk::chunk_size;
+      debug_panel.label_heightmap.set_text(ss_heightmap_text.str());
+      debug_panel.label_heightmap_shadow.set_text(ss_heightmap_text.str());
+    } else {
+      debug_panel.label_heightmap.set_text("Heightmap: ?");
+      debug_panel.label_heightmap_shadow.set_text("Heightmap: ?");
     }
 
     ui.update(window_size.x, window_size.y);

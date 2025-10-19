@@ -14,6 +14,9 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
+Label::Label(const UI& ui_) : Widget::Widget(ui_) {
+}
+
 Label::Label(const UI& ui_, std::string text_) : Widget::Widget(ui_) {
   set_text(text_);
 }

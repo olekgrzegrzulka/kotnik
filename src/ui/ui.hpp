@@ -34,7 +34,7 @@ public:
     matrix = glm::mat4{1.0};
     matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));
 
-    font_face = FontFace(freetype_lib, "./assets/Roboto/Roboto-Regular.ttf", 20);
+    font_face = FontFace(freetype_lib, "./assets/Roboto/Roboto-Regular.ttf", 16);
   }
 
   template <class T, class... Args>

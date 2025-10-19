@@ -6,6 +6,8 @@
 
 Chunk::Chunk(ChunkPos _chunk_position) : position(_chunk_position) {
   mesh = std::make_unique<ChunkMesh>();
+  heightmap.fill(chunk_size);
+  lightmap.resize(chunk_size * chunk_size * chunk_size);
 }
 
 Chunk::~Chunk() {
@@ -58,23 +60,23 @@ void Chunk::set_cube(LocalPos local_pos, CubeId cube_id) {
   update_mesh_update_flags(local_pos);
 
   // Compute heightmap
-  const auto heightmap_at = heightmap[local_pos.x + local_pos.z * chunk_size];
+  auto heightmap_at = get_heightmap(local_pos.x, local_pos.z);
   // Cube which was the highest cube in chunk was set to air. Compute new heighmap
   if (cube_id == CubeId::AIR && heightmap_at.has_value() && heightmap_at.value() == local_pos.y) {
-    for (int16_t new_y = local_pos.y - 1; new_y >= 0; new_y -= 1) {
-      if (is_solid(LocalPos{local_pos.x, new_y, local_pos.z})) {
-        heightmap[local_pos.x + local_pos.z * chunk_size] = new_y;
+    for (i32 new_y = local_pos.y - 1; new_y >= 0; new_y -= 1) {
+      if (get_cube(LocalPos{local_pos.x, new_y, local_pos.z}) != CubeId::AIR) {
+        set_heightmap(local_pos.x, local_pos.z, new_y);
         break;
       }
     }
-    // If heightmap wasn't updated, then there are'nt any cubes in this column
-    if (heightmap[local_pos.x + local_pos.z * chunk_size].value() == local_pos.y) {
-      heightmap[local_pos.x + local_pos.z * chunk_size] = {};
+    // No light occluders in this column
+    if (get_heightmap(local_pos.x, local_pos.z) == local_pos.y) {
+      clear_heightmap(local_pos.x, local_pos.z);
     }
   }
 
-  if (cube_id != CubeId::AIR && local_pos.y >= heightmap[local_pos.x + local_pos.z * chunk_size].value_or(0)) {
-    heightmap[local_pos.x + local_pos.z * chunk_size] = local_pos.y;
+  if (cube_id != CubeId::AIR && local_pos.y >= get_heightmap(local_pos.x, local_pos.z).value_or(0)) {
+    set_heightmap(local_pos.x, local_pos.z, local_pos.y);
   }
 }
 

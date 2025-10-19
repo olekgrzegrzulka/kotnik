@@ -168,4 +168,6 @@ bool key_just_pressed(Input::Key);
 bool key_just_released(Input::Key);
 
 glm::vec<2, i32> get_mouse_delta();
+
+glm::vec<2, i32> get_window_size();
 }; // namespace Input

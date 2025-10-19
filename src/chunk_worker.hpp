@@ -48,18 +48,18 @@ struct ChunkTerrainGenWorker {
 
   std::shared_ptr<WorldGen> world_gen;
 
-  void add_to_queue(ChunkPos);
+  void add_to_queue(glm::vec<2, int>);
 
-  std::vector<std::unique_ptr<Chunk>> collect_finished_chunks();
+  std::vector<std::vector<std::unique_ptr<Chunk>>> collect_finished_chunks();
 
 private:
   std::thread thread;
   std::atomic<bool> kill_thread = false;
 
-  std::vector<ChunkPos> chunk_queue;
+  std::vector<glm::vec<2, int>> chunk_queue;
   std::mutex chunk_queue_mutex;
   std::condition_variable cond_var;
 
-  std::vector<std::unique_ptr<Chunk>> chunks_finished;
+  std::vector<std::vector<std::unique_ptr<Chunk>>> chunks_finished;
   std::mutex chunks_finished_mutex;
 };

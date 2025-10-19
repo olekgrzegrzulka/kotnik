@@ -14,12 +14,14 @@ public:
   ChunkMeshData(ChunkPos, World&);
 
   CubeId get_cube_id(LocalPos at, bool check_if_neigbour_chunk = true);
+  u8 get_lightmap(LocalPos at, bool check_if_neigbour_chunk = true);
 
   bool is_valid() const { return valid; }
   ChunkPos get_chunk_pos() const { return chunk_pos; }
 
 private:
-  std::vector<std::vector<CubeId>> chunks_data;
+  std::array<decltype(Chunk::cubes), 27> cubes;
+  std::array<decltype(Chunk::lightmap), 27> lightmaps;
   bool valid = false;
   ChunkPos chunk_pos;
 

@@ -2,8 +2,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include <optional>
-#include <xmmintrin.h>
+#include <vector>
 #include "array3d.hpp"
 #include "biome.hpp"
 #include "biome_map.hpp"
@@ -36,23 +37,19 @@ public:
   const WorldGen& world_gen;
 
 private:
-  Array3D<bool, array_size.x, array_size.y, array_size.z> ground_array;
+  Array3D<bool, array_size.x, array_size.y, array_size.z> ground_array{begin.x, begin.y, begin.z};
 
 public:
-  ChunkPos chunk_pos;
-  Array3D<biomes::Biome, array_size.x, 1, array_size.z> biome_array;
+  ChunkPos chunk_pos{};
+  bool initialized = false;
+  Array3D<biomes::Biome, array_size.x, 1, array_size.z> biome_array{begin.x, 0, begin.z};
+  Array3D<float, array_size.x, 1, array_size.z> noise_heightmap_array{begin.x, 0, begin.z};
 
 private:
   bool empty = true;
 
 public:
-  ChunkGenArray(const WorldGen& wg, ChunkPos chunk_pos_) : world_gen(wg),
-                                                           ground_array{begin.x, begin.y, begin.z},
-                                                           chunk_pos(chunk_pos_),
-                                                           biome_array{begin.x, 0, begin.z} {
-    Array3D<float, array_size.x, 1, array_size.z> noise_heightmap_array{begin.x, 0, begin.z};
-    Array3D<float, array_size.x, array_size.y, array_size.z> noise_3d_array{begin.x, begin.y, begin.z};
-
+  void create_biome_array() {
     // Get biomes at grid points
     for (i32 x : biome_grid_points_x) {
       for (i32 z : biome_grid_points_z) {
@@ -90,32 +87,103 @@ public:
           const bool is_grid_point_z = (z == grid_point_low.y) || (z == grid_point_high.y);
           if (is_grid_point_x && is_grid_point_z) { continue; }
 
-          const float x_coefficient = (x - grid_point_low.x) / (float)(grid_point_high.x - grid_point_low.x);
-          const float z_coefficient = (z - grid_point_low.y) / (float)(grid_point_high.y - grid_point_low.y);
+          float x_coefficient = (x - grid_point_low.x) / (float)(grid_point_high.x - grid_point_low.x);
+          float z_coefficient = (z - grid_point_low.y) / (float)(grid_point_high.y - grid_point_low.y);
 
-          const biomes::Biome biome_low_x = biomes::biome_lerp(
+          using biomes::Biome;
+
+          std::array<Biome, 4> biomes = {
               biome_array.at({grid_point_low.x, 0, grid_point_low.y}),
               biome_array.at({grid_point_low.x, 0, grid_point_high.y}),
-              z_coefficient);
-          const biomes::Biome biome_high_x = biomes::biome_lerp(
               biome_array.at({grid_point_high.x, 0, grid_point_low.y}),
               biome_array.at({grid_point_high.x, 0, grid_point_high.y}),
-              z_coefficient);
+          };
 
-          biome_array.set({x, 0, z}, biomes::biome_lerp(biome_low_x, biome_high_x, x_coefficient));
+          std::array<float, 4> weights = {
+              biomes[0].strength * (1.0f - x_coefficient) * (1.0f - z_coefficient),
+              biomes[1].strength * (1.0f - x_coefficient) * z_coefficient,
+              biomes[2].strength * x_coefficient * (1.0f - z_coefficient),
+              biomes[3].strength * x_coefficient * z_coefficient,
+          };
+
+          biome_array.set({x, 0, z}, biomes::biome_weighted_average(weights, biomes));
         }
       }
     }
+  }
 
-    // Fill 3d noise and ground arrays at grid points
+  void create_heightmap() {
     for (i32 x : noise_grid_points_x) {
       for (i32 z : noise_grid_points_z) {
-        float noise_heightmap = wg.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, biome_array.at({x, 0, z}));
+        float noise_heightmap = world_gen.get_heightmap_noise(chunk_pos * Chunk::chunk_size + LocalPos{x, 0, z}, biome_array.at({x, 0, z}));
         noise_heightmap_array.set({x, 0, z}, noise_heightmap);
+      }
+    }
 
+    // Interpolate
+    size_t grid_point_x_high_i = 1;
+    for (i32 x = begin.x; x < end.x; x += 1) {
+
+      while (x > noise_grid_points_x[grid_point_x_high_i]) {
+        grid_point_x_high_i += 1;
+      }
+
+      size_t grid_point_z_high_i = 1;
+      for (i32 z = begin.z; z < end.z; z += 1) {
+
+        while (z > noise_grid_points_z[grid_point_z_high_i]) {
+          grid_point_z_high_i += 1;
+        }
+
+        const glm::vec<2, i32> grid_point_low{
+            noise_grid_points_x[grid_point_x_high_i - 1],
+            noise_grid_points_z[grid_point_z_high_i - 1],
+        };
+
+        const glm::vec<2, i32> grid_point_high{
+            noise_grid_points_x[grid_point_x_high_i],
+            noise_grid_points_z[grid_point_z_high_i],
+        };
+
+        const bool is_grid_point_x = (x == grid_point_low.x) || (x == grid_point_high.x);
+        const bool is_grid_point_z = (z == grid_point_low.y) || (z == grid_point_high.y);
+        if (is_grid_point_x && is_grid_point_z) { continue; }
+
+        const float x_coefficient = (x - grid_point_low.x) / (float)(grid_point_high.x - grid_point_low.x);
+        const float z_coefficient = (z - grid_point_low.y) / (float)(grid_point_high.y - grid_point_low.y);
+
+        const float noise_heightmap_x_low = noise_heightmap_array.at({grid_point_low.x, 0, grid_point_low.y}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_low.x, 0, grid_point_high.y}) * z_coefficient;
+        const float noise_heightmap_x_high = noise_heightmap_array.at({grid_point_high.x, 0, grid_point_low.y}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_high.x, 0, grid_point_high.y}) * z_coefficient;
+
+        const float noise_heightmap_value = noise_heightmap_x_low * (1.0f - x_coefficient) + noise_heightmap_x_high * x_coefficient;
+        noise_heightmap_array.set({x, 0, z}, noise_heightmap_value);
+      }
+    }
+  }
+
+  ChunkGenArray(const WorldGen& wg) : world_gen(wg) {}
+
+  void initialize(ChunkPos chunk_pos_) {
+
+    Array3D<float, array_size.x, array_size.y, array_size.z> noise_3d_array{begin.x, begin.y, begin.z};
+    ground_array = Array3D<bool, array_size.x, array_size.y, array_size.z>{begin.x, begin.y, begin.z};
+    empty = true;
+
+    if (!initialized || chunk_pos_.x != chunk_pos.x || chunk_pos_.z != chunk_pos.z) {
+      chunk_pos = chunk_pos_;
+      create_biome_array();
+      create_heightmap();
+      initialized = true;
+    }
+
+    chunk_pos = chunk_pos_;
+
+    // Fill 3d noise at grid points
+    for (i32 x : noise_grid_points_x) {
+      for (i32 z : noise_grid_points_z) {
         for (i32 y : noise_grid_points_y) {
           const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
-          const float noise_3d = wg.get_3d_noise(cube_pos, biome_array.at({x, 0, z}));
+          const float noise_3d = world_gen.get_3d_noise(cube_pos, biome_array.at({x, 0, z}));
           noise_3d_array.set({x, y, z}, noise_3d);
           const bool is_solid = world_gen.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_array.at({x, 0, z}), noise_3d);
           if (is_solid) { empty = false; }
@@ -126,7 +194,7 @@ public:
 
     if (empty) { return; }
 
-    // Interpolate 3d noise and ground arrays
+    // Interpolate 3d noise
     size_t grid_point_x_high_i = 1;
     for (i32 x = begin.x; x < end.x; x += 1) {
 
@@ -182,13 +250,9 @@ public:
           const float noise_3d_x_high = noise_3d_x_high_z_low * (1.0f - z_coefficient) + noise_3d_x_high_z_high * z_coefficient;
 
           const float noise_3d_value = noise_3d_x_low * (1.0f - x_coefficient) + noise_3d_x_high * x_coefficient;
-
-          const float noise_heightmap_x_low = noise_heightmap_array.at({grid_point_low.x, 0, grid_point_low.z}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_low.x, 0, grid_point_high.z}) * z_coefficient;
-          const float noise_heightmap_x_high = noise_heightmap_array.at({grid_point_high.x, 0, grid_point_low.z}) * (1.0f - z_coefficient) + noise_heightmap_array.at({grid_point_high.x, 0, grid_point_high.z}) * z_coefficient;
-
-          const float noise_heightmap_value = noise_heightmap_x_low * (1.0f - x_coefficient) + noise_heightmap_x_high * x_coefficient;
+          const float noise_heightmap_value = noise_heightmap_array.at({x, 0, z});
           const CubePos cube_pos = chunk_pos * Chunk::chunk_size + LocalPos{x, y, z};
-          ground_array.set({x, y, z}, wg.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_value, noise_3d_value));
+          ground_array.set({x, y, z}, world_gen.is_ground(cube_pos, biome_array.at({x, 0, z}), noise_heightmap_value, noise_3d_value));
         }
       }
     }
@@ -207,9 +271,9 @@ public:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
-  constexpr float freq_biome = 0.00145f;
+  constexpr float freq_biome = 0.00135f;
   constexpr float freq_height = 0.0075f;
-  constexpr float freq_3d = 0.00425f;
+  constexpr float freq_3d = 0.00515f;
   noise_heightmap.SetSeed(seed);
   noise_heightmap.SetFrequency(freq_height);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
@@ -222,8 +286,8 @@ WorldGen::WorldGen(World& w, i32 seed) : world(w) {
   noise_3d.SetSeed(seed);
   noise_3d.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
   noise_3d.SetFractalOctaves(3);
-  // noise_3d.SetFractalGain(0.6785f);
-  // noise_3d.SetFractalLacunarity(2.481f);
+  noise_3d.SetFractalGain(0.6085f);
+  noise_3d.SetFractalLacunarity(2.481f);
   noise_3d.SetDomainWarpType(FastNoiseLite::DomainWarpType::DomainWarpType_BasicGrid);
   noise_3d.SetDomainWarpAmp(80.0f);
 
@@ -381,13 +445,9 @@ void WorldGen::generate_chunk_only_water(Chunk* chunk) const {
   }
 }
 
-void WorldGen::generate_chunk(Chunk* chunk) const {
+std::vector<std::unique_ptr<Chunk>> WorldGen::generate_chunk_column(glm::vec<2, i32> chunk_column_pos) const {
   BENCHMARK("chunkgen");
-  auto chunk_solid_cubes_array = ChunkGenArray(*this, chunk->position);
-  if (chunk_solid_cubes_array.is_empty()) {
-    generate_chunk_only_water(chunk);
-    return;
-  }
+
   Array3D<int, Chunk::chunk_size, 1, Chunk::chunk_size> tree_map;
 
   auto tree_map_get_or_false = [&tree_map](i32 at_x, i32 at_y) -> bool {
@@ -395,7 +455,7 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
     return tree_map.at({at_x, 0, at_y});
   };
 
-  for (size_t i = 0; i < 32; i += 1) {
+  for (size_t i = 0; i < 128; i += 1) {
     // Starting from (1, 1) to prevent two trees sticking on chunk boundaries
     i32 ox = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
     i32 oy = StaticRandom::get().next<i32>(1, Chunk::chunk_size - 1);
@@ -408,65 +468,88 @@ void WorldGen::generate_chunk(Chunk* chunk) const {
     tree_map.set({ox, 0, oy}, true);
   }
 
-  for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
-    for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
-      // FIXME: biomes are blocky when fetching them from biome_array
-      const auto& blended_biome = chunk_solid_cubes_array.biome_array.at({x_local, 0, z_local});
-      // auto blended_biome = get_blended_biome(local_pos_to_cube_pos(chunk->position, {x_local, 0, z_local}));
+  Array3D<biomes::Biome, Chunk::chunk_size, 1, Chunk::chunk_size> blended_biomes;
+  for (i32 x = 0; x < Chunk::chunk_size; x += 1) {
+    for (i32 z = 0; z < Chunk::chunk_size; z += 1) {
+      blended_biomes.set({x, 0, z}, get_blended_biome(local_pos_to_cube_pos({chunk_column_pos.x, 0, chunk_column_pos.y}, {x, 0, z})));
+    }
+  }
 
-      for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
-        float y = chunk->position.y * Chunk::chunk_size + (int)y_local;
-        LocalPos local_pos = {x_local, y_local, z_local};
-        auto is_solid = chunk_solid_cubes_array.is_solid_unsafe(local_pos);
+  std::vector<std::unique_ptr<Chunk>> chunks;
+  auto chunk_solid_cubes_array = ChunkGenArray(*this);
 
-        // -1 = air, 0 = at ground level, lower = under ground
-        i32 depth = 0;
-        while (chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, depth, 0}).value_or(false)) {
-          depth += 1;
-        }
-        depth -= 1;
+  for (i32 chunk_y = World::max_chunk_y; chunk_y >= World::min_chunk_y; chunk_y -= 1) {
+    ChunkPos chunk_pos = {chunk_column_pos.x, chunk_y, chunk_column_pos.y};
+    chunk_solid_cubes_array.initialize(chunk_pos);
+    auto chunk = std::make_unique<Chunk>(chunk_pos);
 
-        bool just_over_ground = (true == chunk_solid_cubes_array.is_solid_unsafe(local_pos + LocalPos{0, -1, 0})) &&
-                                (false == chunk_solid_cubes_array.is_solid_unsafe(local_pos));
+    if (chunk_solid_cubes_array.is_empty()) {
+      generate_chunk_only_water(chunk.get());
+      chunks.emplace_back(std::move(chunk));
+      continue;
+    }
 
-        if (is_solid) {
-          CubeId ground_cube = blended_biome.get_ground_cube((i32)y, depth, 0.0);
+    for (size_t x_local = 0; x_local < Chunk::chunk_size; x_local += 1) {
+      for (size_t z_local = 0; z_local < Chunk::chunk_size; z_local += 1) {
+        auto& blended_biome = blended_biomes.at({x_local, 0, z_local});
 
-          if (y <= -1 && !chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, 0}).value_or(true) && ground_cube == CubeId::GRASS) {
-            ground_cube = CubeId::DIRT;
+        for (size_t y_local = 0; y_local < Chunk::chunk_size; y_local += 1) {
+          float y = chunk->position.y * Chunk::chunk_size + (int)y_local;
+          LocalPos local_pos = {x_local, y_local, z_local};
+          auto is_solid = chunk_solid_cubes_array.is_solid_unsafe(local_pos);
+
+          // -1 = air, 0 = at ground level, lower = under ground
+          i32 depth = 0;
+          while (chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, depth, 0}).value_or(false)) {
+            depth += 1;
           }
-          chunk->set_cube(local_pos, ground_cube);
-        } else if (y <= 0) {
-          chunk->set_cube(local_pos, CubeId::WATER);
-        } else if (just_over_ground) {
-          bool gen_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS);
+          depth -= 1;
 
-          // Don't spawn trees on steep terrain
-          if (chunk_solid_cubes_array.is_solid(local_pos + LocalPos{-1, 1, 0}).value_or(false) ||
-              chunk_solid_cubes_array.is_solid(local_pos + LocalPos{+1, 1, 0}).value_or(false) ||
-              chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, -1}).value_or(false) ||
-              chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, +1}).value_or(false)) {
-            gen_tree = false;
-          }
+          bool just_over_ground = (true == chunk_solid_cubes_array.is_solid_unsafe(local_pos + LocalPos{0, -1, 0})) &&
+                                  (false == chunk_solid_cubes_array.is_solid_unsafe(local_pos));
 
-          if (gen_tree) {
-            i32 tree_type = StaticRandom::get().next<i32>(1, 100);
-            if (tree_type >= 1 && tree_type <= 50) {
-              gen_tree_poplar(chunk, {x_local, y_local, z_local}, false);
-            } else if (tree_type >= 51 && tree_type <= 65) {
-              gen_tree_poplar(chunk, {x_local, y_local, z_local}, true);
-            } else if (tree_type >= 66 && tree_type <= 85) {
-              gen_tree_spruce(chunk, {x_local, y_local, z_local}, false);
-            } else if (tree_type >= 86 && tree_type <= 100) {
-              gen_tree_spruce(chunk, {x_local, y_local, z_local}, true);
+          if (is_solid) {
+            CubeId ground_cube = blended_biome.get_ground_cube((i32)y, depth, 0.0);
+
+            if (y <= -1 && !chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, 0}).value_or(true) && ground_cube == CubeId::GRASS) {
+              ground_cube = CubeId::DIRT;
             }
-          } else { // Foliage gen
-            float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
-            auto foliage_cube = blended_biome.get_foliage_cube((i32)y, rng);
-            chunk->set_cube(local_pos, foliage_cube);
+            chunk->set_cube(local_pos, ground_cube);
+          } else if (y <= 0) {
+            chunk->set_cube(local_pos, CubeId::WATER);
+          } else if (just_over_ground) {
+            bool gen_tree = tree_map_get_or_false(x_local, z_local) && (blended_biome.get_ground_cube((i32)y, 0, 0.0) == CubeId::GRASS) &&
+                            blended_biome.tree_density >= StaticRandom::get().next<float>(0.0f, 1.0f);
+
+            // Don't spawn trees on steep terrain
+            if (chunk_solid_cubes_array.is_solid(local_pos + LocalPos{-1, 1, 0}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{+1, 1, 0}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, -1}).value_or(false) ||
+                chunk_solid_cubes_array.is_solid(local_pos + LocalPos{0, 1, +1}).value_or(false)) {
+              gen_tree = false;
+            }
+
+            if (gen_tree) {
+              float tree_type_random = StaticRandom::get().next<float>(0.0f, blended_biome.oak_tree_chance + blended_biome.birch_tree_chance + blended_biome.spruce_tree_chance);
+              if (tree_type_random <= blended_biome.oak_tree_chance) {
+                gen_tree_poplar(chunk.get(), {x_local, y_local, z_local}, false);
+              } else if (tree_type_random <= blended_biome.oak_tree_chance + blended_biome.birch_tree_chance) {
+                gen_tree_poplar(chunk.get(), {x_local, y_local, z_local}, true);
+              } else {
+                gen_tree_spruce(chunk.get(), {x_local, y_local, z_local}, false);
+              }
+            } else { // Foliage gen
+              float rng = StaticRandom::get().next<float>(0.0f, 1.0f);
+              auto foliage_cube = blended_biome.get_foliage_cube((i32)y, rng);
+              chunk->set_cube(local_pos, foliage_cube);
+            }
           }
         }
       }
     }
+
+    chunks.emplace_back(std::move(chunk));
   }
+
+  return chunks;
 }

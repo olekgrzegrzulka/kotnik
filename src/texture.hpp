@@ -1,5 +1,4 @@
 #pragma once
-
 #include "common.hpp"
 #include "glad/glad.h"
 #include "stb_image.h"

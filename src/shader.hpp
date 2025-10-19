@@ -1,9 +1,7 @@
 #pragma once
-
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <glm/gtc/type_ptr.hpp>
 #include "common.hpp"
 #include "glad/glad.h"
@@ -20,7 +18,9 @@ public:
     for (GLint i = 0; i < uniform_count; i++) {
       char name[256];
       GLsizei length;
-      glGetActiveUniform(shader_program, i, sizeof(name), &length, nullptr, nullptr, name);
+      GLint size;
+      GLenum type;
+      glGetActiveUniform(shader_program, i, sizeof(name), &length, &size, &type, name);
       std::string uniform_name{name};
       ensure(!uniforms.contains(uniform_name));
       uniforms[uniform_name] = glGetUniformLocation(shader_program, uniform_name.c_str());

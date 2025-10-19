@@ -135,7 +135,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   for (auto& [chunk_pos, chunk] : world.chunks) {
     chunks_sorted_by_distance_to_player.emplace_back(chunk.get());
   }
-  ChunkPos player_chunk_pos = (world.player) ? world_pos_to_chunk_pos(world.player->world_pos) : ChunkPos{0, 0, 0};
+  ChunkPos player_chunk_pos = (world.player) ? cube_pos_to_chunk_pos(world.player->world_pos) : ChunkPos{0, 0, 0};
   sort_chunk_vector_by_manhattan_distance(chunks_sorted_by_distance_to_player, player_chunk_pos);
 
   cube_shader.set_uniform_float("alpha", 0.8);
@@ -152,9 +152,9 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   std::multimap<i32, Chunk*, std::greater<i32>> chunks_for_remeshing;
   // Skip the edge chunks as they don't have all neigbours and can't be meshed
 
-  for (int x = -world.chunk_load_distance + 1; x <= world.chunk_load_distance - 1; x += 1) {
-    for (int z = -world.chunk_load_distance + 1; z <= world.chunk_load_distance - 1; z += 1) {
-      for (int y = -world.chunk_load_distance + 1; y <= world.chunk_load_distance - 1; y += 1) {
+  for (i32 x = -world.chunk_load_distance + 1; x <= world.chunk_load_distance - 1; x += 1) {
+    for (i32 z = -world.chunk_load_distance + 1; z <= world.chunk_load_distance - 1; z += 1) {
+      for (i32 y = world.min_chunk_y + 1; y <= world.max_chunk_y - 1; y += 1) {
         ChunkPos chunk_pos = player_chunk_pos + ChunkPos{x, y, z};
         if (!chunks_awaiting_mesh_update.contains(chunk_pos)) {
           continue;

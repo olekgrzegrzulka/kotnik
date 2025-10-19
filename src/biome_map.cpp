@@ -33,6 +33,7 @@ static const std::unordered_map<rgb, BiomeId, RGBHasher>
         {{64, 134, 160}, BiomeId::OCEAN_DESERT},
         {{245, 197, 120}, BiomeId::BEACH},
         {{156, 219, 67}, BiomeId::FLATLANDS},
+        {{82, 179, 39}, BiomeId::FOREST},
         // {{31, 163, 80}, BiomeId::FOREST},
         // {{26, 122, 62}, BiomeId::DEEP_FOREST},
         {{74, 84, 98}, BiomeId::HIGHLANDS},
@@ -41,6 +42,7 @@ static const std::unordered_map<rgb, BiomeId, RGBHasher>
         {{251, 170, 42}, BiomeId::DESERT},
         {{210, 118, 15}, BiomeId::DESERT_HIGHLANDS},
         {{141, 141, 141}, BiomeId::STONY_SHORES},
+        {{38, 43, 50}, BiomeId::PLATEAU},
     };
 
 const std::unique_ptr<BiomeMap> init_biome_map() {
@@ -93,6 +95,7 @@ const std::unique_ptr<BiomeMap> init_biome_map() {
         float weight = 1.0f;
 
         BiomeId sampled_biome = color_to_biome_id(get_bitmap_color(x + ox, y + oy));
+        // float weight = biomes::get_biome(sampled_biome).strength;
 
         if (auto it = std::find(biome_ids.begin(), biome_ids.end(), sampled_biome); it != biome_ids.end()) {
           size_t i = std::distance(biome_ids.begin(), it);

@@ -6,11 +6,13 @@
 #include <unordered_set>
 #include "aabb.hpp"
 #include "chunk.hpp"
+#include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
 #include "entity.hpp"
 #include "world_gen.hpp"
+#include "world_lighter.hpp"
 
 struct ChunkMeshWorker;
 struct ChunkTerrainGenWorker;
@@ -51,6 +53,14 @@ struct NeigbourCubeIds {
   std::optional<CubeId> right_bottom_back;
   std::optional<CubeId> right_top_front;
   std::optional<CubeId> right_top_back;
+
+  u8 brightness;
+  u8 brightness_left;
+  u8 brightness_right;
+  u8 brightness_bottom;
+  u8 brightness_top;
+  u8 brightness_front;
+  u8 brightness_back;
 };
 
 class World {
@@ -58,6 +68,8 @@ class World {
 
 public:
   static const i32 chunk_load_distance = 7;
+  static const i32 max_chunk_y = 7;
+  static const i32 min_chunk_y = -7;
 
   struct {
     double gravity = -0.01;
@@ -73,8 +85,8 @@ public:
 protected:
   std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, Vec3Hasher> chunks;
   std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_mesh_update;
-  std::unordered_set<ChunkPos, Vec3Hasher> chunks_awaiting_generation;
-  std::unordered_set<ChunkPos, Vec3Hasher> chunks_being_generated;
+  std::unordered_set<glm::vec<2, i32>, Vec2Hasher> chunks_awaiting_generation;
+  std::unordered_set<glm::vec<2, i32>, Vec2Hasher> chunks_being_generated;
   std::vector<std::unique_ptr<Entity>> entities;
 
   std::vector<std::unique_ptr<ChunkTerrainGenWorker>> chunk_terrain_gen_workers;
@@ -82,6 +94,7 @@ protected:
   Player* player = nullptr;
 
   std::shared_ptr<WorldGen> world_gen;
+  WorldLighter world_lighter;
   i32 seed = 0;
 
 public:
@@ -104,7 +117,7 @@ public:
 
   void set_cube(CubePos cube_pos, CubeId to);
 
-  bool create_new_chunk(ChunkPos chunk_pos);
+  bool generate_chunk_column(i32 chunk_x, i32 chunk_z);
 
   CubeId get_cube(CubePos cube_pos) const;
 

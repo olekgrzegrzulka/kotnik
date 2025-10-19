@@ -9,7 +9,6 @@
 #include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
-#include "random.hpp"
 #include "world.hpp"
 #include "world_gen.hpp"
 
@@ -134,24 +133,25 @@ std::vector<std::pair<ChunkPos, std::unique_ptr<ChunkMesh>>> ChunkMeshWorker::co
 ChunkTerrainGenWorker::ChunkTerrainGenWorker(std::shared_ptr<WorldGen> world_gen_) : world_gen(world_gen_) {
   thread = std::thread([=, this]() -> void {
     while (true) {
-      ChunkPos chunk_pos;
+      glm::vec<2, i32> chunk_column_pos;
       {
         std::unique_lock lock(chunk_queue_mutex);
         cond_var.wait(lock, [&]() -> bool { return kill_thread || chunk_queue.size() > 0; });
 
         if (kill_thread) { break; }
 
-        chunk_pos = chunk_queue.back();
+        chunk_column_pos = chunk_queue.back();
         chunk_queue.pop_back();
       }
 
-      auto chunk = std::make_unique<Chunk>(chunk_pos);
-      world_gen->generate_chunk(chunk.get());
+      auto chunks = world_gen->generate_chunk_column(chunk_column_pos);
 
       {
         std::unique_lock lock2(chunks_finished_mutex);
-        chunk->flags.awaiting_mesh_update = true;
-        chunks_finished.emplace_back(std::move(chunk));
+        for (auto&& chunk : chunks) {
+          chunk->flags.awaiting_mesh_update = true;
+        }
+        chunks_finished.emplace_back(std::move(chunks));
       }
     }
   });
@@ -163,15 +163,15 @@ ChunkTerrainGenWorker::~ChunkTerrainGenWorker() {
   thread.join();
 }
 
-void ChunkTerrainGenWorker::add_to_queue(ChunkPos chunk_pos) {
+void ChunkTerrainGenWorker::add_to_queue(glm::vec<2, int> chunk_column_pos) {
   {
     std::unique_lock lock(chunk_queue_mutex);
-    chunk_queue.emplace_back(chunk_pos);
+    chunk_queue.emplace_back(chunk_column_pos);
   }
   cond_var.notify_all();
 }
 
-std::vector<std::unique_ptr<Chunk>> ChunkTerrainGenWorker::collect_finished_chunks() {
+std::vector<std::vector<std::unique_ptr<Chunk>>> ChunkTerrainGenWorker::collect_finished_chunks() {
   std::unique_lock lock(chunks_finished_mutex);
   return std::exchange(chunks_finished, {});
 }
