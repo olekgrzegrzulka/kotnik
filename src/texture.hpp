@@ -1,65 +1,19 @@
 #pragma once
-#include "common.hpp"
-#include "glad/glad.h"
-#include "stb_image.h"
+#include <string>
+#include "types.hpp"
 
 class Texture {
 public:
-  Texture(std::string file_name) {
-    std::string file_path = "./assets/" + file_name;
-    texture = Texture::load_texture(file_path);
-    sampler = Texture::create_sampler();
-  }
+  Texture(std::string file_name);
 
-  void bind(u32 slot) const {
-    glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glBindSampler(slot, sampler);
-  }
+  void bind(u32 slot) const;
 
 private:
-  static GLuint load_texture(std::string file_path) {
-    int width, height, channels;
-    stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+  static u32 load_texture(std::string file_path);
 
-    if (!data) {
-      debug_error("failed to load texture" + file_path);
-    }
-
-    GLuint texture_ = 0;
-
-    glGenTextures(1, &texture_);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_);
-
-    glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, width, height);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    stbi_image_free(data);
-
-    return texture_;
-  }
-
-  static GLuint create_sampler() {
-    GLuint sampler_ = 0;
-    glCreateSamplers(1, &sampler_);
-    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glSamplerParameteri(sampler_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-    glSamplerParameteri(sampler_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    return sampler_;
-  }
+  static u32 create_sampler();
 
 private:
-  GLuint texture = 0;
-  GLuint sampler = 0;
+  u32 texture = 0;
+  u32 sampler = 0;
 };

@@ -3,7 +3,7 @@
 #include <random>
 #include <span>
 #include <type_traits>
-#include "common.hpp"
+#include "types.hpp"
 
 class Random {
 private:

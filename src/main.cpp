@@ -1,18 +1,9 @@
 
-#include <cmath>
-#include <optional>
-#include <sstream>
-#include <string>
-#include "biome.hpp"
-#include "chunk.hpp"
-#include "ui/crosshair.hpp"
-#include "ui/debug_panel.hpp"
-#include "ui/label.hpp"
-
 #define GLM_FORCE_RADIANS
 
-#include "common.hpp"
+#include "glad/glad.h"
 
+#include "common.hpp"
 #define STBI_ASSERT(x) ensure(x);
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -23,6 +14,9 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -31,6 +25,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <unistd.h>
+#include "biome.hpp"
+#include "chunk.hpp"
 #include "clouds.hpp"
 #include "cube_indicator_renderer.hpp"
 #include "cubes.hpp"
@@ -40,8 +36,12 @@
 #include "shader.hpp"
 #include "skybox.hpp"
 #include "texture.hpp"
+#include "ui/crosshair.hpp"
+#include "ui/debug_panel.hpp"
+#include "ui/label.hpp"
 #include "ui/pause_menu.hpp"
 #include "ui/ui.hpp"
+#include "water_overlay.hpp"
 #include "world.hpp"
 #include "world_renderer.hpp"
 
@@ -119,6 +119,7 @@ int main() {
 
   cubes_init();
   skybox_init();
+  water_overlay_init();
   clouds_init();
 
   World world;
@@ -187,6 +188,7 @@ int main() {
   glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glSamplerParameteri(framebuffer_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+  uint16_t delta = 0;
   while (!glfwWindowShouldClose(window)) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -231,7 +233,13 @@ int main() {
       cube_indicator_renderer.draw(camera_pos, camera_matrix, cube_indicator_pos.value());
     }
 
+    if (player && player->is_viewport_in_water()) {
+      glDisable(GL_DEPTH_TEST);
+      water_overlay_draw(camera_matrix);
+    }
+
     bool pause_menu_new_visiblity = pause_menu.get_process();
+    pause_menu.set_size(window_size.x, window_size.y);
 
     if (Input::key_just_pressed(Input::Key::KEY_ESCAPE)) {
       pause_menu_new_visiblity = !pause_menu_new_visiblity;
@@ -259,6 +267,14 @@ int main() {
 
     auto [player_chunk_pos, player_local_pos] = cube_to_local(player->world_pos);
     Chunk* player_chunk = world.get_chunk(player_chunk_pos);
+
+    std::stringstream ss_frametime_text;
+    ss_frametime_text << std::fixed << std::setprecision(2);
+    ss_frametime_text << "Frametime: " << delta * 0.001 << " ms";
+    std::string frametime_text = ss_frametime_text.str();
+
+    debug_panel.label_frametime.set_text(frametime_text);
+    debug_panel.label_frametime_shadow.set_text(frametime_text);
 
     std::stringstream ss_player_pos_text;
     ss_player_pos_text << std::fixed << std::setprecision(2);
@@ -327,7 +343,7 @@ int main() {
 
     // Delta
     auto end_time = std::chrono::high_resolution_clock::now();
-    uint16_t delta = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    delta = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
     usleep(std::max(delta - 16666, 0));
   }
 

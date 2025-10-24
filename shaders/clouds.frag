@@ -3,7 +3,7 @@
 layout (binding = 0) uniform sampler2D tex;
 
 uniform int t;
-uniform vec3 color;
+uniform vec4 color;
 uniform float scale;
 uniform float speed;
 
@@ -19,5 +19,6 @@ void main() {
     );
     vec4 texture_color = texture(tex, uv2);
     alpha *= texture_color.a;
+    alpha *= color.a;
     FragColor = vec4(color.rgb, alpha);
 }

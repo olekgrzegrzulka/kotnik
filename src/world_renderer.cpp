@@ -10,11 +10,13 @@
 #include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
-#include "glad/glad.h"
 #include "player.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 #include "world.hpp"
+
+float WorldRenderer::fog_start = 192.0;
+float WorldRenderer::fog_distance = 24.0;
 
 static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector, ChunkPos to) {
   std::sort(vector.begin(), vector.end(), [&](const Chunk* a, const Chunk* b) {
@@ -67,6 +69,8 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   cube_shader.set_uniform_float("light_dir", light.x, light.y, light.z);
   cube_shader.set_uniform_float("camera_pos", camera_pos.x, camera_pos.y, camera_pos.z);
   cube_shader.set_uniform_float("alpha", 1.0);
+  cube_shader.set_uniform_float("fog_start", fog_start);
+  cube_shader.set_uniform_float("fog_end", fog_start + fog_distance);
 
   // Update chunk meshes and propagate mesh updates from adjacent chunks
   // and draw chunks

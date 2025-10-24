@@ -103,6 +103,10 @@ public:
                  glm::sin(yaw + rotated_by) * glm::cos(pitch)});
   };
 
+  bool is_viewport_in_water() const {
+    return world.get_cube(world_pos + camera_offset) == CubeId::WATER;
+  }
+
   WorldPos get_walking_dir() const {
     if (!(input_held("forward") || input_held("back") || input_held("strafe_left") || input_held("strafe_right"))) return WorldPos(0.0);
     const double pi = std::numbers::pi_v<double>;

@@ -10,7 +10,7 @@ class Sprite;
 
 class SettingsMenu : public Widget {
 public:
-  SettingsMenu(const UI& ui);
+  SettingsMenu(UI& ui);
 
   void update() override;
 
@@ -18,8 +18,9 @@ public:
 
 private:
   Sprite& panel;
-  Sprite& inner_panel;
+  Widget& top_bar_panel;
   Sprite& tab_panel;
+  Sprite& inner_panel;
 
   Button& tab1;
   Button& tab2;
@@ -31,9 +32,6 @@ private:
   Label& tab1_label;
   Label& tab2_label;
   Label& tab3_label;
-
-  Slider& slider1;
-  Slider& slider2;
 
   std::array<Button*, 3> tabs = {&tab1, &tab2, &tab3};
   std::array<Label*, 3> tab_labels = {&tab1_label, &tab2_label, &tab3_label};

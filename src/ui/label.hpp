@@ -2,11 +2,12 @@
 #include <string>
 #include <vector>
 #include <glm/vec3.hpp>
-#include "../common.hpp"
-#include "../vertex.hpp"
+#include "../types.hpp"
+#include "vertex.hpp"
 #include "widget.hpp"
 
 class UI;
+class Sprite;
 
 class Label final : public Widget {
 public:
@@ -14,19 +15,51 @@ public:
 
 private:
   std::string text;
+  Anchor label_anchor = Anchor::CENTER;
   u32 vao = 0;
   u32 vbo = 0;
   std::vector<vertex2> vertices;
   glm::vec3 text_color = {1.0, 1.0, 1.0};
 
 public:
-  Label(const UI&);
-  Label(const UI&, std::string);
+  Label(UI&);
+  Label(UI&, std::string);
 
   ~Label() override;
 
-  WIDGET_DEF_SETTER_DIRTY(text);
-  WIDGET_DEF_SETTER_DIRTY(text_color);
+  // WIDGET_DEF_GETTER(text_length);
+  WIDGET_DEF_GETTER(text);
+  WIDGET_DEF_SETTER_DIRTY(label_anchor);
+
+  void set_text(std::string text_) {
+    if (text == text_) { return; }
+    text = text_;
+    // text_dirty = true;
+    dirty = true;
+  }
+
+  void set_text_color(glm::vec3 text_color_) {
+    if (text_color == text_color_) { return; }
+    debug_log("set_text() ", text_color, " -> ", text_color_);
+    text_color = text_color_;
+    // text_dirty = true;
+    dirty = true;
+  }
+
+  void append_text(std::string append) {
+    if (append.empty()) { return; }
+    text += append;
+    // text_dirty = true;
+    dirty = true;
+  }
+
+  void erase_last_character() {
+    if (text.length() > 0) {
+      text.pop_back();
+      // text_dirty = true;
+      dirty = true;
+    }
+  }
 
   void update() override;
 

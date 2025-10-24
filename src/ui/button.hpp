@@ -21,27 +21,27 @@ protected:
   std::function<void()> lambda_depress = nullptr;
   ButtonState state = ButtonState::IDLE;
   bool switch_mode = false;
+  bool offset_label_on_press = false;
 
-  glm::vec2 uv_start_idle = glm::vec2(0.0f / 16.0f, 0.0f / 16.0f);
-  glm::vec2 uv_end_idle = glm::vec2(1.0f / 16.0f, 1.0f / 16.0f);
-  glm::vec2 uv_start_hovered = glm::vec2(0.0f / 16.0f, 1.0f / 16.0f);
-  glm::vec2 uv_end_hovered = glm::vec2(1.0f / 16.0f, 2.0f / 16.0f);
-  glm::vec2 uv_start_pressed = glm::vec2(0.0f / 16.0f, 2.0f / 16.0f);
-  glm::vec2 uv_end_pressed = glm::vec2(1.0f / 16.0f, 3.0f / 16.0f);
-  glm::vec2 uv_start_disabled = glm::vec2(0.0f / 16.0f, 3.0f / 16.0f);
-  glm::vec2 uv_end_disabled = glm::vec2(1.0f / 16.0f, 4.0f / 16.0f);
+  glm::vec2 uv_start_idle{};
+  glm::vec2 uv_end_idle{};
+  glm::vec2 uv_start_hovered{};
+  glm::vec2 uv_end_hovered{};
+  glm::vec2 uv_start_pressed{};
+  glm::vec2 uv_end_pressed{};
+  glm::vec2 uv_start_disabled{};
+  glm::vec2 uv_end_disabled{};
 
 public:
-  Button(const UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>("")) {
-    set_sprite_idle();
-    set_nine_slice_margin(3.0f);
+  Button(UI& ui_, std::string label_ = "") : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+    set_texture_idle("button_idle");
+    set_texture_hovered("button_hovered");
+    set_texture_pressed("button_pressed");
+    set_texture_disabled("button_disabled");
+    set_nine_slice_margin(4.0f);
     set_nine_slice_scale(1.0f);
-  }
 
-  Button(const UI& ui_, std::string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
     set_sprite_idle();
-    set_nine_slice_margin(3.0f);
-    set_nine_slice_scale(1.0f);
   }
 
   Label& get_label() { return label; }
@@ -51,6 +51,9 @@ public:
   virtual void draw() override {
     Sprite::draw();
   }
+
+  void press();
+  void depress();
 
   void on_press(std::function<void()> lambda_press_) {
     lambda_press = lambda_press_;
@@ -62,9 +65,9 @@ public:
 
   void set_disabled(bool disabled) {
     if (disabled) {
-      state = ButtonState::DISABLED;
+      set_state(ButtonState::DISABLED);
     } else {
-      state = ButtonState::IDLE;
+      set_state(ButtonState::IDLE);
     }
   }
 
@@ -72,6 +75,9 @@ public:
 
   WIDGET_DEF_SETTER_DIRTY(switch_mode);
   WIDGET_DEF_GETTER(switch_mode);
+
+  WIDGET_DEF_SETTER_DIRTY(offset_label_on_press);
+  WIDGET_DEF_GETTER(offset_label_on_press);
 
   void set_uv_start_idle(glm::vec2 to) {
     if (uv_start_idle == to) { return; }
@@ -113,6 +119,11 @@ public:
     uv_end_disabled = to;
     if (state == ButtonState::DISABLED) { dirty = true; }
   }
+
+  void set_texture_idle(std::string id);
+  void set_texture_hovered(std::string id);
+  void set_texture_pressed(std::string id);
+  void set_texture_disabled(std::string id);
 
 protected:
   void set_sprite_idle() {

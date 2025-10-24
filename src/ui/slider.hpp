@@ -1,12 +1,13 @@
 #pragma once
-#include "../common.hpp"
+#include <glm/ext/vector_float2.hpp>
+#include "../types.hpp"
 #include "button.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
 
 class UI;
 
-class Slider final : public Widget {
+class Slider : public Widget {
 protected:
   Sprite& track;
   Sprite& thumb;
@@ -17,16 +18,19 @@ protected:
   std::function<void(i32)> lambda = nullptr;
 
 public:
-  Slider(const UI& ui_) : Widget::Widget(ui_), track(add_child<Sprite>()), thumb(add_child<Sprite>()) {
+  Slider(UI& ui_) : Widget::Widget(ui_), track(add_child<Sprite>()), thumb(add_child<Sprite>()) {
     set_height(16);
 
-    track.set_uv_start({2.0 / 16.0, 0.0 / 16.0});
-    track.set_uv_end({3.0 / 16.0, 1.0 / 16.0});
-    track.set_nine_slice_margin(1);
+    track.set_texture("slider_track");
+    track.set_nine_slice_margin(2);
     track.set_height(16);
+    track.set_screen_anchor(Anchor::CENTER_LEFT);
+    track.set_anchor(Anchor::CENTER_LEFT);
 
     thumb.set_width(16);
     thumb.set_height(16);
+    thumb.set_screen_anchor(Anchor::CENTER_LEFT);
+    thumb.set_anchor(Anchor::CENTER_CENTER);
   }
 
   void on_value_changed(std::function<void(i32)> lambda_) {

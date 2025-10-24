@@ -11,6 +11,7 @@
 #include <glm/trigonometric.hpp>
 #include "common.hpp"
 #include "cubes.hpp"
+#include "glad/glad.h"
 #include "random.hpp"
 #include "shader.hpp"
 #include "texture.hpp"

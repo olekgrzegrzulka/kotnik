@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.31)
 
 project(kotnik)
 
 add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror=shadow -Werror=switch -Werror=return-type ${MY_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror=shadow -Wuninitialized -Werror=switch -Werror=return-type ${MY_FLAGS} -O3")
 SET(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,14 +32,22 @@ set(SOURCES
     ./src/world_renderer.cpp
     ./src/skybox.cpp
     ./src/clouds.cpp
-    ./src/ui/widget.cpp
-    ./src/ui/sprite.cpp
-    ./src/ui/label.cpp
-    ./src/ui/pause_menu.cpp
-    ./src/ui/slider.cpp
-    ./src/ui/button.cpp
-    ./src/ui/settings_menu.cpp
     ./src/world_lighter.cpp
+    ./src/texture.cpp
+    ./src/shader.cpp
+    ./src/water_overlay.cpp
+
+    ./src/ui/button.cpp
+    ./src/ui/font_face.cpp
+    ./src/ui/label.cpp
+    ./src/ui/slider.cpp
+    ./src/ui/sprite.cpp
+    ./src/ui/text_input.cpp
+    ./src/ui/texture_atlas.cpp
+    ./src/ui/ui.cpp
+    ./src/ui/widget.cpp
+    ./src/ui/pause_menu.cpp
+    ./src/ui/settings_menu.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})

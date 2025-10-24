@@ -67,7 +67,7 @@ class World {
   friend class WorldRenderer;
 
 public:
-  static const i32 chunk_load_distance = 7;
+  static i32 chunk_load_distance;
   static const i32 max_chunk_y = 7;
   static const i32 min_chunk_y = -7;
 

@@ -61,10 +61,22 @@ void clouds_draw(const glm::mat4& camera_matrix) {
 
   clouds_shader.use();
   clouds_shader.set_uniform_mat4("camera_matrix", camera_matrix);
-  clouds_shader.set_uniform_float("color", color.r, color.g, color.b);
+  clouds_shader.set_uniform_float("color", color.r, color.g, color.b, 1.0);
   clouds_shader.set_uniform_float("scale", 3.0);
   clouds_shader.set_uniform_float("speed", 0.0025);
   clouds_shader.set_uniform_i32("t", t);
+  clouds_texture.bind(0);
+
+  glBindVertexArray(vao);
+  glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+  glBindVertexArray(0);
+
+  clouds_shader.use();
+  clouds_shader.set_uniform_mat4("camera_matrix", camera_matrix);
+  clouds_shader.set_uniform_float("color", color.r, color.g, color.b, 0.45);
+  clouds_shader.set_uniform_float("scale", 1.5);
+  clouds_shader.set_uniform_float("speed", 0.00113);
+  clouds_shader.set_uniform_i32("t", t + 1000);
   clouds_texture.bind(0);
 
   glBindVertexArray(vao);

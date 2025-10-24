@@ -3,29 +3,39 @@
 #include <limits>
 #include <locale>
 #include <string>
-#include <vector>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include "../common.hpp"
+#include "../glad/glad.h"
 #include "../shader.hpp"
-#include "../vertex.hpp"
+#include "../types.hpp"
 #include "font_face.hpp"
 #include "label.hpp"
+#include "sprite.hpp"
 #include "ui.hpp"
 #include "widget.hpp"
 
-Label::Label(const UI& ui_) : Widget::Widget(ui_) {
+Label::Label(UI& ui_) : Widget::Widget(ui_) {
 }
 
-Label::Label(const UI& ui_, std::string text_) : Widget::Widget(ui_) {
+Label::Label(UI& ui_, std::string text_) : Widget::Widget(ui_) {
+
   set_text(text_);
+  update_mesh();
 }
 
 Label::~Label() {
 }
 
 void Label::update() {
-  if (dirty) {
+  bool dirty_ = dirty;
+  Widget::update();
+  // if (text_dirty) {
+  //   update_mesh();
+  //   text_dirty = false;
+  //   debug_warn("TEXTdirty ", text);
+  // }
+
+  if (dirty_) {
     update_mesh();
     setup_buffers();
     dirty = false;
@@ -49,12 +59,11 @@ void Label::update_mesh() {
   i32 window_height_ = ui.get_window_height();
 
   vertices.clear();
-  width = 0;
-  height = 0;
+  glm::vec2 text_extents{};
 
   glm::vec<2, i32> max_bearing = {std::numeric_limits<i32>::min(), std::numeric_limits<i32>::min()};
 
-  // // calculate text dimensions
+  // calculate text dimensions
   size_t text_length = 0;
   static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
   auto text_utf32 = converter.from_bytes(text);
@@ -65,19 +74,18 @@ void Label::update_mesh() {
     auto* glyph = ui.get_font_face().find_glyph(c);
     if (!glyph) { continue; }
 
-    width += glyph->advance.x / 64.0;
-    height = std::max(height, glyph->size.y);
+    text_extents.x += glyph->advance.x / 64.0;
+    text_extents.y = std::max(text_extents.y, (float)glyph->size.y);
 
     max_bearing.x = std::max(max_bearing.x, glyph->bearing.x);
     max_bearing.y = std::max(max_bearing.y, glyph->bearing.y);
   }
 
   // calculate initial pen position
-  glm::vec2 pen = {x, y};
-  pen.y += max_bearing.y;
-  pen += anchor_to_uv(screen_anchor) * glm::vec2{window_width_, window_height_};
-  pen.x -= width * anchor_to_uv(anchor).x;
-  pen.y -= height * anchor_to_uv(anchor).y;
+  glm::vec2 pen = get_position();
+  pen += glm::vec<2, i32>((anchor_to_uv(label_anchor)) * (glm::vec2(width, height) - text_extents));
+  pen.y += text_extents.y;
+  // pen.y += max_bearing.y;
 
   for (auto c : text_utf32) {
     auto* glyph = ui.get_font_face().find_glyph(c);

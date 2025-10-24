@@ -1,5 +1,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "common.hpp"
+#include "glad/glad.h"
 #include "shader.hpp"
 
 class CubeIndicatorRenderer {

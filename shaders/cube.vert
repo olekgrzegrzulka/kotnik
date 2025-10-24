@@ -7,6 +7,8 @@ uniform mat4 camera_matrix;
 uniform vec3 light_dir;
 uniform vec3 camera_pos;
 uniform float alpha;
+uniform float fog_start = 180.0;
+uniform float fog_end = 240.0;
 
 out vec2 uv;
 out float brightness;
@@ -25,13 +27,11 @@ void main() {
     uint brightness_vertex = ((pack & 0xFF000000) >> 24); // from 0 to 255
     // brightness_vertex = 255;
 
-
     float dot = (dot(normal, light_dir) + 1.0) * 0.5;
     brightness = 0.5 + dot * 0.5;
     brightness = min(brightness, float(brightness_vertex) / 255.0);
 
-    const float fog_start = 180.0;
-    const float fog_end = 240.0;
+
     float dist = distance(vertex, camera_pos);
     dist = sqrt(
         (vertex.x - camera_pos.x) * (vertex.x - camera_pos.x) +

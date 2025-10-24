@@ -1,7 +1,8 @@
 #pragma once
+#include <string>
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
-#include "common.hpp"
+#include "types.hpp"
 
 namespace Input {
 
@@ -151,13 +152,21 @@ void glfw_mouse_button_callback(GLFWwindow*, i32 button, i32 action, i32 mods);
 
 void glfw_scroll_button_callback(GLFWwindow*, double xoffset, double yoffset);
 
+void glfw_char_callback(GLFWwindow*, u32 c);
+
 void init(GLFWwindow*);
 
 void update();
 
-int get_mouse_x();
+glm::vec<2, i32> get_mouse_pos();
 
-int get_mouse_y();
+i32 get_mouse_x();
+
+i32 get_mouse_y();
+
+i32 get_window_x();
+
+i32 get_window_y();
 
 bool mouse_pressed(Input::Mouse);
 bool mouse_just_pressed(Input::Mouse);
@@ -167,7 +176,13 @@ bool key_pressed(Input::Key);
 bool key_just_pressed(Input::Key);
 bool key_just_released(Input::Key);
 
+glm::vec<2, float> get_mouse_scroll();
+
 glm::vec<2, i32> get_mouse_delta();
 
 glm::vec<2, i32> get_window_size();
+
+std::string get_typed_characters();
+
+std::string key_to_string(Input::Key key);
 }; // namespace Input

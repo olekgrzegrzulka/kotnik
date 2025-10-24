@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <glm/vec2.hpp>
-#include "../common.hpp"
+#include "../types.hpp"
 #include "widget.hpp"
 
 class UI;
@@ -22,6 +22,8 @@ protected:
   float nine_slice_scale = 1.0f;
   glm::vec<2, float> uv_start = {0.0f, 0.0f};
   glm::vec<2, float> uv_end = {1.0f, 1.0f};
+  i32 texture_width = 16;
+  i32 texture_height = 16;
 
 protected:
   u32 vbo = 0;
@@ -29,7 +31,9 @@ protected:
   std::vector<vertex_sprite> vertices;
 
 public:
-  Sprite(const UI& ui_);
+  Sprite(UI&);
+
+  Sprite(UI&, std::string texture_id);
 
   ~Sprite() override;
 
@@ -40,6 +44,8 @@ public:
   void update_mesh();
 
   void setup_buffers();
+
+  void set_texture(std::string id);
 
   WIDGET_DEF_SETTER_DIRTY(nine_slice_margin)
   WIDGET_DEF_SETTER_DIRTY(nine_slice_scale)

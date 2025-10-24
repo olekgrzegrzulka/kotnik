@@ -1,25 +1,13 @@
 #pragma once
-#include <chrono>
 #include <cstring>
 #include <ctime>
-#include <iostream>
-#include <mutex>
-#include <string>
-#include <unordered_map>
-#include <vector>
 #include <glm/common.hpp>
 #include <glm/vec3.hpp>
 #include <stdint.h>
 
-using u8 = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
-
-using i8 = int8_t;
-using i16 = int16_t;
-using i32 = int32_t;
-using i64 = int64_t;
+#include "debug.hpp"
+#include "math.hpp"
+#include "types.hpp"
 
 typedef glm::vec<3, i32> ChunkPos;
 typedef glm::vec<3, i32> CubePos;
@@ -35,14 +23,13 @@ struct rgb {
   auto operator<=>(const rgb& rhs) const = default;
 };
 
-enum Dir {
-  NONE = 0,
-  LEFT = 1,
-  RIGHT = 2,
-  FRONT = 4,
-  BACK = 8,
-  TOP = 16,
-  BOTTOM = 32,
+struct rgba {
+  u8 r;
+  u8 g;
+  u8 b;
+  u8 a;
+
+  auto operator<=>(const rgba& rhs) const = default;
 };
 
 template <typename T>
@@ -68,175 +55,6 @@ constexpr glm::vec<3, T> Vec3Back = {0, 0, 1};
       glm::floor(pos.x),
       glm::floor(pos.y),
       glm::floor(pos.z)};
-}
-
-template <typename T>
-static void print_(T&& arg) {
-  std::cout << arg;
-}
-
-template <typename T>
-static void print_(glm::vec<2, T> vec2) {
-  std::cout << "[" << vec2.x << ", " << vec2.y << "]";
-}
-
-template <typename T>
-static void print_(glm::vec<3, T> vec3) {
-  std::cout << "[" << vec3.x << ", " << vec3.y << ", " << vec3.z << "]";
-}
-
-template <typename T>
-static void print_(std::vector<T> vec) {
-  std::cout << "{";
-  for (size_t i = 0; i < vec.size(); i += 1) {
-    print_(vec[i]);
-    if (i != vec.size() - 1) {
-      std::cout << ", ";
-    }
-  }
-  std::cout << "}";
-}
-
-template <typename T>
-static void print(T arg) {
-  print_(arg);
-  std::cout << std::endl;
-}
-
-template <typename T, typename... R>
-static void print(T&& first_arg, R&&... args) {
-  print_(first_arg);
-  print(args...);
-}
-
-#define __FILENAME__ strrchr("/" __FILE__, '/') + 1
-
-#define debug_log(...) \
-  print("\033[1;36m", "[LOG] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__)
-
-#define debug_log_no_filename(...) \
-  print("\033[1;36m", "[LOG]\033[0m ", __VA_ARGS__)
-
-#define debug_warn(...) \
-  print("\033[1;33m", "[WARN] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__)
-
-#define debug_error(...)                                                                               \
-  print("\033[1;31m", "[ERROR] \033[1;37m", __FILENAME__, ":", __LINE__, " ", "\033[0m", __VA_ARGS__); \
-  exit(1)
-
-#define ensure(condition)               \
-  do {                                  \
-    if (!(condition)) {                 \
-      debug_error("Assertion failed!"); \
-    }                                   \
-  } while (false);
-
-struct ScopeTimer {
-  std::string message;
-  std::chrono::time_point<std::chrono::system_clock> start_time;
-
-  ScopeTimer(std::string _message = "") : message(_message) {
-    start_time = std::chrono::high_resolution_clock::now();
-  }
-
-  ~ScopeTimer() {
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    if (message.empty()) {
-      debug_log_no_filename("took ", milliseconds);
-    } else {
-      debug_log_no_filename(message, " took ", milliseconds);
-    }
-  }
-};
-
-class Benchmark {
-  static constexpr size_t max_measure_count = 1000;
-  friend class measure;
-
-private:
-  static inline std::unordered_map<std::string, std::vector<long>> times;
-  static inline std::mutex times_mutex;
-
-public:
-  static void print_all() {
-    std::scoped_lock lock{times_mutex};
-    for (auto& [tag, vec] : times) {
-      debug_log_no_filename(tag);
-
-      long sum = 0;
-
-      for (auto ms : vec) {
-        sum += ms;
-      }
-      if (vec.size() == max_measure_count) {
-        debug_log_no_filename("\t count:   ", max_measure_count, "+");
-      } else {
-        debug_log_no_filename("\t count:   ", vec.size());
-      }
-      debug_log_no_filename("\t average: ", sum / (double)(vec.size()), " ms");
-    }
-  }
-
-  class measure {
-  public:
-    [[nodiscard]] measure(std::string tag_) : tag{tag_} {
-      start = std::chrono::high_resolution_clock::now();
-    }
-
-    ~measure() {
-      auto end = std::chrono::high_resolution_clock::now();
-      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-      std::scoped_lock lock{Benchmark::times_mutex};
-
-      auto it = Benchmark::times.find(tag);
-      if (it != Benchmark::times.end()) {
-        auto& my_times = it->second;
-
-        if (my_times.size() == Benchmark::max_measure_count) {
-          my_times[i] = ms;
-          i = (i + 1) % Benchmark::max_measure_count;
-        } else {
-          my_times.emplace_back(ms);
-        }
-
-      } else {
-        Benchmark::times[tag] = {ms};
-      }
-    }
-
-  private:
-    size_t i = 0;
-    std::string tag;
-    using chrono_time_point = decltype(std::chrono::high_resolution_clock::now());
-    chrono_time_point start;
-  };
-};
-#define CONCAT2__(a, b) a##b
-#define CONCAT1__(a, b) CONCAT2__(a, b)
-#define BENCHMARK(tag) auto CONCAT1__(benchmark_measure, __LINE__) = Benchmark::measure(tag);
-
-static constexpr Dir opposite_dir(Dir dir) {
-  if (dir == Dir::NONE) {
-    return Dir::NONE;
-  } else if (dir == Dir::LEFT) {
-    return Dir::RIGHT;
-  } else if (dir == Dir::RIGHT) {
-    return Dir::LEFT;
-  } else if (dir == Dir::FRONT) {
-    return Dir::BACK;
-  } else if (dir == Dir::BACK) {
-    return Dir::FRONT;
-  } else if (dir == Dir::TOP) {
-    return Dir::BOTTOM;
-  } else if (dir == Dir::BOTTOM) {
-    return Dir::TOP;
-  }
-
-  debug_error("opposite_dir(): invalid input direction");
-  return Dir::NONE;
 }
 
 // FIXME: better hashing function
@@ -274,31 +92,4 @@ static glm::vec<3, T> lerp_vec3(glm::vec<3, T> from, glm::vec<3, T> to, float a)
       std::lerp(from.x, to.x, a),
       std::lerp(from.y, to.y, a),
       std::lerp(from.z, to.z, a)};
-}
-
-template <class T>
-static constexpr T manhattan_distance(glm::vec<2, T> first, glm::vec<2, T> second) {
-  return std::abs(first.x - second.x) + std::abs(first.y - second.y);
-}
-
-template <class T>
-static constexpr T manhattan_distance(glm::vec<3, T> first, glm::vec<3, T> second) {
-  return std::abs(first.x - second.x) + std::abs(first.y - second.y) + std::abs(first.z - second.z);
-}
-
-template <typename T>
-static void sort_vector_by_manhattan_distance(std::vector<glm::vec<3, T>>& vector, glm::vec<3, T> to) {
-  using Vec3T = glm::vec<3, T>;
-  std::sort(vector.begin(), vector.end(), [&](const Vec3T a, const Vec3T b) {
-    ChunkPos first = glm::abs(to - a);
-    ChunkPos second = glm::abs(to - b);
-    return first.x + first.y + first.z < second.x + second.y + second.z;
-  });
-}
-
-// Adapted from https://github.com/godotengine/godot/blob/0eadbdb5d0709e4e557e52377fa075d3e2f0ad1f/core/math/math_funcs.h#L511
-template <class T>
-constexpr T wrapi(T value, T min, T max) {
-  T range = max - min;
-  return range == 0 ? min : min + ((((value - min) % range) + range) % range);
 }

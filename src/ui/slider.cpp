@@ -1,8 +1,20 @@
 #include "slider.hpp"
-#include "../common.hpp"
+#include <cmath>
 #include "../input.hpp"
+#include "../types.hpp"
+#include "sprite.hpp"
 
 void Slider::update() {
+  if (dirty) {
+
+    // FIXME: this can cause a 1 frame delay when children are updated BEFORE parent
+    for (auto&& c : children) {
+      c->mark_dirty();
+    }
+
+    dirty = false;
+  }
+
   static constexpr i32 x_margin = 10;
   bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x - x_margin &&
                            Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x + x_margin;
@@ -30,18 +42,10 @@ void Slider::update() {
     lambda(value);
   }
 
-  track.set_x(x);
-  track.set_y(y);
   track.set_width(width);
-  track.set_anchor(anchor);
-  track.set_screen_anchor(screen_anchor);
 
-  i32 thumb_x = track.get_position(Anchor::CENTER_CENTER).x - width * 0.5;
-  thumb_x += (value - min_value) / (float)(max_value - min_value) * width;
-  thumb.set_x(thumb_x);
-  thumb.set_y(track.get_position(Anchor::CENTER_CENTER).y);
-  thumb.set_anchor(Anchor::CENTER_CENTER);
-  thumb.set_screen_anchor(Anchor::TOP_LEFT);
+  i32 thumb_x = (value - min_value) / (float)(max_value - min_value) * width;
+  thumb.set_x(std::lerp(thumb.get_x(), thumb_x, 0.7));
 
   bool mouse_on_thumb_x = Input::get_mouse_x() >= thumb.get_position(Anchor::TOP_LEFT).x &&
                           Input::get_mouse_x() < thumb.get_position(Anchor::BOTTOM_RIGHT).x;
@@ -49,13 +53,10 @@ void Slider::update() {
                           Input::get_mouse_y() < thumb.get_position(Anchor::BOTTOM_RIGHT).y;
   bool mouse_on_thumb = mouse_on_thumb_x && mouse_on_thumb_y;
   if (is_dragged) {
-    thumb.set_uv_start({2.0 / 16.0, 3.0 / 16.0});
-    thumb.set_uv_end({3.0 / 16.0, 4.0 / 16.0});
+    thumb.set_texture("slider_thumb_pressed");
   } else if (mouse_on_thumb && !lmb_pressed) {
-    thumb.set_uv_start({2.0 / 16.0, 2.0 / 16.0});
-    thumb.set_uv_end({3.0 / 16.0, 3.0 / 16.0});
+    thumb.set_texture("slider_thumb_hovered");
   } else {
-    thumb.set_uv_start({2.0 / 16.0, 1.0 / 16.0});
-    thumb.set_uv_end({3.0 / 16.0, 2.0 / 16.0});
+    thumb.set_texture("slider_thumb_idle");
   }
 }
