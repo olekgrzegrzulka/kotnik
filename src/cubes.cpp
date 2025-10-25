@@ -215,7 +215,7 @@ constexpr Cube& Cube::add_model_x_shape(glm::vec<2, float> uv) {
   return *this;
 };
 
-void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, std::optional<i32> rng_opt, std::vector<CompactVertex>& vertices_list) const {
+void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, std::optional<i32> rng_opt, rgb foliage_color, std::vector<CompactVertex>& vertices_list) const {
   if (draw_data.vertices.empty()) { return; }
   CubeId cube_id = neigbour_cube_ids.center.value();
 
@@ -329,6 +329,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
 
   for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     // vertex.pack.brightness = neigbour_cube_ids.brightness;
     vertices_list.emplace_back(vertex);
   }
@@ -347,6 +350,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_left);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
@@ -365,6 +371,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_right);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
@@ -383,6 +392,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_bottom);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
@@ -401,6 +413,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_top);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
@@ -419,6 +434,9 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_front);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
@@ -437,47 +455,71 @@ void Cube::get_vertices(CubePos cube_pos, NeigbourCubeIds& neigbour_cube_ids, st
       // vertex.pack.brightness = std::min(vertex.pack.brightness, neigbour_cube_ids.brightness_back);
 
       vertex.pos += cube_pos;
+      vertex.foliage_color.r = foliage_color.r;
+      vertex.foliage_color.g = foliage_color.g;
+      vertex.foliage_color.b = foliage_color.b;
       vertices_list.emplace_back(vertex);
     }
   }
 }
 
-void Cube::get_vertices(CubePos cube_pos, i32 rng, std::vector<CompactVertex>& vertices_list) const {
+void Cube::get_vertices(CubePos cube_pos, i32 rng, rgb foliage_color, std::vector<CompactVertex>& vertices_list) const {
   if (draw_data.vertices.empty()) { return; }
   if (draw_data.vertices.size() == 0) { return; }
   size_t vertices_index = std::abs(rng) % draw_data.vertices.size();
   for (auto vertex : draw_data.vertices[vertices_index].vertices) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].left) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].right) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].bottom) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].top) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].front) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 
   for (auto vertex : draw_data.vertices[vertices_index].back) {
     vertex.pos += cube_pos;
+    vertex.foliage_color.r = foliage_color.r;
+    vertex.foliage_color.g = foliage_color.g;
+    vertex.foliage_color.b = foliage_color.b;
     vertices_list.emplace_back(vertex);
   }
 }

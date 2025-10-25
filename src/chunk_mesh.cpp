@@ -1,9 +1,11 @@
 #include "chunk_mesh.hpp"
 #include <memory>
 #include <glm/gtx/norm.hpp>
+#include "biome.hpp"
 #include "chunk.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
+#include "debug.hpp"
 #include "glad/glad.h"
 #include "world.hpp"
 #include "world_renderer.hpp"
@@ -36,6 +38,14 @@ ChunkMeshData::ChunkMeshData(ChunkPos chunk_pos_, World& world) {
   }
   valid = true;
   chunk_pos = chunk_pos_;
+
+  i32 half = Chunk::chunk_size / 2;
+  auto& wg = world.get_world_gen();
+  CubePos middle = chunk_pos * Chunk::chunk_size + CubePos{half, half, half};
+  foliage_color_neg_x_neg_z = wg.get_blended_biome(middle + CubePos{-half, 0, -half}).foliage_color;
+  foliage_color_neg_x_pos_z = wg.get_blended_biome(middle + CubePos{-half, 0, +half}).foliage_color;
+  foliage_color_pos_x_neg_z = wg.get_blended_biome(middle + CubePos{+half, 0, -half}).foliage_color;
+  foliage_color_pos_x_pos_z = wg.get_blended_biome(middle + CubePos{+half, 0, +half}).foliage_color;
 }
 
 inline CubeId ChunkMeshData::get_cube_id(LocalPos at, bool check_if_neigbour_chunk) {
@@ -63,6 +73,26 @@ inline u8 ChunkMeshData::get_lightmap(LocalPos at, bool check_if_neigbour_chunk)
 ChunkMesh::ChunkMesh() {
 }
 
+rgb interpolate_foliage_color(float l_x, float l_y, rgb foliage_color_neg_x_neg_z, rgb foliage_color_neg_x_pos_z, rgb foliage_color_pos_x_neg_z, rgb foliage_color_pos_x_pos_z) {
+  float t_x = l_x / 32.0f;
+  float t_y = l_y / 32.0f;
+
+  float r_neg_z = (1.0f - t_x) * foliage_color_neg_x_neg_z.r + t_x * foliage_color_pos_x_neg_z.r;
+  float g_neg_z = (1.0f - t_x) * foliage_color_neg_x_neg_z.g + t_x * foliage_color_pos_x_neg_z.g;
+  float b_neg_z = (1.0f - t_x) * foliage_color_neg_x_neg_z.b + t_x * foliage_color_pos_x_neg_z.b;
+
+  float r_pos_z = (1.0f - t_x) * foliage_color_neg_x_pos_z.r + t_x * foliage_color_pos_x_pos_z.r;
+  float g_pos_z = (1.0f - t_x) * foliage_color_neg_x_pos_z.g + t_x * foliage_color_pos_x_pos_z.g;
+  float b_pos_z = (1.0f - t_x) * foliage_color_neg_x_pos_z.b + t_x * foliage_color_pos_x_pos_z.b;
+
+  rgb result;
+  result.r = static_cast<uint8_t>((1.0f - t_y) * r_neg_z + t_y * r_pos_z + 0.5f);
+  result.g = static_cast<uint8_t>((1.0f - t_y) * g_neg_z + t_y * g_pos_z + 0.5f);
+  result.b = static_cast<uint8_t>((1.0f - t_y) * b_neg_z + t_y * b_pos_z + 0.5f);
+
+  return result;
+}
+
 ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
   BENCHMARK("chunk meshing");
   const ChunkPos chunk_pos = data->get_chunk_pos();
@@ -74,6 +104,8 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
     if (data->get_cube_id(l, 13) == CubeId::AIR) { continue; }
     bool is_edge = l.x == 0 || l.x == Chunk::chunk_size - 1 || l.y == 0 || l.y == Chunk::chunk_size - 1 || l.z == 0 || l.z == Chunk::chunk_size - 1;
     auto& cube = cubes_get(data->get_cube_id(l, false));
+
+    rgb foliage_color = interpolate_foliage_color(l.x, l.z, data->foliage_color_neg_x_neg_z, data->foliage_color_neg_x_pos_z, data->foliage_color_pos_x_neg_z, data->foliage_color_pos_x_pos_z);
 
     neigbour_cube_ids.center = data->get_cube_id(LocalPos{l.x, l.y, l.z}, false);
     // Straight neigbour_cube_ids
@@ -120,9 +152,9 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
     neigbour_cube_ids.brightness_back = data->get_lightmap(l + LocalPos{+0, +0, +1}, is_edge);
 
     if (cube.draw_data.is_translucent) {
-      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices_translucent);
+      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, foliage_color, vertices_translucent);
     } else {
-      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, vertices);
+      cube.get_vertices(chunk_pos * Chunk::chunk_size + l, neigbour_cube_ids, std::nullopt, foliage_color, vertices);
     }
   }
 }
@@ -160,6 +192,10 @@ void ChunkMesh::initialize() {
     glEnableVertexAttribArray(1);
     glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
 
+    // Bind foliage color
+    glEnableVertexAttribArray(2);
+    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, foliage_color));
+
     // Unbind buffers
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -184,6 +220,10 @@ void ChunkMesh::initialize() {
     // Bind packed normals information
     glEnableVertexAttribArray(1);
     glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
+
+    // Bind foliage color
+    glEnableVertexAttribArray(2);
+    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, foliage_color));
 
     // Unbind buffers
     glBindVertexArray(0);

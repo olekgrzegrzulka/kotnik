@@ -2,6 +2,7 @@
 
 layout (location = 0) in vec3 vertex;
 layout (location = 1) in uint pack;
+layout (location = 2) in uint foliage_;
 
 uniform mat4 camera_matrix;
 uniform vec3 light_dir;
@@ -14,6 +15,7 @@ out vec2 uv;
 out float brightness;
 out float fog_factor;
 out float alpha_frag;
+out vec3 foliage;
 
 void main() {
     uv.x = float((pack & 0xFF)) / 16.0 / 2.0;
@@ -23,6 +25,10 @@ void main() {
     normal.x = float((pack & 0x30000) >> 16) - 1.0;
     normal.y = float((pack & 0xc0000) >> 18) - 1.0;
     normal.z = float((pack & 0x300000) >> 20) - 1.0;
+
+    foliage.r = float((foliage_ & 0x000000FF) >> 0) / 255.0;
+    foliage.g = float((foliage_ & 0x0000FF00) >> 8) / 255.0;
+    foliage.b = float((foliage_ & 0x00FF0000) >> 16) / 255.0;
 
     uint brightness_vertex = ((pack & 0xFF000000) >> 24); // from 0 to 255
     // brightness_vertex = 255;

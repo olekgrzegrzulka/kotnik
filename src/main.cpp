@@ -110,6 +110,7 @@ int main() {
   glViewport(0, 0, window_size.x, window_size.y);
 
   Texture atlas_texture{"atlas.png"};
+  Texture atlas_texture_foliage_mask{"atlas_foliage_mask.png"};
 
   Shader cube_shader{"cube"};
 
@@ -123,7 +124,7 @@ int main() {
   clouds_init();
 
   World world;
-  WorldRenderer world_renderer(world, cube_shader, atlas_texture);
+  WorldRenderer world_renderer(world, cube_shader, atlas_texture, atlas_texture_foliage_mask);
   world.add_entity<Player>({0, 20, 0});
 
   std::stringstream ss_seed;

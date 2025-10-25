@@ -19,6 +19,11 @@ public:
   bool is_valid() const { return valid; }
   ChunkPos get_chunk_pos() const { return chunk_pos; }
 
+  rgb foliage_color_neg_x_neg_z{};
+  rgb foliage_color_neg_x_pos_z{};
+  rgb foliage_color_pos_x_neg_z{};
+  rgb foliage_color_pos_x_pos_z{};
+
 private:
   std::array<decltype(Chunk::cubes), 27> cubes;
   std::array<decltype(Chunk::lightmap), 27> lightmaps;

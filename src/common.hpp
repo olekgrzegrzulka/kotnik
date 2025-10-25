@@ -33,6 +33,16 @@ struct rgba {
 };
 
 template <typename T>
+static void print_(const rgb& c) {
+  std::cout << "rgb(" << c.r << ", " << c.g << ", " << c.b << ")";
+}
+
+template <typename T>
+static void print_(const rgba& c) {
+  std::cout << "rgb(" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << ")";
+}
+
+template <typename T>
 constexpr glm::vec<3, T> Vec3Left = {-1, 0, 0};
 
 template <typename T>

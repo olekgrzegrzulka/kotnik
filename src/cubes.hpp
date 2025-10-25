@@ -49,6 +49,13 @@ struct CompactVertex {
     u8 brightness = 255;
   } pack;
 
+  struct {
+    u8 r{};
+    u8 g{};
+    u8 b{};
+    u8 unused{};
+  } foliage_color;
+
   constexpr CompactVertex(glm::vec<3, float> pos_, float u_, float v_, CompactVertexNormal normal_)
       : pos(pos_) {
     set_uv(u_, v_);
@@ -68,7 +75,7 @@ struct CompactVertex {
 
 static_assert(sizeof(float) == 4);
 static_assert(sizeof(CompactVertexNormal) == 1);
-static_assert(sizeof(CompactVertex) == 16);
+static_assert(sizeof(CompactVertex) == 20);
 
 struct Cube {
   std::string name = "";
@@ -128,9 +135,9 @@ struct Cube {
     CubeAOMode ao = CubeAOMode::ALWAYS;
   } draw_data;
 
-  void get_vertices(CubePos, NeigbourCubeIds&, std::optional<i32> rng, std::vector<CompactVertex>& vertices_list) const;
+  void get_vertices(CubePos, NeigbourCubeIds&, std::optional<i32> rng, rgb foliage_color, std::vector<CompactVertex>& vertices_list) const;
 
-  void get_vertices(CubePos, i32 rng, std::vector<CompactVertex>& vertices_list) const;
+  void get_vertices(CubePos, i32 rng, rgb foliage_color, std::vector<CompactVertex>& vertices_list) const;
 
   Cube& set_occlusion_mode(CubeOccludeMode mode) {
     using enum CubeOccludeMode;

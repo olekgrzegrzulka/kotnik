@@ -32,6 +32,7 @@ enum class BiomeId : u16 {
 
 struct Biome final {
   std::string name = "Biome";
+  rgb foliage_color{};
 
   float base_height = 0.0f;
   float noise_height_multiplier = 0.0f;

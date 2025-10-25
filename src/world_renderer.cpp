@@ -26,8 +26,8 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
   });
 }
 
-WorldRenderer::WorldRenderer(World& world_, Shader& cube_shader_, Texture& atlas_texture_)
-    : world{world_}, cube_shader{cube_shader_}, atlas_texture{atlas_texture_} {
+WorldRenderer::WorldRenderer(World& world_, Shader& cube_shader_, Texture& atlas_texture_, Texture& atlas_foliage_mask_texture_)
+    : world{world_}, cube_shader{cube_shader_}, atlas_texture{atlas_texture_}, atlas_foliage_mask_texture{atlas_foliage_mask_texture_} {
   for (size_t i = 0; i < 1; i += 1) {
     chunk_mesh_workers.push_back(std::make_unique<ChunkMeshWorker>());
   }
@@ -65,6 +65,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   static constexpr glm::vec3 light = {0.41f, 0.82f, 0.41f};
   cube_shader.use();
   atlas_texture.bind(0);
+  atlas_foliage_mask_texture.bind(1);
   cube_shader.set_uniform_mat4("camera_matrix", camera_matrix);
   cube_shader.set_uniform_float("light_dir", light.x, light.y, light.z);
   cube_shader.set_uniform_float("camera_pos", camera_pos.x, camera_pos.y, camera_pos.z);

@@ -80,7 +80,7 @@ public:
 private:
   void update_mesh(CubeId cube) {
     vertices.clear();
-    cubes_get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), vertices);
+    cubes_get(cube).get_vertices(CubePos{}, StaticRandom::get().next<i32>(), rgb{90, 132, 41}, vertices);
     // Create and bind VAO
     glGenVertexArrays(1, (GLuint*)&vao);
 
@@ -99,6 +99,10 @@ private:
     // Bind packed normals information
     glEnableVertexAttribArray(1);
     glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, pack));
+
+    // Bind foliage color
+    glEnableVertexAttribArray(2);
+    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(CompactVertex), (void*)offsetof(CompactVertex, foliage_color));
 
     // Unbind buffers
     glBindVertexArray(0);

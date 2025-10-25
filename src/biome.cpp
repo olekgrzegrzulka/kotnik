@@ -1,5 +1,7 @@
 #include "biome.hpp"
+#include <algorithm>
 #include <vector>
+#include "common.hpp"
 #include "cubes.hpp"
 
 using BiomeList = std::array<biomes::Biome, (size_t)biomes::BiomeId::BIOME_ID_SIZE>;
@@ -12,6 +14,7 @@ const BiomeList init_biome_list() {
   // Flatlands
   Biome biome_flatlands{
       .name = "Flatlands",
+      .foliage_color = rgb{143, 149, 50},
       .base_height = 0.0f,
       .noise_height_multiplier = 10.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -39,6 +42,7 @@ const BiomeList init_biome_list() {
   // Flatlands
   Biome biome_forest{
       .name = "Forest",
+      .foliage_color = rgb{90, 132, 41},
       .base_height = 0.0f,
       .noise_height_multiplier = 10.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -66,6 +70,7 @@ const BiomeList init_biome_list() {
   // Desert
   Biome biome_desert{
       .name = "Desert",
+      .foliage_color = rgb{163, 124, 33},
       .base_height = 0.0f,
       .noise_height_multiplier = 12.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -86,6 +91,7 @@ const BiomeList init_biome_list() {
   // Desert Highlands
   Biome biome_desert_highlands{
       .name = "Desert Highlands",
+      .foliage_color = rgb{163, 124, 33},
       .base_height = 50.0f,
       .noise_height_multiplier = 10.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -106,6 +112,7 @@ const BiomeList init_biome_list() {
   // Shallow Waters
   Biome biome_shallow_waters{
       .name = "Shallow Waters",
+      .foliage_color = rgb{133, 139, 83},
       .base_height = -2.0f,
       .noise_height_multiplier = 2.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -130,6 +137,7 @@ const BiomeList init_biome_list() {
   // Ocean
   Biome biome_ocean{
       .name = "Ocean",
+      .foliage_color = rgb{133, 139, 80},
       .base_height = -8.0f,
       .noise_height_multiplier = 8.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -169,6 +177,7 @@ const BiomeList init_biome_list() {
   // Deep Ocean
   Biome biome_deep_ocean{
       .name = "Deep Ocean",
+      .foliage_color = rgb{133, 139, 80},
       .base_height = -32.0f,
       .noise_height_multiplier = 8.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -194,6 +203,7 @@ const BiomeList init_biome_list() {
   // Beach
   Biome biome_beach{
       .name = "Beach",
+      .foliage_color = rgb{133, 139, 83},
       .base_height = 0.0f,
       .noise_height_multiplier = 4.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -215,6 +225,7 @@ const BiomeList init_biome_list() {
   // Highlands
   Biome biome_highlands{
       .name = "Highlands",
+      .foliage_color = rgb{90, 142, 75},
       .base_height = 65.0f,
       .noise_height_multiplier = 15.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -268,6 +279,7 @@ const BiomeList init_biome_list() {
   // Hillylands
   Biome biome_hillylands{
       .name = "Hillylands",
+      .foliage_color = rgb{125, 145, 50},
       .base_height = 10.0f,
       .noise_height_multiplier = 20.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -295,6 +307,7 @@ const BiomeList init_biome_list() {
   // Stony Plain
   Biome biome_stony_shores{
       .name = "Stony Shores",
+      .foliage_color = rgb{133, 139, 83},
       .base_height = 0.0f,
       .noise_height_multiplier = 4.0f,
       .noise_spiky_multiplier = 0.0f,
@@ -313,6 +326,7 @@ const BiomeList init_biome_list() {
   biome_list[(size_t)BiomeId::STONY_SHORES] = biome_stony_shores;
 
   debug_log("Initialized biome list");
+
   return biome_list;
 }
 
@@ -325,8 +339,16 @@ const Biome& get_biome(BiomeId id) {
 Biome biome_lerp(const biomes::Biome& biome_a, const biomes::Biome& biome_b, float t) {
   const Biome& stronger_biome = (t <= 0.5f) ? biome_a : biome_b;
 
+  float foliage_color_r = (float)biome_a.foliage_color.r * (1.0f - t) + (float)biome_b.foliage_color.r * t;
+  float foliage_color_g = (float)biome_a.foliage_color.g * (1.0f - t) + (float)biome_b.foliage_color.g * t;
+  float foliage_color_b = (float)biome_a.foliage_color.b * (1.0f - t) + (float)biome_b.foliage_color.b * t;
+  foliage_color_r = std::clamp(foliage_color_r, 0.0f, 255.0f);
+  foliage_color_g = std::clamp(foliage_color_g, 0.0f, 255.0f);
+  foliage_color_b = std::clamp(foliage_color_b, 0.0f, 255.0f);
+
   return Biome{
       .name = stronger_biome.name,
+      .foliage_color = rgb{(u8)foliage_color_r, (u8)foliage_color_g, (u8)foliage_color_b},
       .base_height = biome_a.base_height * (1.0f - t) + biome_b.base_height * t,
       .noise_height_multiplier = biome_a.noise_height_multiplier * (1.0f - t) + biome_b.noise_height_multiplier * t,
       .noise_spiky_multiplier = biome_a.noise_spiky_multiplier * (1.0f - t) + biome_b.noise_spiky_multiplier * t,
@@ -364,6 +386,7 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
   Biome blended_biome{};
   float total_weight = 0.0f;
   size_t strongest_biome_index = 0;
+  glm::vec<3, float> foliage_color{};
 
   for (size_t i = 0; i < biomes.size(); i += 1) {
     const Biome& b = biomes[i];
@@ -380,6 +403,7 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
     blended_biome.oak_tree_chance += b.oak_tree_chance * w;
     blended_biome.birch_tree_chance += b.birch_tree_chance * w;
     blended_biome.spruce_tree_chance += b.spruce_tree_chance * w;
+    foliage_color += glm::vec<3, float>(b.foliage_color.r, b.foliage_color.g, b.foliage_color.b) * w;
 
     if (weights[i] > weights[strongest_biome_index]) {
       strongest_biome_index = i;
@@ -395,6 +419,8 @@ Biome biome_weighted_average(std::span<float> weights, std::span<Biome> biomes) 
   blended_biome.oak_tree_chance /= total_weight;
   blended_biome.birch_tree_chance /= total_weight;
   blended_biome.spruce_tree_chance /= total_weight;
+  foliage_color /= total_weight;
+  blended_biome.foliage_color = rgb{(u8)foliage_color.r, (u8)foliage_color.g, (u8)foliage_color.b};
 
   const Biome& strongest_biome = biomes[strongest_biome_index];
   blended_biome.name = strongest_biome.name;
