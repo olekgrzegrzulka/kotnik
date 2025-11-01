@@ -24,7 +24,9 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
                                      panel(add_child<Sprite>()),
                                      top_bar_panel(panel.add_child<Widget>()),
                                      tab_panel(panel.add_child<Sprite>()),
-                                     inner_panel(panel.add_child<Sprite>()),
+                                     panel_tab1(panel.add_child<Sprite>()),
+                                     panel_tab2(panel.add_child<Sprite>()),
+                                     panel_tab3(panel.add_child<Sprite>()),
                                      tab1(tab_panel.add_child<Button>()),
                                      tab2(tab_panel.add_child<Button>()),
                                      tab3(tab_panel.add_child<Button>()),
@@ -65,14 +67,34 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
   tab_panel.set_nine_slice_margin(4);
   tab_panel.set_height(22);
 
-  inner_panel.set_texture("panel_rounded");
-  inner_panel.set_nine_slice_margin(4);
-  inner_panel.set_height(200);
-  inner_panel.get_layout().enabled = true;
-  inner_panel.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
-  inner_panel.get_layout().margin = 6;
-  inner_panel.get_layout().spacing = 0;
-  inner_panel.get_layout().expand_children = true;
+  panel_tab1.set_texture("panel_rounded");
+  panel_tab1.set_nine_slice_margin(4);
+  panel_tab1.set_height(200);
+  panel_tab1.get_layout().enabled = true;
+  panel_tab1.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
+  panel_tab1.get_layout().margin = 6;
+  panel_tab1.get_layout().spacing = 0;
+  panel_tab1.get_layout().expand_children = true;
+
+  panel_tab2.set_texture("panel_rounded");
+  panel_tab2.set_nine_slice_margin(4);
+  panel_tab2.set_height(200);
+  panel_tab2.get_layout().enabled = true;
+  panel_tab2.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
+  panel_tab2.get_layout().margin = 6;
+  panel_tab2.get_layout().spacing = 0;
+  panel_tab2.get_layout().expand_children = true;
+  panel_tab2.set_process(false);
+
+  panel_tab3.set_texture("panel_rounded");
+  panel_tab3.set_nine_slice_margin(4);
+  panel_tab3.set_height(200);
+  panel_tab3.get_layout().enabled = true;
+  panel_tab3.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
+  panel_tab3.get_layout().margin = 6;
+  panel_tab3.get_layout().spacing = 0;
+  panel_tab3.get_layout().expand_children = true;
+  panel_tab3.set_process(false);
 
   tab1_label.set_text("General");
   tab1_label_shadow.set_text("General");
@@ -94,7 +116,7 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
   }
 
   {
-    auto& container_simulation_distance = inner_panel.add_child<Widget>();
+    auto& container_simulation_distance = panel_tab1.add_child<Widget>();
     container_simulation_distance.set_height(20);
     container_simulation_distance.get_layout().enabled = true;
     container_simulation_distance.get_layout().direction = LayoutDirection::LEFT_TO_RIGHT;
@@ -117,7 +139,7 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
   }
 
   {
-    auto& container_fog_density = inner_panel.add_child<Widget>();
+    auto& container_fog_density = panel_tab1.add_child<Widget>();
     container_fog_density.set_height(20);
     container_fog_density.get_layout().enabled = true;
     container_fog_density.get_layout().direction = LayoutDirection::LEFT_TO_RIGHT;
@@ -139,6 +161,29 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
     });
   }
 
+  {
+    auto& container_flight_speed = panel_tab3.add_child<Widget>();
+    container_flight_speed.set_height(20);
+    container_flight_speed.get_layout().enabled = true;
+    container_flight_speed.get_layout().direction = LayoutDirection::LEFT_TO_RIGHT;
+    container_flight_speed.get_layout().margin = 0;
+    container_flight_speed.get_layout().spacing = 0;
+    container_flight_speed.get_layout().expand_children = true;
+    container_flight_speed.get_layout().fill = true;
+    auto& label = container_flight_speed.add_child<Label>("Flight speed");
+    label.set_label_anchor(Anchor::CENTER_LEFT);
+    label.set_weight(0.8f);
+    auto& slider = container_flight_speed.add_child<Slider>();
+    slider.set_weight(1.0f);
+    slider.set_min_value(25);
+    slider.set_max_value(500);
+    slider.set_value(50);
+
+    slider.on_value_changed([&](i32 value) {
+      //  value * 0.01f;
+    });
+  }
+
   for (auto* label : {&tab1_label, &tab2_label, &tab3_label}) {
     label->set_anchor(Anchor::CENTER);
     label->set_screen_anchor(Anchor::CENTER);
@@ -154,16 +199,25 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
   tab1.on_press([&] {
     tab2.depress();
     tab3.depress();
+    panel_tab1.set_process(true);
+    panel_tab2.set_process(false);
+    panel_tab3.set_process(false);
   });
 
   tab2.on_press([&] {
     tab1.depress();
     tab3.depress();
+    panel_tab1.set_process(false);
+    panel_tab2.set_process(true);
+    panel_tab3.set_process(false);
   });
 
   tab3.on_press([&] {
     tab1.depress();
     tab2.depress();
+    panel_tab1.set_process(false);
+    panel_tab2.set_process(false);
+    panel_tab3.set_process(true);
   });
 
   for (size_t i = 0; i < 3; i += 1) {

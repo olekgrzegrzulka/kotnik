@@ -32,3 +32,13 @@ constexpr T wrapi(T value, T min, T max) {
   T range = max - min;
   return range == 0 ? min : min + ((((value - min) % range) + range) % range);
 }
+
+constexpr float wrapf(float value, float min, float max) {
+  float range = max - min;
+  return fmodf(fmodf(value - min, range) + range, range) + min;
+}
+
+constexpr double wrapf(double value, double min, double max) {
+  double range = max - min;
+  return fmodf(fmodf(value - min, range) + range, range) + min;
+}

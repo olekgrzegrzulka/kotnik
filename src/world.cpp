@@ -1,16 +1,20 @@
 #include "world.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <functional>
 #include <map>
 #include <memory>
 #include <unordered_set>
+#include <glm/common.hpp>
+#include "aabb.hpp"
 #include "chunk.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
 #include "cubes.hpp"
 #include "entity.hpp"
 #include "input.hpp"
+#include "math.hpp"
 #include "player.hpp"
 #include "random.hpp"
 #include "world_gen.hpp"
@@ -19,11 +23,11 @@ i32 World::chunk_load_distance = 7;
 
 World::World() : world_lighter{*this} {
   seed = StaticRandom::get().next<i32>();
-  seed = 1081206155;
+  // seed = 1081206155;
   debug_log("Created world with seed ", seed);
   world_gen = std::make_unique<WorldGen>(*this, seed);
 
-  for (size_t i = 0; i < 1; i += 1) {
+  for (size_t i = 0; i < 2; i += 1) {
     chunk_terrain_gen_workers.push_back(std::make_unique<ChunkTerrainGenWorker>(world_gen));
   }
 }
@@ -133,7 +137,24 @@ bool World::has_solid_neigbour(CubePos world_position) const {
 }
 
 bool World::is_solid(glm::vec<3, float> world_position_f) const {
-  return is_solid(CubePos{std::floor(world_position_f.x), std::floor(world_position_f.y), std::floor(world_position_f.z)});
+  glm::vec<3, float> inner_pos = glm::vec<3, float>{
+      wrapf(world_position_f.x, 0.0f, 1.0f),
+      wrapf(world_position_f.y, 0.0f, 1.0f),
+      wrapf(world_position_f.z, 0.0f, 1.0f)};
+
+  glm::vec<3, float> cube_pos = glm::floor(world_position_f);
+
+  auto [chunk_pos, local_pos] = cube_to_local(cube_pos);
+  assert(is_local_pos_valid(local_pos));
+
+  const Chunk* chunk = get_chunk(chunk_pos);
+  if (!chunk) { return false; }
+  for (auto& aabb : cubes_get(chunk->get_cube(local_pos)).hitbox_aabbs) {
+    if (aabb.contains_point(inner_pos)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 WorldPos World::query_raycast_solid(glm::vec<3, float> from, glm::vec<3, float> to) const {
@@ -377,6 +398,7 @@ void World::update() {
   if (!chunk_terrain_gen_workers.empty()) {
     size_t i = 0;
     for (auto& [_, chunk_pos] : chunks_awaiting_generation_sorted) {
+      if (chunk_terrain_gen_workers.empty()) { break; }
       if (chunks_being_generated.contains(chunk_pos)) { continue; }
       size_t worker_index = i % chunk_terrain_gen_workers.size();
       chunk_terrain_gen_workers[worker_index]->add_to_queue(chunk_pos);

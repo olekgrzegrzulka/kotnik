@@ -71,5 +71,7 @@ protected:
   Button& button_resume;
   Button& button_settings;
   Button& button_quit;
+
+public:
   SettingsMenu& settings_menu;
 };

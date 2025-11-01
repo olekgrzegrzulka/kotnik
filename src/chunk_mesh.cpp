@@ -159,13 +159,16 @@ ChunkMesh::ChunkMesh(std::unique_ptr<ChunkMeshData> data) {
   }
 }
 
-void ChunkMesh::inherit_buffers_from_previous_mesh(ChunkMesh* prev_mesh) {
-  ensure(prev_mesh);
-  ensure(!ready);
-  vbo = prev_mesh->vbo;
-  vao = prev_mesh->vao;
-  vbo_translucent = prev_mesh->vbo_translucent;
-  vao_translucent = prev_mesh->vao_translucent;
+ChunkMesh::~ChunkMesh() {
+  if (ready && vbo != 0) {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &vbo_translucent);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteVertexArrays(1, &vao_translucent);
+  }
 }
 
 void ChunkMesh::initialize() {

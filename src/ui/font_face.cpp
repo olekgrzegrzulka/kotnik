@@ -41,6 +41,11 @@ FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height)
   save_glyph_texture_to_file("./xx.png");
 }
 
+FontFace::~FontFace() { // FIXME font rendering broken when deleting texture
+  // if (texture != 0) { glDeleteTextures(1, &texture); }
+  // if (sampler != 0) { glDeleteSamplers(1, &sampler); }
+}
+
 [[maybe_unused]] void FontFace::save_glyph_texture_to_file(const char* filename) const {
 #ifdef INCLUDE_STB_IMAGE_WRITE_H
   if (texture == 0) { return; }

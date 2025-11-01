@@ -26,6 +26,8 @@ public:
 
   FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height);
 
+  ~FontFace();
+
   void bind(u32 slot) const;
 
   const FontGlyph* find_glyph(u32 charcode) const;

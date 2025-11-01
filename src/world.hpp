@@ -72,7 +72,7 @@ public:
   static const i32 min_chunk_y = -7;
 
   struct {
-    double gravity = -0.01;
+    double gravity = -0.0085;
     double air_friction = 0.015;
 
     double water_gravity = -0.0052;
@@ -88,7 +88,6 @@ protected:
   std::unordered_set<glm::vec<2, i32>, Vec2Hasher> chunks_awaiting_generation;
   std::unordered_set<glm::vec<2, i32>, Vec2Hasher> chunks_being_generated;
   std::vector<std::unique_ptr<Entity>> entities;
-
   std::vector<std::unique_ptr<ChunkTerrainGenWorker>> chunk_terrain_gen_workers;
 
   Player* player = nullptr;

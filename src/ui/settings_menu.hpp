@@ -20,7 +20,9 @@ private:
   Sprite& panel;
   Widget& top_bar_panel;
   Sprite& tab_panel;
-  Sprite& inner_panel;
+  Sprite& panel_tab1;
+  Sprite& panel_tab2;
+  Sprite& panel_tab3;
 
   Button& tab1;
   Button& tab2;

@@ -82,6 +82,7 @@ void Widget::update() {
     }
 
     for (auto& c : children) {
+      if (!c->get_process()) { continue; }
       if (c->ignore_parents_layout) { continue; }
 
       c->set_anchor(child_anchor);

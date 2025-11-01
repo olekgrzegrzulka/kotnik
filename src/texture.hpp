@@ -6,6 +6,8 @@ class Texture {
 public:
   Texture(std::string file_name);
 
+  ~Texture();
+
   void bind(u32 slot) const;
 
 private:

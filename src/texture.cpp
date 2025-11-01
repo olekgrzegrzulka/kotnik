@@ -11,6 +11,11 @@ Texture::Texture(std::string file_name) {
   sampler = Texture::create_sampler();
 }
 
+Texture::~Texture() {
+  glDeleteTextures(1, &texture);
+  glDeleteSamplers(1, &sampler);
+}
+
 void Texture::bind(u32 slot) const {
   glActiveTexture(GL_TEXTURE0 + slot);
   glBindTexture(GL_TEXTURE_2D, texture);

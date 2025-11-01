@@ -19,10 +19,12 @@ class UI {
 public:
   UI(i32 window_width_, i32 window_height_);
 
+  ~UI();
+
   template <class T, class... Args>
   T& add_widget(Args&&... args) {
-    widgets.emplace_back(std::make_unique<T>(*this, std::forward<Args&&...>(args)...));
-    T& widget = static_cast<T&>(*widgets.back().get());
+    widgets.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
+    T& widget = static_cast<T&>(*widgets.back());
     widget.set_window_width(window_width);
     widget.set_window_height(window_height);
     return widget;

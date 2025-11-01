@@ -72,63 +72,67 @@ void cubes_init() {
   cube_array[0].set_occlusion_mode(NEVER);
 
   cube_array.emplace_back(Cube{"Dirt"});
-  cube_array[1].add_model_full_cube({1.0f, 0.0f}).add_collider();
+  cube_array[1].add_model_full_cube({1.0f, 0.0f}).add_collider().add_hitbox();
 
   cube_array.emplace_back(Cube{"Grass"});
   cube_array[2]
       .add_collider()
+      .add_hitbox()
       .add_model_full_cube(
           {2.0f, 0.0f}, {2.0f, 0.0f},
           {1.0f, 0.0f}, {3.0f, 0.0f},
           {2.0f, 0.0f}, {2.0f, 0.0f});
 
   cube_array.emplace_back(Cube{"Stone"});
-  cube_array[3].add_model_full_cube({4.0f, 0.0f}).add_collider();
+  cube_array[3].add_model_full_cube({4.0f, 0.0f}).add_collider().add_hitbox();
 
   cube_array.emplace_back(Cube{"Sand"});
-  cube_array[4].add_model_full_cube({5.0f, 0.0f}).add_collider();
+  cube_array[4].add_model_full_cube({5.0f, 0.0f}).add_collider().add_hitbox();
 
   cube_array.emplace_back(Cube{"Gravel"});
-  cube_array[5].add_model_full_cube({6.0f, 0.0f}).add_collider();
+  cube_array[5].add_model_full_cube({6.0f, 0.0f}).add_collider().add_hitbox();
 
   cube_array.emplace_back(Cube{"Wood"});
-  cube_array[6].add_collider().add_model_full_cube(
+  cube_array[6].add_collider().add_hitbox().add_model_full_cube(
       {7.0f, 0.0f}, {7.0f, 0.0f},
       {8.0f, 0.0f}, {8.0f, 0.0f},
       {7.0f, 0.0f}, {7.0f, 0.0f});
 
   cube_array.emplace_back(Cube{"Birch Wood"});
-  cube_array[7].add_collider().add_model_full_cube(
+  cube_array[7].add_collider().add_hitbox().add_model_full_cube(
       {7.0f, 1.0f}, {7.0f, 1.0f},
       {8.0f, 1.0f}, {8.0f, 1.0f},
       {7.0f, 1.0f}, {7.0f, 1.0f});
 
   cube_array.emplace_back(Cube{"Leaves"});
-  cube_array[8].add_model_full_cube({9.0f, 0.0f}).add_collider();
+  cube_array[8].add_model_full_cube({9.0f, 0.0f}).add_collider().add_hitbox();
   cube_array[8].set_ao(Cube::CubeAOMode::IF_SAME_ID).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
   cube_array.emplace_back(Cube{"Grass Plant"});
+  cube_array[9].add_hitbox(AABB{{0.35f, 0.35f, 0.35f}, {0.5f, 0.35f, 0.5f}});
+
   cube_array[9].set_occlusion_mode(NEVER).set_ao(Cube::CubeAOMode::NEVER);
   cube_array[9].add_model_x_shape({13.0f, 0.0f}).add_model_x_shape({13.0f, 1.0f});
   cube_array[9].set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
   cube_array.emplace_back(Cube{"Flower"});
+  cube_array[10].add_hitbox(AABB{{0.25f, 0.35f, 0.25f}, {0.5f, 0.35f, 0.5f}});
   cube_array[10].add_model_x_shape({14.0f, 0.0f}).add_model_x_shape({15.0f, 0.0f});
   cube_array[10].add_model_x_shape({14.0f, 1.0f}).add_model_x_shape({15.0f, 1.0f});
   cube_array[10].set_ao(Cube::CubeAOMode::NEVER).set_occlusion_mode(Cube::CubeOccludeMode::NEVER);
 
-  cube_array.emplace_back(Cube{"Water"}).add_model_full_cube({0.0f, 1.0f}).add_collider();
+  cube_array.emplace_back(Cube{"Water"}).add_model_full_cube({0.0f, 1.0f}).add_collider().add_hitbox();
   cube_array[11].set_is_translucent(true).set_ao(Cube::CubeAOMode::NEVER);
   cube_array[11].set_occlusion_mode(Cube::CubeOccludeMode::IF_SAME_ID);
 
   cube_array.emplace_back(Cube{"Stone Bricks"});
-  cube_array[12].add_model_full_cube({10.0f, 0.0f}).add_collider();
+  cube_array[12].add_model_full_cube({10.0f, 0.0f}).add_collider().add_hitbox();
   cube_array.emplace_back(Cube{"Stone Bricks"});
 
-  cube_array[13].add_model_full_cube({11.0f, 0.0f}).add_collider();
+  cube_array[13].add_model_full_cube({11.0f, 0.0f}).add_collider().add_hitbox();
 
   cube_array.emplace_back(Cube{"Stone Tiles"});
-  cube_array[14].add_model_full_cube({12.0f, 0.0f}).add_collider();
+  cube_array[14].add_model_full_cube({12.0f, 0.0f}).add_collider().add_hitbox();
 }
 
 const Cube& cubes_get(CubeId cube_id) {

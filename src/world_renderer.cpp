@@ -28,7 +28,7 @@ static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector,
 
 WorldRenderer::WorldRenderer(World& world_, Shader& cube_shader_, Texture& atlas_texture_, Texture& atlas_foliage_mask_texture_)
     : world{world_}, cube_shader{cube_shader_}, atlas_texture{atlas_texture_}, atlas_foliage_mask_texture{atlas_foliage_mask_texture_} {
-  for (size_t i = 0; i < 1; i += 1) {
+  for (size_t i = 0; i < 2; i += 1) {
     chunk_mesh_workers.push_back(std::make_unique<ChunkMeshWorker>());
   }
 }
@@ -53,9 +53,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
     for (auto& [chunk_pos, chunk_mesh] : worker->collect_finished_chunks()) {
       Chunk* chunk = world.get_chunk(chunk_pos);
       if (!chunk) { continue; }
-      auto prev_mesh = std::move(chunk->mesh);
       chunk->mesh = std::move(chunk_mesh);
-      chunk->mesh->inherit_buffers_from_previous_mesh(prev_mesh.get());
       chunk->flags.awaiting_mesh_update = false;
       // ensure(chunks_being_meshed.contains(chunk_pos));
       chunks_being_meshed.erase(chunk_pos);
@@ -178,6 +176,7 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   if (!chunks_for_remeshing.empty()) {
     size_t i = 0;
     for (auto& [_, chunk] : chunks_for_remeshing) {
+      if (chunk_mesh_workers.empty()) { break; }
       size_t worker_index = i % chunk_mesh_workers.size();
       // bool success = chunk_mesh_workers[worker_index]->add_to_queue_no_mutex(chunk->position, world);
       bool success = chunk_mesh_workers[worker_index]->add_to_queue(chunk->position, world);

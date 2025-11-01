@@ -17,6 +17,25 @@ out float fog_factor;
 out float alpha_frag;
 out vec3 foliage;
 
+float rand(vec2 c){
+	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+const float screenWidth = 100.0;
+const float PI = 3.141;
+float noise(vec2 p, float freq ){
+	float unit = screenWidth/freq;
+	vec2 ij = floor(p/unit);
+	vec2 xy = mod(p,unit)/unit;
+	xy = .5*(1.-cos(PI*xy));
+	float a = rand((ij+vec2(0.,0.)));
+	float b = rand((ij+vec2(1.,0.)));
+	float c = rand((ij+vec2(0.,1.)));
+	float d = rand((ij+vec2(1.,1.)));
+	float x1 = mix(a, b, xy.x);
+	float x2 = mix(c, d, xy.x);
+	return mix(x1, x2, xy.y);
+}
+
 void main() {
     uv.x = float((pack & 0xFF)) / 16.0 / 2.0;
     uv.y = float((pack & 0xFF00) >> 8) /  16.0 / 2.0;
@@ -26,9 +45,12 @@ void main() {
     normal.y = float((pack & 0xc0000) >> 18) - 1.0;
     normal.z = float((pack & 0x300000) >> 20) - 1.0;
 
+    gl_Position = camera_matrix * (vec4(vertex - camera_pos, 1.0));
+
     foliage.r = float((foliage_ & 0x000000FF) >> 0) / 255.0;
     foliage.g = float((foliage_ & 0x0000FF00) >> 8) / 255.0;
     foliage.b = float((foliage_ & 0x00FF0000) >> 16) / 255.0;
+    foliage.rgb += ((noise(vertex.xz, 50.0) - 0.5) * 2.0) * 0.04;
 
     uint brightness_vertex = ((pack & 0xFF000000) >> 24); // from 0 to 255
     // brightness_vertex = 255;
@@ -47,6 +69,6 @@ void main() {
 
     alpha_frag = alpha;
 
-    gl_Position = camera_matrix * (vec4(vertex - camera_pos, 1.0));
+    
     
 }

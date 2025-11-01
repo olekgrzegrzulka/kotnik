@@ -51,7 +51,7 @@ public:
 public:
   ChunkMesh();
   ChunkMesh(std::unique_ptr<ChunkMeshData>);
-  void inherit_buffers_from_previous_mesh(ChunkMesh* prev_mesh);
+  ~ChunkMesh();
   void draw();
   void draw_translucent();
 

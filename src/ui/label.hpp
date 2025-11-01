@@ -40,7 +40,6 @@ public:
 
   void set_text_color(glm::vec3 text_color_) {
     if (text_color == text_color_) { return; }
-    debug_log("set_text() ", text_color, " -> ", text_color_);
     text_color = text_color_;
     // text_dirty = true;
     dirty = true;

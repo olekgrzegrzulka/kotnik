@@ -54,6 +54,10 @@ UI::UI(i32 window_width_, i32 window_height_)
   texture_atlas.add_texture("text_input_idle", "./assets/ui/text_input_idle.png");
 }
 
+UI::~UI() {
+  FT_Done_FreeType(freetype_lib);
+}
+
 void UI::update(i32 window_width_, i32 window_height_) {
   window_width = window_width_;
   window_height = window_height_;

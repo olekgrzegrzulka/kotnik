@@ -240,7 +240,7 @@ public:
 
   void update_velocity() {
     const double walking_speed = (is_flying) ? 0.5 : 0.1;
-    static const double jump_power = 0.155;
+    static const double jump_power = 0.145;
     static int jump_delay = 0;
 
     auto walking_vector = (get_walking_dir() * walking_speed);

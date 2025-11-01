@@ -80,6 +80,7 @@ static_assert(sizeof(CompactVertex) == 20);
 struct Cube {
   std::string name = "";
   std::vector<AABB> collider_aabbs;
+  std::vector<AABB> hitbox_aabbs;
 
   constexpr Cube() {}
   constexpr Cube(std::string name_) : name{name_} {}
@@ -168,6 +169,11 @@ struct Cube {
 
   constexpr Cube& add_collider(AABB aabb = AABB{{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}}) {
     collider_aabbs.emplace_back(aabb);
+    return *this;
+  }
+
+  constexpr Cube& add_hitbox(AABB aabb = AABB{{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}}) {
+    hitbox_aabbs.emplace_back(aabb);
     return *this;
   }
 };
