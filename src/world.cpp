@@ -11,6 +11,7 @@
 #include "chunk.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
+#include "config.hpp"
 #include "cubes.hpp"
 #include "entity.hpp"
 #include "input.hpp"
@@ -19,11 +20,9 @@
 #include "random.hpp"
 #include "world_gen.hpp"
 
-i32 World::chunk_load_distance = 7;
-
 World::World() : world_lighter{*this} {
   seed = StaticRandom::get().next<i32>();
-  // seed = 1081206155;
+  seed = 1081206155;
   debug_log("Created world with seed ", seed);
   world_gen = std::make_unique<WorldGen>(*this, seed);
 
@@ -378,6 +377,7 @@ void World::update() {
   ChunkPos player_chunk_pos = (player) ? cube_pos_to_chunk_pos(player->world_pos) : ChunkPos{0, 0, 0};
   glm::vec<2, i32> player_chunk_pos_xz = {player_chunk_pos.x, player_chunk_pos.z};
   // Load chunks near player
+  i32 chunk_load_distance = config_get_i32("chunk_load_distance").value_or(3);
   if (worldgen_enabled) {
     for (i32 x = -chunk_load_distance; x <= chunk_load_distance; x += 1) {
       for (i32 z = -chunk_load_distance; z <= chunk_load_distance; z += 1) {

@@ -37,6 +37,7 @@ set(SOURCES
     ./src/shader.cpp
     ./src/water_overlay.cpp
     ./src/framebuffer.cpp
+    ./src/config.cpp
 
     ./src/ui/button.cpp
     ./src/ui/font_face.cpp

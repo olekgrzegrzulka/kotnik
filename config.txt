@@ -1,0 +1,3 @@
+chunk_load_distance: 5
+fog_start: 135.000000
+fog_distance: 24.000000

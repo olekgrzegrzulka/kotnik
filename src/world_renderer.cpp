@@ -10,13 +10,11 @@
 #include "chunk_mesh.hpp"
 #include "chunk_worker.hpp"
 #include "common.hpp"
+#include "config.hpp"
 #include "player.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 #include "world.hpp"
-
-float WorldRenderer::fog_start = 192.0;
-float WorldRenderer::fog_distance = 24.0;
 
 static void sort_chunk_vector_by_manhattan_distance(std::vector<Chunk*>& vector, ChunkPos to) {
   std::sort(vector.begin(), vector.end(), [&](const Chunk* a, const Chunk* b) {
@@ -68,6 +66,8 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   cube_shader.set_uniform_float("light_dir", light.x, light.y, light.z);
   cube_shader.set_uniform_float("camera_pos", camera_pos.x, camera_pos.y, camera_pos.z);
   cube_shader.set_uniform_float("alpha", 1.0);
+  float fog_start = config_get_float("fog_start").value_or(192.0f);
+  float fog_distance = config_get_float("fog_distance").value_or(24.0f);
   cube_shader.set_uniform_float("fog_start", fog_start);
   cube_shader.set_uniform_float("fog_end", fog_start + fog_distance);
 
@@ -155,8 +155,10 @@ void WorldRenderer::update(WorldPos camera_pos, const glm::mat4& camera_matrix) 
   std::multimap<i32, Chunk*, std::greater<i32>> chunks_for_remeshing;
   // Skip the edge chunks as they don't have all neigbours and can't be meshed
 
-  for (i32 x = -world.chunk_load_distance + 1; x <= world.chunk_load_distance - 1; x += 1) {
-    for (i32 z = -world.chunk_load_distance + 1; z <= world.chunk_load_distance - 1; z += 1) {
+  i32 chunk_load_distance = config_get_i32("chunk_load_distance").value_or(3);
+
+  for (i32 x = -chunk_load_distance + 1; x <= chunk_load_distance - 1; x += 1) {
+    for (i32 z = -chunk_load_distance + 1; z <= chunk_load_distance - 1; z += 1) {
       for (i32 y = world.min_chunk_y + 1; y <= world.max_chunk_y - 1; y += 1) {
         ChunkPos chunk_pos = player_chunk_pos + ChunkPos{x, y, z};
         if (!chunks_awaiting_mesh_update.contains(chunk_pos)) {

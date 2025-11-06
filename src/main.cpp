@@ -10,6 +10,10 @@
 #include "stb_image.h"
 #undef STB_IMAGE_IMPLEMENTATION
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#undef STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include <chrono>
 #include <cstdlib>
 #include <iomanip>
@@ -58,9 +62,9 @@ void check_opengl_errors() {
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
 
-  if (!glfwInit()) {
-    debug_error("Failed to initialize glfw");
-  }
+  config_load_from_file("config.txt");
+
+  if (!glfwInit()) { debug_error("Failed to initialize glfw"); }
 
   glm::vec<2, i32> window_size;
 
@@ -77,10 +81,8 @@ int main() {
   glfwGetWindowSize(window, &window_size.x, &window_size.y);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // glad
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-  // gl
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
   glEnable(GL_BLEND);
@@ -90,7 +92,6 @@ int main() {
 
   Texture atlas_texture{"atlas.png"};
   Texture atlas_texture_foliage_mask{"atlas_foliage_mask.png"};
-
   Shader cube_shader{"cube"};
 
   CubeIndicatorRenderer cube_indicator_renderer;
@@ -191,7 +192,7 @@ int main() {
       water_overlay_draw(camera_matrix);
     }
     CubeId players_held_cube = player ? player->cube_to_place : CubeId::AIR;
-    held_cube_renderer.draw(aspect_ratio, players_held_cube);
+    held_cube_renderer.draw(window_width, window_height, players_held_cube);
     std::optional<CubePos> cube_indicator_pos = player->get_cube_indicator_pos();
     if (cube_indicator_pos.has_value()) {
       auto& aabbs = cubes_get(world.get_cube(cube_indicator_pos.value())).hitbox_aabbs;
@@ -213,7 +214,8 @@ int main() {
   }
 
   Benchmark::print_all();
-
+  config_save_to_file("config.txt");
+  glfwDestroyWindow(window);
   // glfwTerminate();
   return 0;
 }

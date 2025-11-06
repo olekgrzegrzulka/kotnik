@@ -1,6 +1,7 @@
 #include "settings_menu.hpp"
 #include <algorithm>
 #include <array>
+#include "../config.hpp"
 #include "../input.hpp"
 #include "button.hpp"
 #include "label.hpp"
@@ -8,17 +9,12 @@
 #include "sprite.hpp"
 #include "widget.hpp"
 
-#include "../world.hpp"          // World::chunk_load_distance
-#include "../world_renderer.hpp" // WorldRenderer::fog_start, fog_end
-
 constexpr i32 total_width = 400;
 constexpr i32 total_height = 300;
-constexpr i32 inner_margin = 3;
 
 constexpr i32 tab_panel_inner_margin = 0;
 constexpr i32 tab_width = 80;
 constexpr i32 tab_height = 22;
-constexpr i32 top_bar_height = 22;
 
 SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
                                      panel(add_child<Sprite>()),
@@ -131,10 +127,10 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
     slider.set_weight(1.0f);
     slider.set_min_value(2);
     slider.set_max_value(8);
-    slider.set_value(World::chunk_load_distance);
+    slider.set_value(config_get_i32("chunk_load_distance").value_or(3));
 
     slider.on_value_changed([&](i32 value) {
-      World::chunk_load_distance = value;
+      config_set_i32("chunk_load_distance", value);
     });
   }
 
@@ -154,10 +150,10 @@ SettingsMenu::SettingsMenu(UI& ui) : Widget::Widget(ui),
     slider.set_weight(1.0f);
     slider.set_min_value(8.0f);
     slider.set_max_value(256.0f);
-    slider.set_value(WorldRenderer::fog_start);
+    slider.set_value(config_get_float("fog_start").value_or(192.0f));
 
     slider.on_value_changed([&](i32 value) {
-      WorldRenderer::fog_start = value;
+      config_set_float("fog_start", value);
     });
   }
 

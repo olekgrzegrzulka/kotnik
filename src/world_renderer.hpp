@@ -15,9 +15,6 @@ public:
   static constexpr bool ambient_occlusion_enabled = true;
   static constexpr u8 ambient_occlusion_intensity = 105;
 
-  static float fog_start;
-  static float fog_distance;
-
 private:
   World& world;
   Shader& cube_shader;

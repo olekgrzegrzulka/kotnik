@@ -10,6 +10,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/trigonometric.hpp>
 #include "common.hpp"
+#include "config.hpp"
 #include "cubes.hpp"
 #include "glad/glad.h"
 #include "random.hpp"
@@ -32,44 +33,45 @@ public:
       : shader{shader_}, atlas_texture{atlas_texture_} {
   }
 
-  void draw(float aspect_ratio, CubeId new_cube_id) {
+  void draw(i32 window_width, i32 window_height, CubeId new_cube_id) {
     if (!cube_id.has_value() || cube_id.value() != new_cube_id) {
       cube_id = new_cube_id;
       update_mesh(cube_id.value());
     }
 
-    shader.use();
-    atlas_texture.bind(0);
-
+    glm::vec2 pixel_size = {1.0f / window_width, 1.0f / window_height}; // FIXME it's not actual pixel size
     static constexpr glm::vec3 light = {0.41f, 0.82f, 0.41f};
-
-    glm::mat4 projection = glm::ortho(-0.5f * aspect_ratio, 0.5f * aspect_ratio, -0.5f, 0.5f, 0.01f, 10.0f);
-
-    glm::mat4 view = glm::lookAt(
-        glm::vec<3, float>{1.0f, 0.0f, 0.0f},
-        glm::vec<3, float>{0.0f},
-        {0.0f, 1.0f, 0.0f});
-
-    view *= glm::translate(glm::mat4(1.0), glm::vec3(0.0f, -0.41f, -0.82f));
-    view *= glm::scale(glm::mat4(1.0), glm::vec3(0.1f));
-
     auto now = std::chrono::high_resolution_clock::now();
     auto t = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     float r = static_cast<float>((t / 32) % 360);
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model *= glm::eulerAngleXYZ(glm::radians(0.0f), glm::radians(r), glm::radians(r));
+    glm::mat4 proj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
+
+    glm::mat4 model{1.0f};
+    model *= glm::translate(glm::mat4(1.0f), {0.5f, 0.5f, 0.5f});
+    model *= glm::eulerAngleXYZ(glm::radians(r), glm::radians(0.0f), glm::radians(r));
     model *= glm::translate(glm::mat4(1.0f), {-0.5f, -0.5f, -0.5f});
 
-    glm::mat4 camera_matrix = projection * view * model;
+    glm::mat4 view{1.0f};
+    glm::vec2 padding = pixel_size * 90.0f;
+    glm::vec2 size = pixel_size * 400.0f;
+    glm::vec2 sxsy = glm::vec2(size.x - 2.0f * padding.x, 2.0f * padding.y - size.y);
+    glm::vec2 tt = glm::vec2(1.0f + padding.x - size.x, -1.0f - padding.y + size.y);
+    view[0][0] = sxsy.x;
+    view[1][1] = sxsy.y;
+    view[3][0] = tt.x;
+    view[3][1] = tt.y;
 
-    glDisable(GL_DEPTH_TEST);
+    glm::mat4 camera_matrix = proj * view * model;
 
+    shader.use();
+    atlas_texture.bind(0);
     shader.set_uniform_mat4("camera_matrix", camera_matrix);
     shader.set_uniform_float("light_dir", light.x, light.y, light.z);
     shader.set_uniform_float("camera_pos", 0.0f, 0.0f, 0.0f);
     shader.set_uniform_float("alpha", 1.0f);
 
+    glDisable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
