@@ -271,9 +271,9 @@ public:
 };
 
 WorldGen::WorldGen(World& w, i32 seed) : world(w) {
-  constexpr float freq_biome = 0.00135f;
-  constexpr float freq_height = 0.0075f;
-  constexpr float freq_3d = 0.00515f;
+  constexpr float freq_biome = 0.00135f * 0.85f;
+  constexpr float freq_height = 0.0075f * 0.85f;
+  constexpr float freq_3d = 0.00515f * 0.85f;
   noise_heightmap.SetSeed(seed);
   noise_heightmap.SetFrequency(freq_height);
   noise_heightmap.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);

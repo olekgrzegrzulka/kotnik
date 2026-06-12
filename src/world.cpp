@@ -22,7 +22,6 @@
 
 World::World() : world_lighter{*this} {
   seed = StaticRandom::get().next<i32>();
-  seed = 1081206155;
   debug_log("Created world with seed ", seed);
   world_gen = std::make_unique<WorldGen>(*this, seed);
 
