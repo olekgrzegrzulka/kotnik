@@ -30,8 +30,6 @@
 # CMake / Make
 CMakeFiles
 CMakeCache.txt
-Makefile
-*.cmake
 compile_commands.json
 .cache
 
@@ -43,4 +41,4 @@ compile_commands.json
 kotnik
 ideas.txt
 .ignore
-lib/freetype/build
+config.txt
